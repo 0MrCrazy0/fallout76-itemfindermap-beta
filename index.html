@@ -263,8 +263,8 @@
     const MAP_VERSION_KEY = 'fallout76_map_version';
     const TERMS_ACCEPTED_KEY = 'fallout76_terms_accepted';
     const UPDATE_VERSION_KEY = 'fallout76_last_update_seen';
-    const CURRENT_UPDATE_VERSION = 'v34-cid-import-fix'; // CHANGE ON EVERY MAJOR UPDATE
-    const APP_VERSION = "34";
+    const CURRENT_UPDATE_VERSION = 'v35-undo-import'; // CHANGE ON EVERY MAJOR UPDATE
+    const APP_VERSION = "35";
     let soundsEnabled = localStorage.getItem('soundsEnabled') !== 'false';
     const baseSounds = {
         click: new Audio("https://rpg.hamsterrepublic.com/wiki-images/8/84/Select8-Bit.ogg"),
@@ -306,6 +306,9 @@
     let customCategories = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_KEY)) || {};
     let communityVersion = localStorage.getItem(MAP_VERSION_KEY) || "1.0";
     let termsAccepted = localStorage.getItem(TERMS_ACCEPTED_KEY) === 'true';
+
+    // NEW: UNDO IMPORT BACKUP
+    let lastImportBackup = null;
 
     /* SECTION 2: CATEGORY ICONS & COLORS — REAL EMOJIS */
     const defaultCategoryIcons = {
@@ -477,6 +480,7 @@
     const newCategoryEmoji = document.getElementById('newCategoryEmoji');
     const toggleDarkModeBtn = document.getElementById('toggleDarkModeBtn');
     const voiceSearchBtn = document.getElementById('voiceSearchBtn');
+    const undoImportBtn = document.getElementById('undoImportBtn'); // NEW
     toggleSoundsBtn.textContent = soundsEnabled ? 'Sounds: On' : 'Sounds: Off';
     toggleClusterBtn.textContent = `Clustering: ${clusteringEnabled ? 'On' : 'Off'}`;
     toggleMapBtn.textContent = currentMap === 'named' ? 'Show No-Name Map' : 'Show Named Map';
@@ -1036,7 +1040,6 @@
     }
 
     /* SECTION 14: TABLE */
-    // NEW: FORCE COUNTER TO SHOW LATEST VERSION
     function updateCounterDisplay() {
         const latestVersion = localStorage.getItem(MAP_VERSION_KEY) || "1.0";
         const totalFiltered = locations.filter(l => activeCategories.has(l.category)).length;
@@ -1100,7 +1103,7 @@
         pageInfo.textContent = `Page ${tablePage} of ${totalPages || 1}`;
         prevPageBtn.disabled = tablePage <= 1;
         nextPageBtn.disabled = tablePage >= totalPages;
-        updateCounterDisplay(); // FIXED: Always show latest version
+        updateCounterDisplay();
     }
 
     setInterval(() => {
@@ -1279,7 +1282,7 @@
         alert(wantsAll ? 'Exported **ALL** logged locations!' : 'Exported **USER-ONLY** locations!');
     };
 
-    // === FIXED IMPORT WITH PRESERVE/RESET LOGIC ===
+    // === FIXED IMPORT WITH PRESERVE/RESET LOGIC + UNDO ===
     importBtn.onclick = () => {
         const input = document.createElement('input');
         input.type = 'file';
@@ -1289,6 +1292,7 @@
             if (!file) return;
             const reader = new FileReader();
             reader.onload = ev => {
+                backupBeforeImport(); // BACKUP BEFORE ANY CHANGES
                 try {
                     const data = JSON.parse(ev.target.result);
                     const incoming = data.locations || [];
@@ -1423,7 +1427,6 @@
                     recalculateXP();
                     saveLocations();
 
-                    // === FORCE DOM & COUNTER UPDATE AFTER IMPORT ===
                     setTimeout(() => {
                         forceReload();
                         updateCounterDisplay();
@@ -1449,7 +1452,7 @@
         input.click();
     };
 
-    // === FIXED COMMUNITY UPDATE — NO NULL ERROR ===
+    // === FIXED COMMUNITY UPDATE + UNDO ===
     downloadCommunityBtn.onclick = () => {
         playSound('click');
         if (!confirm(
@@ -1471,6 +1474,7 @@
                 return r.text();
             })
             .then(text => {
+                backupBeforeImport(); // BACKUP BEFORE ANY CHANGES
                 try {
                     const data = JSON.parse(text);
                     const incoming = data.locations || [];
@@ -1575,7 +1579,7 @@
                         updateCounterDisplay();
                     }, 100);
 
-                    alert(`Community Map Updated!\n${toAdd.length} added | ${toReplace.length} updated | ${skippedUserEdited} preserved`);
+                    alert(`Community Map Updated!\nVersion: ${communityVersion}`);
                     playSound('saving');
                 } catch (err) {
                     console.error('Community update error:', err);
@@ -1584,7 +1588,7 @@
                 }
             })
             .catch(err => {
-                alert(`Update failed: ${err.message}\n\nTry manual import.`);
+                alert(`Update failed: ${err.message}\n\nCheck internet or file.`);
                 playSound('error');
             })
             .finally(() => {
@@ -1592,6 +1596,48 @@
                 downloadCommunityBtn.textContent = 'Update Community Map';
             });
     };
+
+    // === UNDO IMPORT LOGIC ===
+    function backupBeforeImport() {
+        lastImportBackup = {
+            locations: JSON.parse(JSON.stringify(locations)),
+            customCategories: { ...customCategories },
+            communityVersion: communityVersion,
+            activeCategories: new Set(activeCategories)
+        };
+        undoImportBtn.style.display = 'inline-block';
+        showTempMessage('Import backup saved. Use "Undo Import" if needed.', 4000);
+    }
+
+    function undoLastImport() {
+        if (!lastImportBackup) {
+            alert("No import to undo.");
+            return;
+        }
+        if (!confirm("Undo last import? This will restore your previous state.")) return;
+
+        locations = lastImportBackup.locations;
+        customCategories = lastImportBackup.customCategories;
+        communityVersion = lastImportBackup.communityVersion;
+        activeCategories = lastImportBackup.activeCategories;
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(locations));
+        localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(customCategories));
+        localStorage.setItem(MAP_VERSION_KEY, communityVersion);
+        localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
+
+        lastImportBackup = null;
+        undoImportBtn.style.display = 'none';
+
+        recalculateXP();
+        forceReload();
+        updateCounterDisplay();
+
+        showTempMessage('Import undone! Previous state restored.', 4000);
+        playSound('undo');
+    }
+
+    undoImportBtn.onclick = undoLastImport;
 
     /* SECTION 19: JPEG SAVE & PAGINATION */
     saveJpegBtn.onclick = () => {
@@ -1827,7 +1873,7 @@
         }
     };
 
-    // FIXED DUPLICATE: NEW CID, NO CONFLICTS
+        // FIXED DUPLICATE: NEW CID, NO CONFLICTS
     duplicateBtn.onclick = () => {
         if (currentIndex >= 0) {
             const loc = locations[currentIndex];
@@ -1877,7 +1923,7 @@
         });
     };
 
-        /* SECTION 23: FILTER & MAP EVENTS */
+    /* SECTION 23: FILTER & MAP EVENTS */
     categoryFilter.addEventListener('change', () => {
         const val = categoryFilter.value;
         localStorage.setItem('currentCategoryFilter', val);
@@ -1920,7 +1966,7 @@
     refreshTableVisibility();
 })();
  /* --------------------------------------------------------------------------
-       Fallout 76 Item Finder Map Version 34 - Disclaimer and Terms of Use
+       Fallout 76 Item Finder Map Version 35 - Disclaimer and Terms of Use
        --------------------------------------------------------------------------
        Copyright (c) 2025 MrCrazy. All rights reserved.
        This application, including all code, design, content, and the map images, is the intellectual property of MrCrazy.
@@ -1928,7 +1974,7 @@
        This app is provided "as is" for personal, non-commercial use by Fallout 76 players to track in-game items.
        The author is not responsible for any damages or losses resulting from the use of this application. Use at your own risk.
        For inquiries or permission requests, call someone who cares.
-       Last updated: October 24, 2025
+       Last updated: November 01, 2025
        -------------------------------------------------------------------------- */
 </script>
 </body>
