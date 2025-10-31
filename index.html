@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Fallout 76 Item Finder v34</title>
+    <title>Fallout 76 Item Finder vBeta</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
@@ -286,17 +286,45 @@
     let customCategories = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_KEY)) || {};
     let communityVersion = localStorage.getItem(MAP_VERSION_KEY) || "1.0";
     let termsAccepted = localStorage.getItem(TERMS_ACCEPTED_KEY) === 'true';
+    
+    // REAL EMOJIS — YOUR EXACT CHOICES
     const defaultCategoryIcons = {
-        'weapons': 'GUN', 'armor': 'SHIELD', 'aid': 'SYRINGE', 'food/drink': 'PLATE', 'ammunition': 'EXPLOSION',
-        'apparel': 'SHIRT', 'plans': 'SCROLL', 'junk': 'TRASH', 'holotapes': 'DISC', 'misc': 'NOTE',
-        'plants': 'LEAF', 'eggs': 'EGG', 'creatures': 'WOLF', 'vendors': 'DOLLAR', 'exchanges': 'BALANCE',
-        'vaults': 'GEAR', 'power armor': 'ASTRONAUT', 'fusion core': 'BATTERY', 'nuke drop zones': 'RADIOACTIVE',
-        'nuke silos': 'ROCKET', 'magazines': 'BOOK', 'bobbleheads': 'DOLL', 'safe locations': 'SAFE',
-        'terminal locations': 'COMPUTER', 'treasure maps': 'MAP', 'resource deposits': 'PICKAXE',
-        'fishing locations': 'FISH', 'workshops': 'WRENCH', 'train stations': 'TRAIN', 'town locations': 'SCHOOL',
-        'event locations': 'PARTY', 'named locations': 'FLAG', 'regions': 'PIN'
+        'weapons': 'GUN', 
+        'armor': 'SHIELD', 
+        'aid': 'SYRINGE', 
+        'food/drink': 'PLATE', 
+        'ammunition': 'EXPLOSION',
+        'apparel': 'SHIRT', 
+        'plans': 'SCROLL', 
+        'junk': 'TRASH', 
+        'holotapes': 'DISC', 
+        'misc': 'NOTE',
+        'plants': 'LEAF', 
+        'eggs': 'EGG', 
+        'creatures': 'WOLF', 
+        'vendors': 'DOLLAR', 
+        'exchanges': 'BALANCE',
+        'vaults': 'GEAR', 
+        'power armor': 'ASTRONAUT', 
+        'fusion core': 'BATTERY', 
+        'nuke drop zones': 'RADIOACTIVE',
+        'nuke silos': 'ROCKET', 
+        'magazines': 'BOOK', 
+        'bobbleheads': 'DOLL', 
+        'safe locations': 'SAFE',
+        'terminal locations': 'COMPUTER', 
+        'treasure maps': 'MAP', 
+        'resource deposits': 'PICKAXE',
+        'fishing locations': 'FISH', 
+        'workshops': 'WRENCH', 
+        'train stations': 'TRAIN', 
+        'town locations': 'SCHOOL',
+        'event locations': 'PARTY', 
+        'named locations': 'FLAG', 
+        'regions': 'PIN'
     };
     let categoryIcons = { ...defaultCategoryIcons, ...customCategories };
+    
     const defaultCategoryColors = {
         'weapons': '#ff4444', 'armor': '#4682b4', 'aid': '#32cd32', 'food/drink': '#adff2f',
         'ammunition': '#ff8c00', 'apparel': '#dda0dd', 'plans': '#a0522d', 'junk': '#808080',
@@ -309,6 +337,8 @@
         'regions': '#00ff00', 'named locations': '#ffffff'
     };
     let categoryColors = { ...defaultCategoryColors };
+
+    // === MAP SETUP ===
     const map = L.map('map', { crs: L.CRS.Simple, minZoom: -3, maxZoom: 4, zoomControl: true, scrollWheelZoom: true, doubleClickZoom: true, boxZoom: true, touchZoom: true, dragging: true });
     const imageBounds = [[0, 0], [4096, 4096]];
     const mapUrls = {
@@ -318,10 +348,12 @@
     let currentMap = localStorage.getItem('currentMap') || 'named';
     let imageOverlay = L.imageOverlay(mapUrls[currentMap], imageBounds).addTo(map);
     map.fitBounds(imageBounds);
+
     const clusteredMarkers = L.markerClusterGroup({ maxClusterRadius: 30, disableClusteringAtZoom: 2 });
     const nonClusteredMarkers = L.layerGroup();
     map.addLayer(clusteredMarkers);
     map.addLayer(nonClusteredMarkers);
+
     let lastDeleted = null;
     let lastMovedMarker = null;
     let currentIndex = -1;
@@ -344,6 +376,7 @@
     let currentCategoryFilter = localStorage.getItem('currentCategoryFilter') || '';
     let isDuplicateEdit = false;
     let darkMode = localStorage.getItem('darkMode') === 'true';
+
     // === GRID SYSTEM ===
     let gridLayer = L.layerGroup().addTo(map);
     function drawGrid() {
@@ -410,6 +443,7 @@
         const emojiRegex = /^\p{Emoji}$/u;
         return emojiRegex.test(str.trim());
     }
+
     // === ELEMENTS ===
     const itemModal = document.getElementById('itemModal');
     const deleteBtn = document.getElementById('deleteItemBtn');
@@ -450,6 +484,7 @@
     const newCategoryEmoji = document.getElementById('newCategoryEmoji');
     const toggleDarkModeBtn = document.getElementById('toggleDarkModeBtn');
     const voiceSearchBtn = document.getElementById('voiceSearchBtn');
+
     toggleSoundsBtn.textContent = soundsEnabled ? 'Sounds: On' : 'Sounds: Off';
     toggleClusterBtn.textContent = `Clustering: ${clusteringEnabled ? 'On' : 'Off'}`;
     toggleMapBtn.textContent = currentMap === 'named' ? 'Show No-Name Map' : 'Show Named Map';
@@ -458,6 +493,7 @@
     toggleButtonGroup.textContent = 'Show Tools';
     combinedSearch.value = currentSearch;
     categoryFilter.value = currentCategoryFilter;
+
     // === TITLE TOGGLE ===
     const toggleTitleBtn = document.getElementById('toggleTitleBtn');
     const mainTitle = document.getElementById('mainTitle');
@@ -471,6 +507,7 @@
         localStorage.setItem('titleVisible', titleVisible);
         playSound('click');
     };
+
     // === DARK MODE ===
     document.body.classList.toggle('dark-mode', darkMode);
     toggleDarkModeBtn.textContent = darkMode ? 'Dark Mode: On' : 'Dark Mode: Off';
@@ -481,6 +518,7 @@
         toggleDarkModeBtn.textContent = darkMode ? 'Dark Mode: On' : 'Dark Mode: Off';
         playSound('click');
     };
+
     // === VOICE SEARCH ===
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -527,9 +565,8 @@
             playSound('error');
         };
     }
-    // ---------------------------------------------------------------
-    // SEARCH INPUT – now with “found” sound (same as voice search)
-    // ---------------------------------------------------------------
+
+    // === SEARCH INPUT ===
     let typingTimeout;
     let lastFilteredCount = -1;
     combinedSearch.addEventListener('input', () => {
@@ -573,6 +610,7 @@
         combinedSearch.focus();
         playSound('modalClose');
     };
+
     // === FETCH WITH TIMEOUT ===
     function fetchWithTimeout(url, ms = 10000) {
         return Promise.race([
@@ -580,6 +618,7 @@
             new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), ms))
         ]);
     }
+
     // === FETCH NUKE CODES ===
     function fetchNukeCodes() {
         const codesDiv = document.getElementById('nuke-codes');
@@ -599,6 +638,7 @@
         </div>
     `;
     }
+
     // === TERMS MODAL ===
     const termsModal = document.createElement('div');
     termsModal.className = 'modal';
@@ -640,6 +680,7 @@
     } else {
         setButtonsEnabled(true);
     }
+
     resetAppBtn.onclick = () => {
         if (confirm("WARNING: This will DELETE ALL markers, categories, and settings. Continue?")) {
             if (confirm("FINAL WARNING: This cannot be undone. Are you ABSOLUTELY sure?")) {
@@ -648,11 +689,13 @@
             }
         }
     };
+
     newCategoryEmoji.addEventListener('input', function(e) {
         const val = e.target.value;
         const clean = val.replace(/[^\p{Emoji}]/gu, '');
         if (val !== clean) e.target.value = clean;
     });
+
     document.getElementById('saveCategoryBtn').onclick = () => {
         const nameInput = document.getElementById('newCategoryName');
         const emojiInput = document.getElementById('newCategoryEmoji');
@@ -680,6 +723,7 @@
         loadData();
         playSound('saving');
     };
+
     function refreshTableVisibility() {
         const isMobile = window.innerWidth <= 768;
         toggleTableBtn.style.display = isMobile ? 'block' : 'none';
@@ -688,6 +732,7 @@
             toggleTableBtn.textContent = tableVisible ? 'Hide Content Table' : 'Show Content Table';
         }
     }
+
     function renderCategoryToggles() {
         const container = document.getElementById('categoryCheckboxes');
         if (!container) return;
@@ -696,7 +741,7 @@
         allCats.forEach(cat => {
             const label = document.createElement('label');
             const checked = activeCategories.has(cat) ? 'checked' : '';
-            label.innerHTML = `<input type="checkbox" value="${cat}" ${checked}><span>${cat} <span class="category-emoji">${categoryIcons[cat] || ''}</span></span>`;
+            label.innerHTML = `<input type="checkbox" value="${cat}" ${checked}><span>${cat} ${categoryIcons[cat] || ''}</span>`;
             container.appendChild(label);
         });
         container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
@@ -710,18 +755,21 @@
             });
         });
     }
+
     function updateCategoryDropdowns() {
         const categories = [...Object.keys(defaultCategoryIcons), ...Object.keys(customCategories)].sort();
-        const makeOption = cat => `<option value="${cat}">${cat} <span class="category-emoji">${categoryIcons[cat] || ''}</span></option>`;
+        const makeOption = cat => `<option value="${cat}">${cat} ${categoryIcons[cat] || ''}</option>`;
         categoryFilter.innerHTML = '<option value="">All Categories</option>' + categories.map(makeOption).join('');
         itemCategorySelect.innerHTML = categories.map(makeOption).join('');
         if (currentCategoryFilter && categories.includes(currentCategoryFilter)) {
             categoryFilter.value = currentCategoryFilter;
         }
     }
+
     function isGlowing(loc) {
         return loc.addedTime && (Date.now() - loc.addedTime) < 120000;
     }
+
     function createMarkerIcon(loc) {
         const isTextOnly = ['named locations', 'regions'].includes(loc.category);
         if (isTextOnly) {
@@ -736,7 +784,7 @@
             });
         } else {
             const base = `<div class="marker-background" style="background-color:${categoryColors[loc.category] || '#808080'};">
-                            <span class="category-emoji" style="font-size:18px;">${loc.icon}</span>
+                            <span style="font-size:18px;">${loc.icon}</span>
                           </div>`;
             return L.divIcon({
                 className: isGlowing(loc) ? 'custom-icon glowing' : 'custom-icon',
@@ -746,6 +794,7 @@
             });
         }
     }
+
     const messageQueue = [];
     let activeMessageControl = null;
     function showTempMessage(html, ms = 3000) {
@@ -772,11 +821,13 @@
             }
         }, ms);
     }
+
     // === EDIT FROM POPUP ===
     window.editMarkerFromPopup = function(index) {
         map.closePopup();
         openModal('Edit Item', index);
     };
+
     function attachDragHandler(marker, loc) {
         let originalLatLng = null;
         let isDragging = false;
@@ -847,7 +898,7 @@
             }
         });
         marker.bindPopup(`
-            <b><span class="category-emoji">${loc.icon}</span> ${loc.category.toUpperCase()}</b><br>
+            <b>${loc.icon} ${loc.category.toUpperCase()}</b><br>
             ${escapeHtml(loc.desc)}<br>
             <button onclick="editMarkerFromPopup(${locations.indexOf(loc)})"
                     style="margin-top:8px; padding:4px 8px; background:#00ff00; color:#000; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">
@@ -855,6 +906,7 @@
             </button>
         `, { maxWidth: 300 });
     }
+
     function addMarkerToMap(loc) {
         const marker = L.marker([loc.lat, loc.lng], {
             icon: createMarkerIcon(loc),
@@ -869,6 +921,7 @@
             nonClusteredMarkers.addLayer(marker);
         }
     }
+
     function refreshTable(search = '', catFilter = '') {
         const tbody = document.querySelector('#locationsTable tbody');
         if (!tbody) return;
@@ -894,10 +947,10 @@
             const shortDesc = loc.desc.split('\n')[0].trim();
             const iconCell = ['named locations', 'regions'].includes(loc.category)
                 ? `<div style="background:#000; color:#fff; padding:2px 6px; border:1px solid #0f0; border-radius:3px; font-weight:bold; font-size:11px; display:inline-block; max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(shortDesc)}</div>`
-                : `<div style="background-color:${categoryColors[loc.category] || '#808080'}; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:#000; font-weight:bold; font-size:16px;"><span class="category-emoji">${loc.icon}</span></div>`;
+                : `<div style="background-color:${categoryColors[loc.category] || '#808080'}; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:#000; font-weight:bold; font-size:16px;">${loc.icon}</div>`;
             tr.innerHTML = `
                 <td>${iconCell}</td>
-                <td>${escapeHtml(loc.category)} <span class="category-emoji">${loc.icon}</span></td>
+                <td>${escapeHtml(loc.category)} ${loc.icon}</td>
                 <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(shortDesc)}</td>
             `;
             tr.onclick = (e) => {
@@ -927,6 +980,7 @@
         nextPageBtn.disabled = tablePage >= totalPages;
         counter.innerHTML = `<strong>Map Version ${communityVersion}</strong> - <strong>${sorted.length}</strong> logged locations - <strong>${pageItems.length}</strong> showing.`;
     }
+
     setInterval(() => {
         if (document.visibilityState === 'visible') {
             [clusteredMarkers, nonClusteredMarkers].forEach(group => {
@@ -946,6 +1000,7 @@
             refreshTable(combinedSearch.value, categoryFilter.value);
         }
     }, 1000);
+
     function showConfirmPopup(message, onConfirm, onCancel) {
         const popup = document.createElement('div');
         popup.className = 'confirm-popup';
@@ -968,6 +1023,7 @@
             playSound('error');
         };
     }
+
     function openModal(title, index = -1, isDupe = false) {
         modalTitle.textContent = title;
         currentIndex = index;
@@ -995,19 +1051,23 @@
         document.body.classList.add('modal-open');
         playSound('click');
     }
+
     function closeModal(modal) {
         modal.style.display = 'none';
         document.body.classList.remove('modal-open');
         playSound('modalClose');
     }
+
     document.querySelectorAll('.modal .close').forEach(closeBtn => {
         closeBtn.onclick = () => closeModal(closeBtn.closest('.modal'));
     });
+
     window.onclick = e => {
         if (e.target.classList.contains('modal')) {
             closeModal(e.target);
         }
     };
+
     function recalculateXP() {
         xp = locations.length * xpPerMarker;
         level = 1 + Math.floor(xp / xpPerLevel);
@@ -1017,12 +1077,14 @@
         localStorage.setItem('fo76_xp', xp);
     }
     recalculateXP();
+
     function updateXPBar() {
         levelSpan.textContent = level;
         xpProgress.value = xp;
         xpProgress.max = xpPerLevel;
         xpText.textContent = `${xp} / ${xpPerLevel}`;
     }
+
     function loadData(search = '', catFilter = '') {
         clusteredMarkers.clearLayers();
         nonClusteredMarkers.clearLayers();
@@ -1033,6 +1095,7 @@
         drawGrid();
         saveAppState();
     }
+
     function forceReload() {
         saveAppState();
         loadData(combinedSearch.value, categoryFilter.value);
@@ -1040,6 +1103,7 @@
         updateCategoryDropdowns();
         refreshTableVisibility();
     }
+
     function saveAppState() {
         localStorage.setItem('currentSearch', combinedSearch.value);
         localStorage.setItem('currentCategoryFilter', categoryFilter.value);
@@ -1050,10 +1114,12 @@
         localStorage.setItem('currentMap', currentMap);
         localStorage.setItem(MAP_VERSION_KEY, communityVersion);
     }
+
     function saveLocations() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(locations));
         saveAppState();
     }
+
     function normalizeString(s) { return (s || '').toString().trim().toLowerCase(); }
     function escapeHtml(unsafe) { return (unsafe || '').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m]); }
     function safeFlyTo(lat, lng, zoom = 2) {
@@ -1061,6 +1127,7 @@
         if (lat < 0 || lat > 4096 || lng < 0 || lng > 4096) return;
         map.flyTo([lat, lng], zoom);
     }
+
     howToUseBtn.onclick = () => { document.getElementById('instructionsModal').style.display = 'block'; document.getElementById('showInstructionsTab').click(); playSound('click'); };
     nukeCodesBtn.onclick = () => { document.getElementById('instructionsModal').style.display = 'block'; document.getElementById('showNukeCodesTab').click(); playSound('click'); };
     document.getElementById('showInstructionsTab').onclick = () => {
@@ -1078,6 +1145,7 @@
         fetchNukeCodes();
         playSound('click');
     };
+
     exportBtn.onclick = () => {
         playSound('saving');
         const wantsAll = confirm('Click **OK** to export **ALL** locations + custom categories.\n\nClick **Cancel** to export **USER-LOGGED** locations only.');
@@ -1104,6 +1172,7 @@
         URL.revokeObjectURL(url);
         alert(wantsAll ? 'Exported **ALL** logged locations!' : 'Exported **USER-ONLY** locations!');
     };
+
     importBtn.onclick = () => {
         const input = document.createElement('input');
         input.type = 'file';
@@ -1117,7 +1186,6 @@
                     const data = JSON.parse(ev.target.result);
                     const incoming = data.locations || [];
 
-                    // Build lookups
                     const existingByCid = new Map();
                     const userEditedCids = new Set();
                     locations.forEach(l => {
@@ -1127,7 +1195,6 @@
                         }
                     });
 
-                    // Validate incoming CIDs
                     const seenCids = new Set();
                     for (const imp of incoming) {
                         if (imp.cid && seenCids.has(imp.cid)) {
@@ -1136,18 +1203,15 @@
                         if (imp.cid) seenCids.add(imp.cid);
                     }
 
-                    // Process incoming
                     const toAdd = [];
                     const toReplace = [];
                     let skippedUserEdited = 0;
-                    let skippedDuplicates = 0;
 
                     incoming.forEach(imp => {
                         const newId = generateUniqueId();
-                        const candidate = { ...imp, 'id': newId, 'addedTime': Date.now() };
+                        const candidate = { ...imp, id: newId, addedTime: Date.now() };
 
                         if (!imp.cid) {
-                            // Pure user marker — always add
                             candidate.userEdited = true;
                             toAdd.push(candidate);
                             return;
@@ -1156,7 +1220,6 @@
                         const existing = existingByCid.get(imp.cid);
 
                         if (existing && userEditedCids.has(imp.cid)) {
-                            // USER EDITED — PRESERVE EVERYTHING, UPDATE ONLY CATEGORY/ICON
                             existing.category = imp.category || existing.category;
                             existing.icon = imp.icon || existing.icon;
                             existing.addedTime = Date.now();
@@ -1165,25 +1228,19 @@
                         }
 
                         if (existing) {
-                            // COMMUNITY — FULL REPLACE (no user edits)
                             candidate.id = existing.id;
                             toReplace.push(candidate);
                             return;
                         }
 
-                        // NEW COMMUNITY MARKER
                         candidate.userEdited = false;
                         toAdd.push(candidate);
                     });
 
-                    // Remove old community markers being replaced
                     const replaceIds = toReplace.map(r => r.id);
                     locations = locations.filter(l => !replaceIds.includes(l.id));
-
-                    // Merge
                     locations = [...locations, ...toAdd, ...toReplace];
 
-                    // Custom categories
                     let customCategoriesUpdated = false;
                     if (data.customCategories && typeof data.customCategories === 'object') {
                         Object.entries(data.customCategories).forEach(([name, emoji]) => {
@@ -1197,7 +1254,6 @@
                         });
                     }
 
-                    // Version
                     communityVersion = data.communityVersion || communityVersion;
                     localStorage.setItem(MAP_VERSION_KEY, communityVersion);
                     localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(customCategories));
@@ -1207,10 +1263,8 @@
                     saveLocations();
                     forceReload();
 
-                    // Summary
                     let message = `Imported ${toAdd.length + toReplace.length} locations successfully!`;
                     if (skippedUserEdited > 0) message += `\nPreserved ${skippedUserEdited} user-edited community markers.`;
-                    if (skippedDuplicates > 0) message += `\nSkipped ${skippedDuplicates} duplicates.`;
                     if (customCategoriesUpdated) message += `\nAdded custom categories.`;
                     message += `\nTotal: ${locations.length} locations.`;
                     alert(message);
@@ -1228,6 +1282,7 @@
         };
         input.click();
     };
+
     downloadCommunityBtn.onclick = () => {
         playSound('click');
         if (!confirm(
@@ -1241,7 +1296,6 @@
         downloadCommunityBtn.disabled = true;
         downloadCommunityBtn.textContent = 'Updating...';
 
-        // Use raw=1 for CORS
         const url = `https://www.dropbox.com/scl/fi/uc525iq6f6lqkm3zaftvo/fallout76_community_map_v${communityVersion}.json?raw=1`;
 
         fetchWithTimeout(url)
@@ -1263,6 +1317,7 @@
                 downloadCommunityBtn.textContent = 'Update Community Map';
             });
     };
+
     saveJpegBtn.onclick = () => {
         playSound('saving');
         html2canvas(document.getElementById('map'), { useCORS: true, scale: 2 }).then(canvas => {
@@ -1277,6 +1332,7 @@
             playSound('error');
         });
     };
+
     prevPageBtn.onclick = () => { if (tablePage > 1) { tablePage--; localStorage.setItem('tablePage', tablePage); refreshTable(combinedSearch.value, categoryFilter.value); playSound('click'); } };
     nextPageBtn.onclick = () => { const total = Math.ceil(locations.filter(l => activeCategories.has(l.category)).length / pageSize); if (tablePage < total) { tablePage++; localStorage.setItem('tablePage', tablePage); refreshTable(combinedSearch.value, categoryFilter.value); playSound('click'); } };
     toggleTableBtn.onclick = () => { tableVisible = !tableVisible; localStorage.setItem('tableVisible', tableVisible); refreshTableVisibility(); playSound('click'); };
@@ -1496,7 +1552,6 @@
         openModal('Log Item');
         playSound('click');
     });
-    // === URL PARAMS PARSER ===
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('lat') && urlParams.has('lng')) {
         const lat = parseFloat(urlParams.get('lat'));
@@ -1509,14 +1564,12 @@
             playSound('click');
         }, 1000);
     }
-    // === INITIAL LOAD ===
     updateCategoryDropdowns();
     renderCategoryToggles();
     loadData(currentSearch, currentCategoryFilter);
     refreshTableVisibility();
     drawGrid();
     updateXPBar();
-    // === RESPONSIVE TABLE TOGGLE ===
     window.addEventListener('resize', refreshTableVisibility);
     refreshTableVisibility();
 })();
