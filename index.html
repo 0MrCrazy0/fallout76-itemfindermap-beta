@@ -292,7 +292,6 @@
     let customCategories = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_KEY)) || {};
     let communityVersion = localStorage.getItem(MAP_VERSION_KEY) || "1.0";
     let termsAccepted = localStorage.getItem(TERMS_ACCEPTED_KEY) === 'true';
-
     /* SECTION 2: CATEGORY ICONS & COLORS — REAL EMOJIS */
     const defaultCategoryIcons = {
         'weapons': '🔫', 'armor': '🛡️', 'aid': '💉', 'food/drink': '🍽️', 'ammunition': '💥',
@@ -317,7 +316,6 @@
         'regions': '#00ff00', 'named locations': '#ffffff'
     };
     let categoryColors = { ...defaultCategoryColors };
-
     /* SECTION 3: MAP SETUP */
     const map = L.map('map', { crs: L.CRS.Simple, minZoom: -3, maxZoom: 4, zoomControl: true, scrollWheelZoom: true, doubleClickZoom: true, boxZoom: true, touchZoom: true, dragging: true });
     const imageBounds = [[0, 0], [4096, 4096]];
@@ -332,7 +330,6 @@
     const nonClusteredMarkers = L.layerGroup();
     map.addLayer(clusteredMarkers);
     map.addLayer(nonClusteredMarkers);
-
     /* SECTION 4: STATE */
     let lastDeleted = null;
     let lastMovedMarker = null;
@@ -355,7 +352,6 @@
     let currentSearch = localStorage.getItem('currentSearch') || '';
     let currentCategoryFilter = localStorage.getItem('currentCategoryFilter') || '';
     let darkMode = localStorage.getItem('darkMode') === 'true';
-
     /* SECTION 5: GRID SYSTEM */
     let gridLayer = L.layerGroup().addTo(map);
     function drawGrid() {
@@ -422,7 +418,6 @@
         const emojiRegex = /^\p{Emoji}$/u;
         return emojiRegex.test(str.trim());
     }
-
     /* SECTION 6: DOM ELEMENTS */
     const itemModal = document.getElementById('itemModal');
     const deleteBtn = document.getElementById('deleteItemBtn');
@@ -463,7 +458,6 @@
     const newCategoryEmoji = document.getElementById('newCategoryEmoji');
     const toggleDarkModeBtn = document.getElementById('toggleDarkModeBtn');
     const voiceSearchBtn = document.getElementById('voiceSearchBtn');
-
     toggleSoundsBtn.textContent = soundsEnabled ? 'Sounds: On' : 'Sounds: Off';
     toggleClusterBtn.textContent = `Clustering: ${clusteringEnabled ? 'On' : 'Off'}`;
     toggleMapBtn.textContent = currentMap === 'named' ? 'Show No-Name Map' : 'Show Named Map';
@@ -472,7 +466,6 @@
     toggleButtonGroup.textContent = 'Show Tools';
     combinedSearch.value = currentSearch;
     categoryFilter.value = currentCategoryFilter;
-
     /* SECTION 7: UI TOGGLES */
     const toggleTitleBtn = document.getElementById('toggleTitleBtn');
     const mainTitle = document.getElementById('mainTitle');
@@ -486,7 +479,6 @@
         localStorage.setItem('titleVisible', titleVisible);
         playSound('click');
     };
-
     document.body.classList.toggle('dark-mode', darkMode);
     toggleDarkModeBtn.textContent = darkMode ? 'Dark Mode: On' : 'Dark Mode: Off';
     toggleDarkModeBtn.onclick = () => {
@@ -496,7 +488,6 @@
         toggleDarkModeBtn.textContent = darkMode ? 'Dark Mode: On' : 'Dark Mode: Off';
         playSound('click');
     };
-
     /* SECTION 8: VOICE SEARCH */
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -543,7 +534,6 @@
             playSound('error');
         };
     }
-
     /* SECTION 9: SEARCH */
     let typingTimeout;
     let lastFilteredCount = -1;
@@ -588,7 +578,6 @@
         combinedSearch.focus();
         playSound('modalClose');
     };
-
     /* SECTION 10: NETWORK */
     function fetchWithTimeout(url, ms = 10000) {
         return Promise.race([
@@ -602,7 +591,7 @@
         codesDiv.innerHTML = `
         <em>Visit the site to view Alpha, Bravo, and Charlie codes for this week.
         Weekly launch codes are always up to date!</em><br>
-       
+      
         <div class="nuke-emoji-wrapper">
             <a href="https://www.falloutbuilds.com/fo76/nuke-codes/"
                target="_blank"
@@ -614,7 +603,6 @@
         </div>
     `;
     }
-
     /* SECTION 11: TERMS MODAL */
     const termsModal = document.createElement('div');
     termsModal.className = 'modal';
@@ -656,7 +644,6 @@
     } else {
         setButtonsEnabled(true);
     }
-
     /* SECTION 11.7: UPDATE ALERT MODAL */
     if (localStorage.getItem(UPDATE_VERSION_KEY) !== CURRENT_UPDATE_VERSION) {
         const updateModal = document.createElement('div');
@@ -666,10 +653,6 @@
             <div class="modal-content" style="background:#0a3a0a; border:2px solid #00ff00; box-shadow:0 0 20px #00ff00;">
                 <span class="close">X</span>
                 <h2 style="color:#00ff00; text-shadow:0 0 10px #00ff00;">App Updated!</h2>
-                <p><strong>What's new:</strong><br>
-                • <strong>Import fixed!</strong> No more duplicates<br>
-                • <strong>User edits preserved</strong> with new <code>cid</code> system<br>
-                • <strong>Safer, faster, future-proof</strong></p>
                 <p><strong>Action recommended:</strong><br>
                 Export your <strong>user-created markers</strong> to keep them safe!</p>
                 <div style="margin-top:12px; text-align:center;">
@@ -680,20 +663,17 @@
         `;
         document.body.appendChild(updateModal);
         document.body.classList.add('modal-open');
-
         updateModal.querySelector('.close').onclick = () => {
             updateModal.style.display = 'none';
             document.body.classList.remove('modal-open');
             localStorage.setItem(UPDATE_VERSION_KEY, CURRENT_UPDATE_VERSION);
         };
-
         document.getElementById('gotItUpdateBtn').onclick = () => {
             updateModal.style.display = 'none';
             document.body.classList.remove('modal-open');
             localStorage.setItem(UPDATE_VERSION_KEY, CURRENT_UPDATE_VERSION);
             playSound('click');
         };
-
         document.getElementById('exportUserNowBtn').onclick = () => {
             playSound('saving');
             const userMarkers = locations.filter(loc => loc.userEdited === true);
@@ -721,7 +701,6 @@
             localStorage.setItem(UPDATE_VERSION_KEY, CURRENT_UPDATE_VERSION);
         };
     }
-
     /* SECTION 11.5: INSTRUCTIONS & NUKE CODES TABS */
     document.getElementById('showInstructionsTab').onclick = () => {
         document.getElementById('instructionsContent').classList.add('active');
@@ -750,7 +729,6 @@
         document.getElementById('showNukeCodesTab').click();
         playSound('click');
     };
-
     /* SECTION 11.6: RESET WITH BACKUP */
     resetAppBtn.onclick = () => {
         const keepUserMarkers = confirm(
@@ -798,7 +776,6 @@
             }
         }, 500);
     };
-
     /* SECTION 12: CATEGORY MANAGEMENT */
     newCategoryEmoji.addEventListener('input', function(e) {
         const val = e.target.value;
@@ -832,7 +809,6 @@
         loadData();
         playSound('saving');
     };
-
     function refreshTableVisibility() {
         const isMobile = window.innerWidth <= 768;
         toggleTableBtn.style.display = isMobile ? 'block' : 'none';
@@ -841,7 +817,6 @@
             toggleTableBtn.textContent = tableVisible ? 'Hide Content Table' : 'Show Content Table';
         }
     }
-
     function renderCategoryToggles() {
         const container = document.getElementById('categoryCheckboxes');
         if (!container) return;
@@ -864,7 +839,6 @@
             });
         });
     }
-
     function updateCategoryDropdowns() {
         const categories = [...Object.keys(defaultCategoryIcons), ...Object.keys(customCategories)].sort();
         const makeOption = cat => `<option value="${cat}">${cat} ${categoryIcons[cat] || ''}</option>`;
@@ -874,12 +848,10 @@
             categoryFilter.value = currentCategoryFilter;
         }
     }
-
     /* SECTION 13: MARKER RENDERING */
     function isGlowing(loc) {
         return loc.addedTime && (Date.now() - loc.addedTime) < 120000;
     }
-
     function createMarkerIcon(loc) {
         const isTextOnly = ['named locations', 'regions'].includes(loc.category);
         if (isTextOnly) {
@@ -904,7 +876,6 @@
             });
         }
     }
-
     const messageQueue = [];
     let activeMessageControl = null;
     function showTempMessage(html, ms = 3000) {
@@ -931,12 +902,10 @@
             }
         }, ms);
     }
-
     window.editMarkerFromPopup = function(index) {
         map.closePopup();
         openModal('Edit Item', index);
     };
-
     function attachDragHandler(marker, loc) {
         let originalLatLng = null;
         let isDragging = false;
@@ -1015,7 +984,6 @@
             </button>
         `, { maxWidth: 300 });
     }
-
     function addMarkerToMap(loc) {
         const marker = L.marker([loc.lat, loc.lng], {
             icon: createMarkerIcon(loc),
@@ -1030,7 +998,6 @@
             nonClusteredMarkers.addLayer(marker);
         }
     }
-
     /* SECTION 14: TABLE */
     function refreshTable(search = '', catFilter = '') {
         const tbody = document.querySelector('#locationsTable tbody');
@@ -1090,7 +1057,6 @@
         nextPageBtn.disabled = tablePage >= totalPages;
         counter.innerHTML = `<strong>Map Version ${communityVersion}</strong> - <strong>${sorted.length}</strong> logged locations - <strong>${pageItems.length}</strong> showing.`;
     }
-
     setInterval(() => {
         if (document.visibilityState === 'visible') {
             [clusteredMarkers, nonClusteredMarkers].forEach(group => {
@@ -1110,7 +1076,6 @@
             refreshTable(combinedSearch.value, categoryFilter.value);
         }
     }, 1000);
-
     /* SECTION 15: MODALS & CONFIRM */
     function showConfirmPopup(message, onConfirm, onCancel) {
         const popup = document.createElement('div');
@@ -1134,7 +1099,6 @@
             playSound('error');
         };
     }
-
     function openModal(title, index = -1, isDupe = false) {
         modalTitle.textContent = title;
         currentIndex = index;
@@ -1162,23 +1126,19 @@
         document.body.classList.add('modal-open');
         playSound('click');
     }
-
     function closeModal(modal) {
         modal.style.display = 'none';
         document.body.classList.remove('modal-open');
         playSound('modalClose');
     }
-
     document.querySelectorAll('.modal .close').forEach(closeBtn => {
         closeBtn.onclick = () => closeModal(closeBtn.closest('.modal'));
     });
-
     window.onclick = e => {
         if (e.target.classList.contains('modal')) {
             closeModal(e.target);
         }
     };
-
     /* SECTION 16: XP */
     function recalculateXP() {
         xp = locations.length * xpPerMarker;
@@ -1189,14 +1149,12 @@
         localStorage.setItem('fo76_xp', xp);
     }
     recalculateXP();
-
     function updateXPBar() {
         levelSpan.textContent = level;
         xpProgress.value = xp;
         xpProgress.max = xpPerLevel;
         xpText.textContent = `${xp} / ${xpPerLevel}`;
     }
-
     /* SECTION 17: CORE DATA */
     function loadData(search = '', catFilter = '') {
         clusteredMarkers.clearLayers();
@@ -1208,7 +1166,6 @@
         drawGrid();
         saveAppState();
     }
-
     function forceReload() {
         saveAppState();
         loadData(combinedSearch.value, categoryFilter.value);
@@ -1216,7 +1173,6 @@
         updateCategoryDropdowns();
         refreshTableVisibility();
     }
-
     function saveAppState() {
         localStorage.setItem('currentSearch', combinedSearch.value);
         localStorage.setItem('currentCategoryFilter', categoryFilter.value);
@@ -1227,12 +1183,10 @@
         localStorage.setItem('currentMap', currentMap);
         localStorage.setItem(MAP_VERSION_KEY, communityVersion);
     }
-
     function saveLocations() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(locations));
         saveAppState();
     }
-
     function normalizeString(s) { return (s || '').toString().trim().toLowerCase(); }
     function escapeHtml(unsafe) { return (unsafe || '').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m]); }
     function safeFlyTo(lat, lng, zoom = 2) {
@@ -1240,7 +1194,6 @@
         if (lat < 0 || lat > 4096 || lng < 0 || lng > 4096) return;
         map.flyTo([lat, lng], zoom);
     }
-
     /* SECTION 18: EXPORT / IMPORT / COMMUNITY UPDATE */
     exportBtn.onclick = () => {
         playSound('saving');
@@ -1268,8 +1221,7 @@
         URL.revokeObjectURL(url);
         alert(wantsAll ? 'Exported **ALL** logged locations!' : 'Exported **USER-ONLY** locations!');
     };
-
-    // === IMPORT WITH FULL REPORT + RESET OPTION + FALLBACK MATCHING ===
+    // === FIXED IMPORT WITH PRESERVE/RESET LOGIC ===
     importBtn.onclick = () => {
         const input = document.createElement('input');
         input.type = 'file';
@@ -1309,7 +1261,7 @@
                         if (imp.cid) seenCids.add(imp.cid);
                     }
 
-                    const resetCommunity = confirm(
+                    const preserveEdits = confirm(
                         `IMPORT OPTIONS:\n\n` +
                         `• OK = PRESERVE your edits/moves\n` +
                         `• CANCEL = RESET ALL community markers to original\n\n` +
@@ -1328,7 +1280,7 @@
                         // === PRIORITY 1: MATCH BY CID ===
                         if (imp.cid) {
                             const existing = existingByCid.get(imp.cid);
-                            if (resetCommunity) {
+                            if (!preserveEdits) {
                                 if (existing) {
                                     candidate.id = existing.id;
                                     toReplace.push(candidate);
@@ -1360,7 +1312,7 @@
                         const fallbackKey = `${imp.desc}|${Math.round(imp.lat)}|${Math.round(imp.lng)}`;
                         const existingFallback = existingByKey.get(fallbackKey);
 
-                        if (resetCommunity) {
+                        if (!preserveEdits) {
                             if (existingFallback) {
                                 candidate.id = existingFallback.id;
                                 toReplace.push(candidate);
@@ -1433,7 +1385,6 @@
         };
         input.click();
     };
-
     // === COMMUNITY UPDATE ===
     downloadCommunityBtn.onclick = () => {
         playSound('click');
@@ -1466,7 +1417,6 @@
                 downloadCommunityBtn.textContent = 'Update Community Map';
             });
     };
-
     /* SECTION 19: JPEG SAVE & PAGINATION */
     saveJpegBtn.onclick = () => {
         playSound('saving');
@@ -1482,7 +1432,6 @@
             playSound('error');
         });
     };
-
     prevPageBtn.onclick = () => {
         if (tablePage > 1) {
             tablePage--;
@@ -1500,7 +1449,6 @@
             playSound('click');
         }
     };
-
     /* SECTION 20: TOGGLE BUTTONS */
     toggleTableBtn.onclick = () => {
         tableVisible = !tableVisible;
@@ -1542,7 +1490,6 @@
         toggleButtonGroup.textContent = isHidden ? 'Hide Tools' : 'Show Tools';
         playSound('click');
     };
-
     /* SECTION 21: CATEGORY TOGGLE MODAL BUTTONS */
     toggleCategoryModalBtn.onclick = () => {
         categoryToggleModal.style.display = 'block';
@@ -1608,7 +1555,6 @@
     document.querySelectorAll('#createCategoryModal .close, #deleteCategoryModal .close').forEach(closeBtn => {
         closeBtn.onclick = () => closeModal(closeBtn.closest('.modal'));
     });
-
     /* SECTION 22: ITEM MODAL — SAVE, DELETE, UNDO, DUPLICATE, SHARE */
     document.getElementById('saveItemBtn').onclick = () => {
         const category = itemCategorySelect.value;
@@ -1654,7 +1600,6 @@
         safeFlyTo(finalLoc.lat, finalLoc.lng, 2);
         forceReload();
     };
-
     deleteBtn.onclick = () => {
         if (currentIndex >= 0) {
             const loc = locations[currentIndex];
@@ -1736,7 +1681,6 @@
             prompt('Copy this link:', url);
         });
     };
-
     /* SECTION 23: FILTER & MAP EVENTS */
     categoryFilter.addEventListener('change', () => {
         const val = categoryFilter.value;
@@ -1755,7 +1699,6 @@
         openModal('Log Item');
         playSound('click');
     });
-
     /* SECTION 24: URL PARAMS & INITIAL LOAD */
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('lat') && urlParams.has('lng')) {
@@ -1769,7 +1712,6 @@
             playSound('click');
         }, 1000);
     }
-
     updateCategoryDropdowns();
     renderCategoryToggles();
     loadData(currentSearch, currentCategoryFilter);
