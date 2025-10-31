@@ -262,6 +262,8 @@
     const CUSTOM_CATEGORIES_KEY = 'fallout76_custom_categories';
     const MAP_VERSION_KEY = 'fallout76_map_version';
     const TERMS_ACCEPTED_KEY = 'fallout76_terms_accepted';
+    const UPDATE_VERSION_KEY = 'fallout76_last_update_seen';
+    const CURRENT_UPDATE_VERSION = 'v34-cid-import-fix'; // CHANGE ON EVERY MAJOR UPDATE
     const APP_VERSION = "34";
     let soundsEnabled = localStorage.getItem('soundsEnabled') !== 'false';
     const baseSounds = {
@@ -291,17 +293,17 @@
     let communityVersion = localStorage.getItem(MAP_VERSION_KEY) || "1.0";
     let termsAccepted = localStorage.getItem(TERMS_ACCEPTED_KEY) === 'true';
 
-    /* SECTION 2: CATEGORY ICONS & COLORS */
+    /* SECTION 2: CATEGORY ICONS & COLORS — REAL EMOJIS */
     const defaultCategoryIcons = {
-        'weapons': '🔫', 'armor': '🛡️', 'aid': '💉', 'food/drink': '🍽️', 'ammunition': '💥',
-        'apparel': '👕', 'plans': '📜', 'junk': '🗑️', 'holotapes': '📀', 'misc': '📝',
-        'plants': '🌿', 'eggs': '🥚', 'creatures': '🐺', 'vendors': '💰', 'exchanges': '⚖️',
-        'vaults': '⚙️', 'power armor': '👨‍🚀', 'fusion core': '🔋', 'nuke drop zones': '☢️',
-        'nuke silos': '🚀', 'magazines': '📚', 'bobbleheads': '🎎', 'safe locations': '🗄️',
-        'terminal locations': '🖥️', 'treasure maps': '🗺️', 'resource deposits': '⛏️',
-        'fishing locations': '🎣', 'workshops': '🔧', 'train stations': '🚂', 'town locations': '🏫',
-        'event locations': '🎉', 'named locations': '🚩', 'regions': '📍'
-        };
+        'weapons': 'GUN', 'armor': 'SHIELD', 'aid': 'SYRINGE', 'food/drink': 'FORK AND KNIFE', 'ammunition': 'EXPLOSION',
+        'apparel': 'SHIRT', 'plans': 'SCROLL', 'junk': 'WASTEBASKET', 'holotapes': 'FLOPPY DISK', 'misc': 'MEMO',
+        'plants': 'HERB', 'eggs': 'EGG', 'creatures': 'WOLF FACE', 'vendors': 'MONEY BAG', 'exchanges': 'BALANCE SCALE',
+        'vaults': 'GEAR', 'power armor': 'ROBOT', 'fusion core': 'BATTERY', 'nuke drop zones': 'RADIOACTIVE',
+        'nuke silos': 'ROCKET', 'magazines': 'BOOKS', 'bobbleheads': 'DOLL', 'safe locations': 'LOCKED',
+        'terminal locations': 'COMPUTER', 'treasure maps': 'TREASURE MAP', 'resource deposits': 'PICK',
+        'fishing locations': 'FISH', 'workshops': 'WRENCH', 'train stations': 'TRAIN', 'town locations': 'CITYSCAPE',
+        'event locations': 'PARTY POPPER', 'named locations': 'ROUND PUSHPIN', 'regions': 'ROUND PUSHPIN'
+    };
     let categoryIcons = { ...defaultCategoryIcons, ...customCategories };
     const defaultCategoryColors = {
         'weapons': '#ff4444', 'armor': '#4682b4', 'aid': '#32cd32', 'food/drink': '#adff2f',
@@ -607,7 +609,7 @@
                rel="noopener noreferrer"
                class="nuke-emoji-btn"
                title="Launch codes – click the rocket">
-               🚀
+               ROCKET
             </a>
         </div>
     `;
@@ -653,6 +655,71 @@
         };
     } else {
         setButtonsEnabled(true);
+    }
+
+    /* SECTION 11.7: UPDATE ALERT MODAL */
+    if (localStorage.getItem(UPDATE_VERSION_KEY) !== CURRENT_UPDATE_VERSION) {
+        const updateModal = document.createElement('div');
+        updateModal.className = 'modal';
+        updateModal.style.display = 'block';
+        updateModal.innerHTML = `
+            <div class="modal-content" style="background:#0a3a0a; border:2px solid #00ff00; box-shadow:0 0 20px #00ff00;">
+                <span class="close">X</span>
+                <h2 style="color:#00ff00; text-shadow:0 0 10px #00ff00;">App Updated!</h2>
+                <p><strong>What's new:</strong><br>
+                • <strong>Import fixed!</strong> No more duplicates<br>
+                • <strong>User edits preserved</strong> with new <code>cid</code> system<br>
+                • <strong>Safer, faster, future-proof</strong></p>
+                <p><strong>Action recommended:</strong><br>
+                Export your <strong>user-created markers</strong> to keep them safe!</p>
+                <div style="margin-top:12px; text-align:center;">
+                    <button id="exportUserNowBtn" style="background:#00ff00; color:#000; font-weight:700; padding:8px 16px;">Export User Markers</button>
+                    <button id="gotItUpdateBtn" style="margin-left:10px; background:#1a3c34; color:#00ff00;">Got it!</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(updateModal);
+        document.body.classList.add('modal-open');
+
+        updateModal.querySelector('.close').onclick = () => {
+            updateModal.style.display = 'none';
+            document.body.classList.remove('modal-open');
+            localStorage.setItem(UPDATE_VERSION_KEY, CURRENT_UPDATE_VERSION);
+        };
+
+        document.getElementById('gotItUpdateBtn').onclick = () => {
+            updateModal.style.display = 'none';
+            document.body.classList.remove('modal-open');
+            localStorage.setItem(UPDATE_VERSION_KEY, CURRENT_UPDATE_VERSION);
+            playSound('click');
+        };
+
+        document.getElementById('exportUserNowBtn').onclick = () => {
+            playSound('saving');
+            const userMarkers = locations.filter(loc => loc.userEdited === true);
+            if (userMarkers.length === 0) {
+                alert("No user-created markers to export yet!");
+                return;
+            }
+            const exportData = {
+                version: 1.0,
+                note: "USER-ONLY backup — safe to re-import",
+                locations: userMarkers,
+                customCategories: customCategories
+            };
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `fallout76_user_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+            showTempMessage(`Exported ${userMarkers.length} user markers!`, 4000);
+            updateModal.style.display = 'none';
+            document.body.classList.remove('modal-open');
+            localStorage.setItem(UPDATE_VERSION_KEY, CURRENT_UPDATE_VERSION);
+        };
     }
 
     /* SECTION 11.5: INSTRUCTIONS & NUKE CODES TABS */
@@ -1174,7 +1241,7 @@
         map.flyTo([lat, lng], zoom);
     }
 
-        /* SECTION 18: EXPORT / IMPORT / COMMUNITY UPDATE */
+    /* SECTION 18: EXPORT / IMPORT / COMMUNITY UPDATE */
     exportBtn.onclick = () => {
         playSound('saving');
         const wantsAll = confirm('Click **OK** to export **ALL** locations + custom categories.\n\nClick **Cancel** to export **USER-LOGGED** locations only.');
