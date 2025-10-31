@@ -1273,7 +1273,7 @@
 
                     // === BUILD EXISTING MAP BY CID OR FALLBACK KEY ===
                     const existingByCid = new Map();
-                    const existingByKey = new Map(); // fallback: desc + lat + lng
+                    const existingByKey = new Map();
                     const userEditedCids = new Set();
                     const userEditedKeys = new Set();
 
@@ -1432,20 +1432,125 @@
             `• YOUR edits & personal markers are 100% SAFE\n\n` +
             `Continue?`
         )) return;
+
         downloadCommunityBtn.disabled = true;
         downloadCommunityBtn.textContent = 'Updating...';
+
         const url = `https://www.dropbox.com/scl/fi/uc525iq6f6lqkm3zaftvo/fallout76_community_map_v${communityVersion}.json?raw=1`;
+
         fetchWithTimeout(url)
             .then(r => {
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 return r.text();
             })
             .then(text => {
-                // Simulate FileReader.onload with the fetched text
-                const fakeEvent = { target: { result: text } };
-                // Reuse the exact same import logic
-                const importHandler = importBtn.onclick().input.onchange().reader.onload;
-                importHandler(fakeEvent);
+                try {
+                    const data = JSON.parse(text);
+                    const incoming = data.locations || [];
+
+                    const existingByCid = new Map();
+                    const existingByKey = new Map();
+                    const userEditedCids = new Set();
+                    const userEditedKeys = new Set();
+
+                    locations.forEach(l => {
+                        if (l.cid) {
+                            existingByCid.set(l.cid, l);
+                            if (l.userEdited) userEditedCids.add(l.cid);
+                        } else {
+                            const key = `${l.desc}|${Math.round(l.lat)}|${Math.round(l.lng)}`;
+                            existingByKey.set(key, l);
+                            if (l.userEdited) userEditedKeys.add(key);
+                        }
+                    });
+
+                    const seenCids = new Set();
+                    for (const imp of incoming) {
+                        if (imp.cid && seenCids.has(imp.cid)) {
+                            throw new Error(`Duplicate CID "${imp.cid}" in import file`);
+                        }
+                        if (imp.cid) seenCids.add(imp.cid);
+                    }
+
+                    const preserveEdits = true;
+
+                    const toAdd = [];
+                    const toReplace = [];
+                    let skippedUserEdited = 0;
+
+                    incoming.forEach(imp => {
+                        const newId = generateUniqueId();
+                        const candidate = { ...imp, id: newId, addedTime: Date.now() };
+
+                        if (imp.cid) {
+                            const existing = existingByCid.get(imp.cid);
+                            if (existing && userEditedCids.has(imp.cid)) {
+                                existing.category = imp.category || existing.category;
+                                existing.icon = imp.icon || existing.icon;
+                                existing.addedTime = Date.now();
+                                skippedUserEdited++;
+                                return;
+                            }
+                            if (existing) {
+                                candidate.id = existing.id;
+                                toReplace.push(candidate);
+                            } else {
+                                candidate.userEdited = false;
+                                toAdd.push(candidate);
+                            }
+                            return;
+                        }
+
+                        const fallbackKey = `${imp.desc}|${Math.round(imp.lat)}|${Math.round(imp.lng)}`;
+                        const existingFallback = existingByKey.get(fallbackKey);
+
+                        if (existingFallback && userEditedKeys.has(fallbackKey)) {
+                            existingFallback.category = imp.category || existingFallback.category;
+                            existingFallback.icon = imp.icon || existingFallback.icon;
+                            existingFallback.addedTime = Date.now();
+                            skippedUserEdited++;
+                            return;
+                        }
+
+                        if (existingFallback) {
+                            candidate.id = existingFallback.id;
+                            toReplace.push(candidate);
+                        } else {
+                            candidate.userEdited = true;
+                            toAdd.push(candidate);
+                        }
+                    });
+
+                    const replaceIds = toReplace.map(r => r.id);
+                    locations = locations.filter(l => !replaceIds.includes(l.id));
+                    locations = [...locations, ...toAdd, ...toReplace];
+
+                    if (data.customCategories && typeof data.customCategories === 'object') {
+                        Object.entries(data.customCategories).forEach(([name, emoji]) => {
+                            if (!customCategories[name] && !defaultCategoryIcons[name] && isValidEmoji(emoji)) {
+                                customCategories[name] = emoji;
+                                categoryIcons[name] = emoji;
+                                categoryColors[name] = '#f0e68c';
+                                activeCategories.add(name);
+                            }
+                        });
+                    }
+
+                    communityVersion = data.communityVersion || communityVersion;
+                    localStorage.setItem(MAP_VERSION_KEY, communityVersion);
+                    localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(customCategories));
+                    localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
+                    recalculateXP();
+                    saveLocations();
+                    forceReload();
+
+                    alert(`Community Map Updated!\n${toAdd.length} added | ${toReplace.length} updated | ${skippedUserEdited} preserved`);
+                    playSound('saving');
+                } catch (err) {
+                    console.error('Community update error:', err);
+                    alert(`Update failed: ${err.message}`);
+                    playSound('error');
+                }
             })
             .catch(err => {
                 alert(`Update failed: ${err.message}\n\nTry manual import.`);
