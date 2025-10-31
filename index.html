@@ -292,6 +292,7 @@
     let customCategories = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_KEY)) || {};
     let communityVersion = localStorage.getItem(MAP_VERSION_KEY) || "1.0";
     let termsAccepted = localStorage.getItem(TERMS_ACCEPTED_KEY) === 'true';
+
     /* SECTION 2: CATEGORY ICONS & COLORS — REAL EMOJIS */
     const defaultCategoryIcons = {
         'weapons': '🔫', 'armor': '🛡️', 'aid': '💉', 'food/drink': '🍽️', 'ammunition': '💥',
@@ -316,6 +317,7 @@
         'regions': '#00ff00', 'named locations': '#ffffff'
     };
     let categoryColors = { ...defaultCategoryColors };
+
     /* SECTION 3: MAP SETUP */
     const map = L.map('map', { crs: L.CRS.Simple, minZoom: -3, maxZoom: 4, zoomControl: true, scrollWheelZoom: true, doubleClickZoom: true, boxZoom: true, touchZoom: true, dragging: true });
     const imageBounds = [[0, 0], [4096, 4096]];
@@ -330,6 +332,7 @@
     const nonClusteredMarkers = L.layerGroup();
     map.addLayer(clusteredMarkers);
     map.addLayer(nonClusteredMarkers);
+
     /* SECTION 4: STATE */
     let lastDeleted = null;
     let lastMovedMarker = null;
@@ -352,6 +355,7 @@
     let currentSearch = localStorage.getItem('currentSearch') || '';
     let currentCategoryFilter = localStorage.getItem('currentCategoryFilter') || '';
     let darkMode = localStorage.getItem('darkMode') === 'true';
+
     /* SECTION 5: GRID SYSTEM */
     let gridLayer = L.layerGroup().addTo(map);
     function drawGrid() {
@@ -418,6 +422,7 @@
         const emojiRegex = /^\p{Emoji}$/u;
         return emojiRegex.test(str.trim());
     }
+
     /* SECTION 6: DOM ELEMENTS */
     const itemModal = document.getElementById('itemModal');
     const deleteBtn = document.getElementById('deleteItemBtn');
@@ -466,6 +471,7 @@
     toggleButtonGroup.textContent = 'Show Tools';
     combinedSearch.value = currentSearch;
     categoryFilter.value = currentCategoryFilter;
+
     /* SECTION 7: UI TOGGLES */
     const toggleTitleBtn = document.getElementById('toggleTitleBtn');
     const mainTitle = document.getElementById('mainTitle');
@@ -488,6 +494,7 @@
         toggleDarkModeBtn.textContent = darkMode ? 'Dark Mode: On' : 'Dark Mode: Off';
         playSound('click');
     };
+
     /* SECTION 8: VOICE SEARCH */
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -534,6 +541,7 @@
             playSound('error');
         };
     }
+
     /* SECTION 9: SEARCH */
     let typingTimeout;
     let lastFilteredCount = -1;
@@ -578,6 +586,7 @@
         combinedSearch.focus();
         playSound('modalClose');
     };
+
     /* SECTION 10: NETWORK */
     function fetchWithTimeout(url, ms = 10000) {
         return Promise.race([
@@ -603,6 +612,7 @@
         </div>
     `;
     }
+
     /* SECTION 11: TERMS MODAL */
     const termsModal = document.createElement('div');
     termsModal.className = 'modal';
@@ -644,6 +654,7 @@
     } else {
         setButtonsEnabled(true);
     }
+
     /* SECTION 11.7: UPDATE ALERT MODAL */
     if (localStorage.getItem(UPDATE_VERSION_KEY) !== CURRENT_UPDATE_VERSION) {
         const updateModal = document.createElement('div');
@@ -701,6 +712,7 @@
             localStorage.setItem(UPDATE_VERSION_KEY, CURRENT_UPDATE_VERSION);
         };
     }
+
     /* SECTION 11.5: INSTRUCTIONS & NUKE CODES TABS */
     document.getElementById('showInstructionsTab').onclick = () => {
         document.getElementById('instructionsContent').classList.add('active');
@@ -729,6 +741,7 @@
         document.getElementById('showNukeCodesTab').click();
         playSound('click');
     };
+
     /* SECTION 11.6: RESET WITH BACKUP */
     resetAppBtn.onclick = () => {
         const keepUserMarkers = confirm(
@@ -776,6 +789,7 @@
             }
         }, 500);
     };
+
     /* SECTION 12: CATEGORY MANAGEMENT */
     newCategoryEmoji.addEventListener('input', function(e) {
         const val = e.target.value;
@@ -809,6 +823,7 @@
         loadData();
         playSound('saving');
     };
+
     function refreshTableVisibility() {
         const isMobile = window.innerWidth <= 768;
         toggleTableBtn.style.display = isMobile ? 'block' : 'none';
@@ -817,6 +832,7 @@
             toggleTableBtn.textContent = tableVisible ? 'Hide Content Table' : 'Show Content Table';
         }
     }
+
     function renderCategoryToggles() {
         const container = document.getElementById('categoryCheckboxes');
         if (!container) return;
@@ -839,6 +855,7 @@
             });
         });
     }
+
     function updateCategoryDropdowns() {
         const categories = [...Object.keys(defaultCategoryIcons), ...Object.keys(customCategories)].sort();
         const makeOption = cat => `<option value="${cat}">${cat} ${categoryIcons[cat] || ''}</option>`;
@@ -848,6 +865,7 @@
             categoryFilter.value = currentCategoryFilter;
         }
     }
+
     /* SECTION 13: MARKER RENDERING */
     function isGlowing(loc) {
         return loc.addedTime && (Date.now() - loc.addedTime) < 120000;
@@ -876,6 +894,7 @@
             });
         }
     }
+
     const messageQueue = [];
     let activeMessageControl = null;
     function showTempMessage(html, ms = 3000) {
@@ -902,10 +921,12 @@
             }
         }, ms);
     }
+
     window.editMarkerFromPopup = function(index) {
         map.closePopup();
         openModal('Edit Item', index);
     };
+
     function attachDragHandler(marker, loc) {
         let originalLatLng = null;
         let isDragging = false;
@@ -984,6 +1005,7 @@
             </button>
         `, { maxWidth: 300 });
     }
+
     function addMarkerToMap(loc) {
         const marker = L.marker([loc.lat, loc.lng], {
             icon: createMarkerIcon(loc),
@@ -998,6 +1020,7 @@
             nonClusteredMarkers.addLayer(marker);
         }
     }
+
     /* SECTION 14: TABLE */
     function refreshTable(search = '', catFilter = '') {
         const tbody = document.querySelector('#locationsTable tbody');
@@ -1057,6 +1080,7 @@
         nextPageBtn.disabled = tablePage >= totalPages;
         counter.innerHTML = `<strong>Map Version ${communityVersion}</strong> - <strong>${sorted.length}</strong> logged locations - <strong>${pageItems.length}</strong> showing.`;
     }
+
     setInterval(() => {
         if (document.visibilityState === 'visible') {
             [clusteredMarkers, nonClusteredMarkers].forEach(group => {
@@ -1076,6 +1100,7 @@
             refreshTable(combinedSearch.value, categoryFilter.value);
         }
     }, 1000);
+
     /* SECTION 15: MODALS & CONFIRM */
     function showConfirmPopup(message, onConfirm, onCancel) {
         const popup = document.createElement('div');
@@ -1099,6 +1124,7 @@
             playSound('error');
         };
     }
+
     function openModal(title, index = -1, isDupe = false) {
         modalTitle.textContent = title;
         currentIndex = index;
@@ -1126,11 +1152,13 @@
         document.body.classList.add('modal-open');
         playSound('click');
     }
+
     function closeModal(modal) {
         modal.style.display = 'none';
         document.body.classList.remove('modal-open');
         playSound('modalClose');
     }
+
     document.querySelectorAll('.modal .close').forEach(closeBtn => {
         closeBtn.onclick = () => closeModal(closeBtn.closest('.modal'));
     });
@@ -1139,6 +1167,7 @@
             closeModal(e.target);
         }
     };
+
     /* SECTION 16: XP */
     function recalculateXP() {
         xp = locations.length * xpPerMarker;
@@ -1155,6 +1184,7 @@
         xpProgress.max = xpPerLevel;
         xpText.textContent = `${xp} / ${xpPerLevel}`;
     }
+
     /* SECTION 17: CORE DATA */
     function loadData(search = '', catFilter = '') {
         clusteredMarkers.clearLayers();
@@ -1166,6 +1196,7 @@
         drawGrid();
         saveAppState();
     }
+
     function forceReload() {
         saveAppState();
         loadData(combinedSearch.value, categoryFilter.value);
@@ -1173,6 +1204,7 @@
         updateCategoryDropdowns();
         refreshTableVisibility();
     }
+
     function saveAppState() {
         localStorage.setItem('currentSearch', combinedSearch.value);
         localStorage.setItem('currentCategoryFilter', categoryFilter.value);
@@ -1183,10 +1215,12 @@
         localStorage.setItem('currentMap', currentMap);
         localStorage.setItem(MAP_VERSION_KEY, communityVersion);
     }
+
     function saveLocations() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(locations));
         saveAppState();
     }
+
     function normalizeString(s) { return (s || '').toString().trim().toLowerCase(); }
     function escapeHtml(unsafe) { return (unsafe || '').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m]); }
     function safeFlyTo(lat, lng, zoom = 2) {
@@ -1194,6 +1228,7 @@
         if (lat < 0 || lat > 4096 || lng < 0 || lng > 4096) return;
         map.flyTo([lat, lng], zoom);
     }
+
     /* SECTION 18: EXPORT / IMPORT / COMMUNITY UPDATE */
     exportBtn.onclick = () => {
         playSound('saving');
@@ -1221,6 +1256,7 @@
         URL.revokeObjectURL(url);
         alert(wantsAll ? 'Exported **ALL** logged locations!' : 'Exported **USER-ONLY** locations!');
     };
+
     // === FIXED IMPORT WITH PRESERVE/RESET LOGIC ===
     importBtn.onclick = () => {
         const input = document.createElement('input');
@@ -1385,7 +1421,8 @@
         };
         input.click();
     };
-    // === COMMUNITY UPDATE ===
+
+    // === FIXED COMMUNITY UPDATE — NO NULL ERROR ===
     downloadCommunityBtn.onclick = () => {
         playSound('click');
         if (!confirm(
@@ -1404,9 +1441,11 @@
                 return r.text();
             })
             .then(text => {
+                // Simulate FileReader.onload with the fetched text
                 const fakeEvent = { target: { result: text } };
-                const importLogic = reader.onload;
-                importLogic.call(reader, fakeEvent);
+                // Reuse the exact same import logic
+                const importHandler = importBtn.onclick().input.onchange().reader.onload;
+                importHandler(fakeEvent);
             })
             .catch(err => {
                 alert(`Update failed: ${err.message}\n\nTry manual import.`);
@@ -1417,6 +1456,7 @@
                 downloadCommunityBtn.textContent = 'Update Community Map';
             });
     };
+
     /* SECTION 19: JPEG SAVE & PAGINATION */
     saveJpegBtn.onclick = () => {
         playSound('saving');
@@ -1432,6 +1472,7 @@
             playSound('error');
         });
     };
+
     prevPageBtn.onclick = () => {
         if (tablePage > 1) {
             tablePage--;
@@ -1449,6 +1490,7 @@
             playSound('click');
         }
     };
+
     /* SECTION 20: TOGGLE BUTTONS */
     toggleTableBtn.onclick = () => {
         tableVisible = !tableVisible;
@@ -1490,6 +1532,7 @@
         toggleButtonGroup.textContent = isHidden ? 'Hide Tools' : 'Show Tools';
         playSound('click');
     };
+
     /* SECTION 21: CATEGORY TOGGLE MODAL BUTTONS */
     toggleCategoryModalBtn.onclick = () => {
         categoryToggleModal.style.display = 'block';
@@ -1555,6 +1598,7 @@
     document.querySelectorAll('#createCategoryModal .close, #deleteCategoryModal .close').forEach(closeBtn => {
         closeBtn.onclick = () => closeModal(closeBtn.closest('.modal'));
     });
+
     /* SECTION 22: ITEM MODAL — SAVE, DELETE, UNDO, DUPLICATE, SHARE */
     document.getElementById('saveItemBtn').onclick = () => {
         const category = itemCategorySelect.value;
@@ -1600,6 +1644,7 @@
         safeFlyTo(finalLoc.lat, finalLoc.lng, 2);
         forceReload();
     };
+
     deleteBtn.onclick = () => {
         if (currentIndex >= 0) {
             const loc = locations[currentIndex];
@@ -1681,6 +1726,7 @@
             prompt('Copy this link:', url);
         });
     };
+
     /* SECTION 23: FILTER & MAP EVENTS */
     categoryFilter.addEventListener('change', () => {
         const val = categoryFilter.value;
@@ -1699,6 +1745,7 @@
         openModal('Log Item');
         playSound('click');
     });
+
     /* SECTION 24: URL PARAMS & INITIAL LOAD */
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('lat') && urlParams.has('lng')) {
@@ -1712,6 +1759,7 @@
             playSound('click');
         }, 1000);
     }
+
     updateCategoryDropdowns();
     renderCategoryToggles();
     loadData(currentSearch, currentCategoryFilter);
