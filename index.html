@@ -298,7 +298,6 @@
     let locations = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
     locations.forEach(loc => { 
         if (!loc.id) loc.id = generateUniqueId(); 
-        // Ensure old markers have CID if missing
         if (!loc.cid && loc.category && loc.desc && loc.lat && loc.lng) {
             loc.cid = generateCid(loc);
         }
@@ -1037,47 +1036,55 @@
     }
 
     /* SECTION 14: TABLE */
+    // NEW: FORCE COUNTER TO SHOW LATEST VERSION
+    function updateCounterDisplay() {
+        const latestVersion = localStorage.getItem(MAP_VERSION_KEY) || "1.0";
+        const totalFiltered = locations.filter(l => activeCategories.has(l.category)).length;
+        const pageItems = locations.filter(l => activeCategories.has(l.category)).slice((tablePage - 1) * pageSize, tablePage * pageSize).length;
+        counter.innerHTML = `<strong>Map Version ${latestVersion}</strong> - <strong>${totalFiltered}</strong> logged locations - <strong>${pageItems}</strong> showing.`;
+    }
+
     function refreshTable(search = '', catFilter = '') {
-    const tbody = document.querySelector('#locationsTable tbody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    const filtered = locations.filter(loc => {
-        if (!activeCategories.has(loc.category)) return false;
-        if (catFilter && loc.category !== catFilter) return false;
-        if (!search) return true;
-        return normalizeString(loc.desc).includes(normalizeString(search)) ||
-               normalizeString(loc.category).includes(normalizeString(search));
-    });
-    const glowing = filtered.filter(isGlowing).sort((a, b) => b.addedTime - a.addedTime);
-    const normal = filtered.filter(loc => !isGlowing(loc)).sort((a, b) => {
-        const catDiff = a.category.localeCompare(b.category);
-        return catDiff !== 0 ? catDiff : a.desc.localeCompare(b.desc);
-    });
-    const sorted = [...glowing, ...normal];
-    const start = (tablePage - 1) * pageSize;
-    const pageItems = sorted.slice(start, start + pageSize);
-    pageItems.forEach(loc => {
-        const tr = document.createElement('tr');
-        if (isGlowing(loc)) tr.classList.add('glowing');
-        const shortDesc = loc.desc.split('\n')[0].trim();
-        const iconCell = ['named locations', 'regions'].includes(loc.category)
-            ? `<div style="background:#000; color:#fff; padding:2px 6px; border:1px solid #0f0; border-radius:3px; font-weight:bold; font-size:11px; display:inline-block; max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(shortDesc)}</div>`
-            : `<div style="background-color:${categoryColors[loc.category] || '#808080'}; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:#000; font-weight:bold; font-size:16px;">${loc.icon}</div>`;
-        tr.innerHTML = `
-            <td>${iconCell}</td>
-            <td>${escapeHtml(loc.category)} ${loc.icon}</td>
-            <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(shortDesc)}</td>
-        `;
-        tr.onclick = (e) => {
-            e.preventDefault();
-            const mapEl = document.getElementById('map');
-            mapEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            setTimeout(() => {
-                safeFlyTo(loc.lat, loc.lng, 2);
-                playSound('click');
-            }, 300);
-        };
-        tr.oncontextmenu = (e) => {
+        const tbody = document.querySelector('#locationsTable tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        const filtered = locations.filter(loc => {
+            if (!activeCategories.has(loc.category)) return false;
+            if (catFilter && loc.category !== catFilter) return false;
+            if (!search) return true;
+            return normalizeString(loc.desc).includes(normalizeString(search)) ||
+                   normalizeString(loc.category).includes(normalizeString(search));
+        });
+        const glowing = filtered.filter(isGlowing).sort((a, b) => b.addedTime - a.addedTime);
+        const normal = filtered.filter(loc => !isGlowing(loc)).sort((a, b) => {
+            const catDiff = a.category.localeCompare(b.category);
+            return catDiff !== 0 ? catDiff : a.desc.localeCompare(b.desc);
+        });
+        const sorted = [...glowing, ...normal];
+        const start = (tablePage - 1) * pageSize;
+        const pageItems = sorted.slice(start, start + pageSize);
+        pageItems.forEach(loc => {
+            const tr = document.createElement('tr');
+            if (isGlowing(loc)) tr.classList.add('glowing');
+            const shortDesc = loc.desc.split('\n')[0].trim();
+            const iconCell = ['named locations', 'regions'].includes(loc.category)
+                ? `<div style="background:#000; color:#fff; padding:2px 6px; border:1px solid #0f0; border-radius:3px; font-weight:bold; font-size:11px; display:inline-block; max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(shortDesc)}</div>`
+                : `<div style="background-color:${categoryColors[loc.category] || '#808080'}; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:#000; font-weight:bold; font-size:16px;">${loc.icon}</div>`;
+            tr.innerHTML = `
+                <td>${iconCell}</td>
+                <td>${escapeHtml(loc.category)} ${loc.icon}</td>
+                <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(shortDesc)}</td>
+            `;
+            tr.onclick = (e) => {
+                e.preventDefault();
+                const mapEl = document.getElementById('map');
+                mapEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                setTimeout(() => {
+                    safeFlyTo(loc.lat, loc.lng, 2);
+                    playSound('click');
+                }, 300);
+            };
+            tr.oncontextmenu = (e) => {
                 e.preventDefault();
                 const mapEl = document.getElementById('map');
                 mapEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1093,7 +1100,7 @@
         pageInfo.textContent = `Page ${tablePage} of ${totalPages || 1}`;
         prevPageBtn.disabled = tablePage <= 1;
         nextPageBtn.disabled = tablePage >= totalPages;
-        counter.innerHTML = `<strong>Map Version ${communityVersion}</strong> - <strong>${sorted.length}</strong> logged locations - <strong>${pageItems.length}</strong> showing.`;
+        updateCounterDisplay(); // FIXED: Always show latest version
     }
 
     setInterval(() => {
@@ -1415,7 +1422,12 @@
                     localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
                     recalculateXP();
                     saveLocations();
-                    forceReload();
+
+                    // === FORCE DOM & COUNTER UPDATE AFTER IMPORT ===
+                    setTimeout(() => {
+                        forceReload();
+                        updateCounterDisplay();
+                    }, 100);
 
                     let report = `Imported ${toAdd.length} new`;
                     if (toReplace.length) report += ` | Updated ${toReplace.length}`;
@@ -1557,7 +1569,11 @@
                     localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
                     recalculateXP();
                     saveLocations();
-                    forceReload();
+
+                    setTimeout(() => {
+                        forceReload();
+                        updateCounterDisplay();
+                    }, 100);
 
                     alert(`Community Map Updated!\n${toAdd.length} added | ${toReplace.length} updated | ${skippedUserEdited} preserved`);
                     playSound('saving');
@@ -1831,7 +1847,7 @@
                 lng: loc.lng + offset,
                 addedTime: Date.now(),
                 userEdited: true,
-                cid: newCid  // NEW UNIQUE CID
+                cid: newCid
             };
 
             locations.push(newLoc);
@@ -1903,7 +1919,6 @@
     window.addEventListener('resize', refreshTableVisibility);
     refreshTableVisibility();
 })();
-
  /* --------------------------------------------------------------------------
        Fallout 76 Item Finder Map Version 34 - Disclaimer and Terms of Use
        --------------------------------------------------------------------------
