@@ -859,7 +859,7 @@ function attachDragHandler(marker, loc) {
         }
         L.DomEvent.on(document, 'mousemove', onDragging);
         L.DomEvent.on(document, 'mouseup', onDragEnd);
-        L.DomEvent.on(document,dcc 'touchmove', onDragging);
+        L.DomEvent.on(document, 'touchmove', onDragging);
         L.DomEvent.on(document, 'touchend', onDragEnd);
     };
     marker.on('dragstart', onDragStart);
