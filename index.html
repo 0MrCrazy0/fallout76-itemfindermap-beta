@@ -286,8 +286,23 @@
         }
     }
     function generateUniqueId() { return 'id-' + crypto.randomUUID(); }
+
+    // NEW: Generate CID from category + desc + lat + lng
+    function generateCid(loc) {
+        const desc = (loc.desc || '').toString().toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '_');
+        const lat = Math.round(loc.lat);
+        const lng = Math.round(loc.lng);
+        return `${loc.category}_${desc}_${lat}_${lng}`;
+    }
+
     let locations = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    locations.forEach(loc => { if (!loc.id) loc.id = generateUniqueId(); });
+    locations.forEach(loc => { 
+        if (!loc.id) loc.id = generateUniqueId(); 
+        // Ensure old markers have CID if missing
+        if (!loc.cid && loc.category && loc.desc && loc.lat && loc.lng) {
+            loc.cid = generateCid(loc);
+        }
+    });
     localStorage.setItem(STORAGE_KEY, JSON.stringify(locations));
     let customCategories = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_KEY)) || {};
     let communityVersion = localStorage.getItem(MAP_VERSION_KEY) || "1.0";
@@ -1736,7 +1751,8 @@
                 desc,
                 icon: categoryIcons[category] || 'UNKNOWN',
                 addedTime: Date.now(),
-                userEdited: true
+                userEdited: true,
+                cid: generateCid({ category, desc, lat: tempLatLng.lat, lng: tempLatLng.lng })
             };
             locations.push(newLoc);
             recalculateXP();
@@ -1794,18 +1810,30 @@
             playSound('undo');
         }
     };
+
+    // FIXED DUPLICATE: NEW CID, NO CONFLICTS
     duplicateBtn.onclick = () => {
         if (currentIndex >= 0) {
             const loc = locations[currentIndex];
             const offset = 30 / Math.pow(2, map.getZoom());
+
+            const newCid = generateCid({
+                category: loc.category,
+                desc: loc.desc,
+                lat: loc.lat + offset,
+                lng: loc.lng + offset
+            });
+
             const newLoc = {
                 ...loc,
                 id: generateUniqueId(),
                 lat: loc.lat + offset,
                 lng: loc.lng + offset,
                 addedTime: Date.now(),
-                userEdited: true
+                userEdited: true,
+                cid: newCid  // NEW UNIQUE CID
             };
+
             locations.push(newLoc);
             recalculateXP();
             saveLocations();
@@ -1813,10 +1841,11 @@
             closeModal(itemModal);
             const newIndex = locations.findIndex(l => l.id === newLoc.id);
             safeFlyTo(newLoc.lat, newLoc.lng, map.getZoom());
-            showTempMessage('Duplicated! Edit below.', 3000);
+            showTempMessage('Duplicated with new ID!', 3000);
             playSound('duplicate');
         }
     };
+
     shareItemBtn.onclick = () => {
         const loc = locations[currentIndex];
         const lat = loc.lat.toFixed(0);
@@ -1832,7 +1861,7 @@
         });
     };
 
-    /* SECTION 23: FILTER & MAP EVENTS */
+        /* SECTION 23: FILTER & MAP EVENTS */
     categoryFilter.addEventListener('change', () => {
         const val = categoryFilter.value;
         localStorage.setItem('currentCategoryFilter', val);
@@ -1874,6 +1903,7 @@
     window.addEventListener('resize', refreshTableVisibility);
     refreshTableVisibility();
 })();
+
  /* --------------------------------------------------------------------------
        Fallout 76 Item Finder Map Version 34 - Disclaimer and Terms of Use
        --------------------------------------------------------------------------
