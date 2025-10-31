@@ -286,45 +286,20 @@
     let customCategories = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_KEY)) || {};
     let communityVersion = localStorage.getItem(MAP_VERSION_KEY) || "1.0";
     let termsAccepted = localStorage.getItem(TERMS_ACCEPTED_KEY) === 'true';
-    
-    // REAL EMOJIS — YOUR EXACT CHOICES
+
+    // REAL EMOJIS — YOUR CHOICES, RENDERED AS PICTURES
     const defaultCategoryIcons = {
-        'weapons': '🔫',
-        'armor': '🛡️',
-        'aid': '💉',
-        'food/drink': '🍽️',
-        'ammunition': '💥',
-        'apparel': '👕',
-        'plans': '📜',
-        'junk': '🗑️',
-        'holotapes': '📀',
-        'misc': '📝',
-        'plants': '🌿',
-        'eggs': '🥚',
-        'creatures': '🐺',
-        'vendors': '💰',
-        'exchanges': '⚖️',
-        'vaults': '⚙️',
-        'power armor': '👨‍🚀',
-        'fusion core': '🔋',
-        'nuke drop zones': '☢️',
-        'nuke silos': '🚀',
-        'magazines': '📚',
-        'bobbleheads': '🎎',
-        'safe locations': '🗄️',
-        'terminal locations': '🖥️',
-        'treasure maps': '🗺️',
-        'resource deposits': '⛏️',
-        'fishing locations': '🎣',
-        'workshops': '🔧',
-        'train stations': '🚂',
-        'town locations': '🏫',
-        'event locations': '🎉',
-        'named locations': '🚩',
-        'regions': '📍'
-    };
+        'weapons': '🔫', 'armor': '🛡️', 'aid': '💉', 'food/drink': '🍽️', 'ammunition': '💥',
+        'apparel': '👕', 'plans': '📜', 'junk': '🗑️', 'holotapes': '📀', 'misc': '📝',
+        'plants': '🌿', 'eggs': '🥚', 'creatures': '🐺', 'vendors': '💰', 'exchanges': '⚖️',
+        'vaults': '⚙️', 'power armor': '👨‍🚀', 'fusion core': '🔋', 'nuke drop zones': '☢️',
+        'nuke silos': '🚀', 'magazines': '📚', 'bobbleheads': '🎎', 'safe locations': '🗄️',
+        'terminal locations': '🖥️', 'treasure maps': '🗺️', 'resource deposits': '⛏️',
+        'fishing locations': '🎣', 'workshops': '🔧', 'train stations': '🚂', 'town locations': '🏫',
+        'event locations': '🎉', 'named locations': '🚩', 'regions': '📍'
+        };
     let categoryIcons = { ...defaultCategoryIcons, ...customCategories };
-    
+
     const defaultCategoryColors = {
         'weapons': '#ff4444', 'armor': '#4682b4', 'aid': '#32cd32', 'food/drink': '#adff2f',
         'ammunition': '#ff8c00', 'apparel': '#dda0dd', 'plans': '#a0522d', 'junk': '#808080',
@@ -633,7 +608,7 @@
                rel="noopener noreferrer"
                class="nuke-emoji-btn"
                title="Launch codes – click the rocket">
-               ROCKET
+               🚀
             </a>
         </div>
     `;
@@ -859,7 +834,7 @@
                 loc.lng = newLatLng.lng;
                 loc.addedTime = Date.now();
                 loc.userEdited = true;
-                if (loc.cid && !loc.userCid) loc.userCid = loc.cid;
+                if (loc.cid && !loc.userCid) loc.userCid = loc.cid;  // FIXED
                 lastMovedMarker = { marker, original: originalLatLng, index: locations.indexOf(loc) };
                 undoMoveBtn.style.display = 'inline-block';
                 saveLocations();
@@ -1185,7 +1160,6 @@
                 try {
                     const data = JSON.parse(ev.target.result);
                     const incoming = data.locations || [];
-
                     const existingByCid = new Map();
                     const userEditedCids = new Set();
                     locations.forEach(l => {
@@ -1194,7 +1168,6 @@
                             if (l.userEdited) userEditedCids.add(l.cid);
                         }
                     });
-
                     const seenCids = new Set();
                     for (const imp of incoming) {
                         if (imp.cid && seenCids.has(imp.cid)) {
@@ -1202,23 +1175,18 @@
                         }
                         if (imp.cid) seenCids.add(imp.cid);
                     }
-
                     const toAdd = [];
                     const toReplace = [];
                     let skippedUserEdited = 0;
-
                     incoming.forEach(imp => {
                         const newId = generateUniqueId();
                         const candidate = { ...imp, id: newId, addedTime: Date.now() };
-
                         if (!imp.cid) {
                             candidate.userEdited = true;
                             toAdd.push(candidate);
                             return;
                         }
-
                         const existing = existingByCid.get(imp.cid);
-
                         if (existing && userEditedCids.has(imp.cid)) {
                             existing.category = imp.category || existing.category;
                             existing.icon = imp.icon || existing.icon;
@@ -1226,21 +1194,17 @@
                             skippedUserEdited++;
                             return;
                         }
-
                         if (existing) {
                             candidate.id = existing.id;
                             toReplace.push(candidate);
                             return;
                         }
-
                         candidate.userEdited = false;
                         toAdd.push(candidate);
                     });
-
                     const replaceIds = toReplace.map(r => r.id);
                     locations = locations.filter(l => !replaceIds.includes(l.id));
                     locations = [...locations, ...toAdd, ...toReplace];
-
                     let customCategoriesUpdated = false;
                     if (data.customCategories && typeof data.customCategories === 'object') {
                         Object.entries(data.customCategories).forEach(([name, emoji]) => {
@@ -1253,23 +1217,19 @@
                             }
                         });
                     }
-
                     communityVersion = data.communityVersion || communityVersion;
                     localStorage.setItem(MAP_VERSION_KEY, communityVersion);
                     localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(customCategories));
                     localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
-
                     recalculateXP();
                     saveLocations();
                     forceReload();
-
                     let message = `Imported ${toAdd.length + toReplace.length} locations successfully!`;
                     if (skippedUserEdited > 0) message += `\nPreserved ${skippedUserEdited} user-edited community markers.`;
                     if (customCategoriesUpdated) message += `\nAdded custom categories.`;
                     message += `\nTotal: ${locations.length} locations.`;
                     alert(message);
                     playSound('saving');
-
                 } catch (err) {
                     console.error('Import error:', err);
                     alert(`Error: ${err.message || 'Invalid JSON'}`);
@@ -1292,12 +1252,9 @@
             `• YOUR edits & personal markers are 100% SAFE\n\n` +
             `Continue?`
         )) return;
-
         downloadCommunityBtn.disabled = true;
         downloadCommunityBtn.textContent = 'Updating...';
-
         const url = `https://www.dropbox.com/scl/fi/uc525iq6f6lqkm3zaftvo/fallout76_community_map_v${communityVersion}.json?raw=1`;
-
         fetchWithTimeout(url)
             .then(r => {
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -1410,6 +1367,8 @@
     document.querySelectorAll('#createCategoryModal .close, #deleteCategoryModal .close').forEach(closeBtn => {
         closeBtn.onclick = () => closeModal(closeBtn.closest('.modal'));
     });
+
+    // FIXED: SAVE ITEM — PRESERVE userCid ON EDIT
     document.getElementById('saveItemBtn').onclick = () => {
         const category = itemCategorySelect.value;
         let desc = itemDescInput.value.trim();
@@ -1431,7 +1390,7 @@
             loc.icon = categoryIcons[category] || 'UNKNOWN';
             loc.addedTime = Date.now();
             loc.userEdited = true;
-            if (wasCommunity && !loc.userCid) loc.userCid = loc.cid;
+            if (wasCommunity && !loc.userCid) loc.userCid = loc.cid;  // FIXED
         } else {
             const newLoc = {
                 id: generateUniqueId(),
@@ -1454,6 +1413,7 @@
         safeFlyTo(finalLoc.lat, finalLoc.lng, 2);
         forceReload();
     };
+
     deleteBtn.onclick = () => {
         if (currentIndex >= 0) {
             const loc = locations[currentIndex];
