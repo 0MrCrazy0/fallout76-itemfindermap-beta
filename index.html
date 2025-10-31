@@ -1463,7 +1463,7 @@
         downloadCommunityBtn.disabled = true;
         downloadCommunityBtn.textContent = 'Updating...';
 
-        const url = `https://raw.githubusercontent.com/0mrcrazy0/fallout76-itemfindermap/main/fallout76_community_map_v${communityVersion}.json`;
+        const url = `https://raw.githubusercontent.com/0mrcrazy0/fallout76-itemfindermap-beta/main/communitymap.json`;
 
         fetchWithTimeout(url)
             .then(r => {
