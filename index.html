@@ -1447,13 +1447,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     safeFlyTo(newLatLng.lat, newLatLng.lng, 2);
                     forceReload();
                 }, () => {
-                    marker.setLatLng(originalLatLng);
-    safeFlyTo(originalLatLng.lat, originalLatLng.lng, 2);
+    marker.setLatLng(originalLatLng);
+    safeFlyTo(originalLatLng.lat, originalLatLng.lng, 2); // ZOOM TO CANCELED MARKER
     playSound('undo');
-
-    // STORE GLOBALLY SO UNDO WORKS ANYWHERE
-    lastMovedMarker = { marker, original: originalLatLng, index: locations.indexOf(loc) };
-    undoMoveBtn.style.display = 'inline-block';
+    lastMovedMarker = null; // CLEAR TO PREVENT WRONG ZOOM
+    undoMoveBtn.style.display = 'none';
 });
             };
             const onDragStart = (e) => {
@@ -2265,7 +2263,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 locations.splice(currentIndex, 1);
                 recalculateXP();
                 closeModal(itemModal);
-                safeFlyTo(loc.lat, loc.lng, map.getZoom() + 1);
+                safeFlyTo(loc.lat, loc.lng, 2); // CONSISTENT ZOOM LEVEL 2
                 saveLocations();
                 forceReload();
                 undoBtn.style.display = 'inline-block';
@@ -2300,7 +2298,7 @@ document.addEventListener('DOMContentLoaded', function() {
         saveLocations();
         forceReload();
         closeModal(itemModal);
-        safeFlyTo(loc.lat, loc.lng, map.getZoom() + 1);
+        safeFlyTo(loc.lat, loc.lng, 2); // ZOOM LEVEL 2
         showTempMessage('Move undone!', 3000);
         playSound('undo');
     }
