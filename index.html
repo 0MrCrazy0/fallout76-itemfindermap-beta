@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Fallout 76 Item Finder vBeta</title>
+    <title>Fallout 76 Item Finder Vbeta</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
@@ -470,7 +470,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const newCategoryEmoji = document.getElementById('newCategoryEmoji');
         const toggleDarkModeBtn = document.getElementById('toggleDarkModeBtn');
         const voiceSearchBtn = document.getElementById('voiceSearchBtn');
-        const undoImportBtn = document.getElementById('undoImportBtn'); // NOW EXISTS!
+        const undoImportBtn = document.getElementById('undoImportBtn');
 
         toggleSoundsBtn.textContent = soundsEnabled ? 'Sounds: On' : 'Sounds: Off';
         toggleClusterBtn.textContent = `Clustering: ${clusteringEnabled ? 'On' : 'Off'}`;
@@ -609,7 +609,7 @@ document.addEventListener('DOMContentLoaded', function() {
             codesDiv.innerHTML = `
             <em>Visit the site to view Alpha, Bravo, and Charlie codes for this week.
             Weekly launch codes are always up to date!</em><br>
-          
+         
             <div class="nuke-emoji-wrapper">
                 <a href="https://www.falloutbuilds.com/fo76/nuke-codes/"
                    target="_blank"
@@ -829,6 +829,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('createCategoryModal').style.display = 'none';
             renderCategoryToggles();
             updateCategoryDropdowns();
+            syncCategoryFilterWithToggles(); // ← SYNC
             loadData();
             playSound('saving');
         };
@@ -861,6 +862,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
                     loadData(combinedSearch.value, categoryFilter.value);
                     playSound('selectcategory');
+                    syncCategoryFilterWithToggles(); // ← SYNC
                 });
             });
         }
@@ -873,6 +875,21 @@ document.addEventListener('DOMContentLoaded', function() {
             if (currentCategoryFilter && categories.includes(currentCategoryFilter)) {
                 categoryFilter.value = currentCategoryFilter;
             }
+        }
+
+        // NEW: SYNC DROPDOWN WITH TOGGLE MENU
+        function syncCategoryFilterWithToggles() {
+            const activeCount = activeCategories.size;
+            const totalCount = Object.keys(categoryIcons).length;
+            if (activeCount === totalCount) {
+                categoryFilter.value = '';
+            } else if (activeCount === 1) {
+                const [cat] = activeCategories;
+                categoryFilter.value = cat;
+            } else {
+                categoryFilter.value = '';
+            }
+            loadData(combinedSearch.value, categoryFilter.value);
         }
 
         /* SECTION 13: MARKER RENDERING */
@@ -1117,7 +1134,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, 1000);
 
-                /* SECTION 15: MODALS & CONFIRM */
+        /* SECTION 15: MODALS & CONFIRM */
         function showConfirmPopup(message, onConfirm, onCancel) {
             const popup = document.createElement('div');
             popup.className = 'confirm-popup';
@@ -1283,17 +1300,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!file) return;
                 const reader = new FileReader();
                 reader.onload = ev => {
-                    backupBeforeImport(); // BACKUP BEFORE ANY CHANGES
+                    backupBeforeImport();
                     try {
                         const data = JSON.parse(ev.target.result);
                         const incoming = data.locations || [];
-
-                        // === BUILD EXISTING MAP BY CID OR FALLBACK KEY ===
                         const existingByCid = new Map();
                         const existingByKey = new Map();
                         const userEditedCids = new Set();
                         const userEditedKeys = new Set();
-
                         locations.forEach(l => {
                             if (l.cid) {
                                 existingByCid.set(l.cid, l);
@@ -1304,8 +1318,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                 if (l.userEdited) userEditedKeys.add(key);
                             }
                         });
-
-                        // === VALIDATE NO DUPLICATE CIDS IN IMPORT ===
                         const seenCids = new Set();
                         for (const imp of incoming) {
                             if (imp.cid && seenCids.has(imp.cid)) {
@@ -1313,24 +1325,19 @@ document.addEventListener('DOMContentLoaded', function() {
                             }
                             if (imp.cid) seenCids.add(imp.cid);
                         }
-
                         const preserveEdits = confirm(
                             `IMPORT OPTIONS:\n\n` +
                             `• OK = PRESERVE your edits/moves\n` +
                             `• CANCEL = RESET ALL community markers to original\n\n` +
                             `Choose wisely.`
                         );
-
                         const toAdd = [];
                         const toReplace = [];
                         let skippedUserEdited = 0;
                         let resetCount = 0;
-
                         incoming.forEach(imp => {
                             const newId = generateUniqueId();
                             const candidate = { ...imp, id: newId, addedTime: Date.now() };
-
-                            // === PRIORITY 1: MATCH BY CID ===
                             if (imp.cid) {
                                 const existing = existingByCid.get(imp.cid);
                                 if (!preserveEdits) {
@@ -1360,11 +1367,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 }
                                 return;
                             }
-
-                            // === PRIORITY 2: FALLBACK — MATCH BY DESC + COORDS ===
                             const fallbackKey = `${imp.desc}|${Math.round(imp.lat)}|${Math.round(imp.lng)}`;
                             const existingFallback = existingByKey.get(fallbackKey);
-
                             if (!preserveEdits) {
                                 if (existingFallback) {
                                     candidate.id = existingFallback.id;
@@ -1376,7 +1380,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                 }
                                 return;
                             }
-
                             if (existingFallback && userEditedKeys.has(fallbackKey)) {
                                 existingFallback.category = imp.category || existingFallback.category;
                                 existingFallback.icon = imp.icon || existingFallback.icon;
@@ -1384,7 +1387,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                 skippedUserEdited++;
                                 return;
                             }
-
                             if (existingFallback) {
                                 candidate.id = existingFallback.id;
                                 toReplace.push(candidate);
@@ -1393,13 +1395,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                 toAdd.push(candidate);
                             }
                         });
-
-                        // === APPLY CHANGES ===
                         const replaceIds = toReplace.map(r => r.id);
                         locations = locations.filter(l => !replaceIds.includes(l.id));
                         locations = [...locations, ...toAdd, ...toReplace];
-
-                        // === CUSTOM CATEGORIES ===
                         if (data.customCategories && typeof data.customCategories === 'object') {
                             Object.entries(data.customCategories).forEach(([name, emoji]) => {
                                 if (!customCategories[name] && !defaultCategoryIcons[name] && isValidEmoji(emoji)) {
@@ -1410,19 +1408,16 @@ document.addEventListener('DOMContentLoaded', function() {
                                 }
                             });
                         }
-
                         communityVersion = data.communityVersion || communityVersion;
                         localStorage.setItem(MAP_VERSION_KEY, communityVersion);
                         localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(customCategories));
                         localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
                         recalculateXP();
                         saveLocations();
-
                         setTimeout(() => {
                             forceReload();
                             updateCounterDisplay();
                         }, 100);
-
                         let report = `Imported ${toAdd.length} new`;
                         if (toReplace.length) report += ` | Updated ${toReplace.length}`;
                         if (skippedUserEdited) report += ` | Preserved ${skippedUserEdited} edits`;
@@ -1465,16 +1460,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     return r.text();
                 })
                 .then(text => {
-                    backupBeforeImport(); // BACKUP BEFORE ANY CHANGES
+                    backupBeforeImport();
                     try {
                         const data = JSON.parse(text);
                         const incoming = data.locations || [];
-
                         const existingByCid = new Map();
                         const existingByKey = new Map();
                         const userEditedCids = new Set();
                         const userEditedKeys = new Set();
-
                         locations.forEach(l => {
                             if (l.cid) {
                                 existingByCid.set(l.cid, l);
@@ -1485,7 +1478,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                 if (l.userEdited) userEditedKeys.add(key);
                             }
                         });
-
                         const seenCids = new Set();
                         for (const imp of incoming) {
                             if (imp.cid && seenCids.has(imp.cid)) {
@@ -1493,17 +1485,13 @@ document.addEventListener('DOMContentLoaded', function() {
                             }
                             if (imp.cid) seenCids.add(imp.cid);
                         }
-
                         const preserveEdits = true;
-
                         const toAdd = [];
                         const toReplace = [];
                         let skippedUserEdited = 0;
-
                         incoming.forEach(imp => {
                             const newId = generateUniqueId();
                             const candidate = { ...imp, id: newId, addedTime: Date.now() };
-
                             if (imp.cid) {
                                 const existing = existingByCid.get(imp.cid);
                                 if (existing && userEditedCids.has(imp.cid)) {
@@ -1522,10 +1510,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 }
                                 return;
                             }
-
                             const fallbackKey = `${imp.desc}|${Math.round(imp.lat)}|${Math.round(imp.lng)}`;
                             const existingFallback = existingByKey.get(fallbackKey);
-
                             if (existingFallback && userEditedKeys.has(fallbackKey)) {
                                 existingFallback.category = imp.category || existingFallback.category;
                                 existingFallback.icon = imp.icon || existingFallback.icon;
@@ -1533,7 +1519,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                 skippedUserEdited++;
                                 return;
                             }
-
                             if (existingFallback) {
                                 candidate.id = existingFallback.id;
                                 toReplace.push(candidate);
@@ -1542,11 +1527,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                 toAdd.push(candidate);
                             }
                         });
-
                         const replaceIds = toReplace.map(r => r.id);
                         locations = locations.filter(l => !replaceIds.includes(l.id));
                         locations = [...locations, ...toAdd, ...toReplace];
-
                         if (data.customCategories && typeof data.customCategories === 'object') {
                             Object.entries(data.customCategories).forEach(([name, emoji]) => {
                                 if (!customCategories[name] && !defaultCategoryIcons[name] && isValidEmoji(emoji)) {
@@ -1557,19 +1540,16 @@ document.addEventListener('DOMContentLoaded', function() {
                                 }
                             });
                         }
-
                         communityVersion = data.communityVersion || communityVersion;
                         localStorage.setItem(MAP_VERSION_KEY, communityVersion);
                         localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(customCategories));
                         localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
                         recalculateXP();
                         saveLocations();
-
                         setTimeout(() => {
                             forceReload();
                             updateCounterDisplay();
                         }, 100);
-
                         alert(`Community Map Updated!\nVersion: ${communityVersion}`);
                         playSound('saving');
                     } catch (err) {
@@ -1717,6 +1697,7 @@ document.addEventListener('DOMContentLoaded', function() {
             activeCategories = new Set(Object.keys(categoryIcons));
             localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
             renderCategoryToggles();
+            syncCategoryFilterWithToggles();
             loadData(combinedSearch.value, categoryFilter.value);
             playSound('click');
         };
@@ -1724,6 +1705,7 @@ document.addEventListener('DOMContentLoaded', function() {
             activeCategories = new Set();
             localStorage.setItem('activeCategories', JSON.stringify([]));
             renderCategoryToggles();
+            syncCategoryFilterWithToggles();
             loadData(combinedSearch.value, categoryFilter.value);
             playSound('click');
         };
@@ -1812,6 +1794,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             closeModal(itemModal);
             saveLocations();
+            categoryFilter.value = ''; // ← RESET TO ALL
             playSound('saving');
             showTempMessage('Saved!', 2000);
             const finalLoc = currentIndex >= 0 ? locations[currentIndex] : locations[locations.length - 1];
@@ -1864,7 +1847,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
 
-        // FIXED DUPLICATE: NEW CID, NO CONFLICTS
+                // FIXED DUPLICATE: NEW CID, NO CONFLICTS
         duplicateBtn.onclick = () => {
             if (currentIndex >= 0) {
                 const loc = locations[currentIndex];
@@ -1929,6 +1912,7 @@ document.addEventListener('DOMContentLoaded', function() {
         map.on('dblclick', e => {
             L.DomEvent.stopPropagation(e);
             tempLatLng = { lat: e.latlng.lat, lng: e.latlng.lng };
+            categoryFilter.value = ''; // ← RESET TO ALL CATEGORIES
             openModal('Log Item');
             playSound('click');
         });
@@ -1949,7 +1933,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         updateCategoryDropdowns();
         renderCategoryToggles();
-        loadData(currentSearch, currentCategoryFilter);
+        syncCategoryFilterWithToggles(); // ← RESPECT TOGGLE MENU ON LOAD
+        loadData(currentSearch, categoryFilter.value);
         refreshTableVisibility();
         drawGrid();
         updateXPBar();
