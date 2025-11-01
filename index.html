@@ -16,7 +16,13 @@
         /* GLOBAL FIXES */
         html, body { overflow-x: hidden; width: 100%; margin: 0; padding: 0; }
         body { 
-           font-family: 'Courier New', monospace; margin: 0; padding: 16px; background-color: #0a2a2a; color: #00ff00; box-sizing: border-box; }
+            font-family: 'Courier New', monospace; 
+            margin: 0; 
+            padding: 16px; 
+            background-color: #0a2a2a; 
+            color: #00ff00; 
+            box-sizing: border-box;
+        }
         /* RESPONSIVE MAP — NO SIDE SCROLL */
         #map {
             height: 60vh;
@@ -112,32 +118,40 @@
         }
         #tableContainer { 
             width: 100%; 
-            max-width: 1000px; 
+            max-width: 100%; 
             margin: 0 auto; 
             overflow-x: auto; 
             overflow-y: hidden; 
+            -webkit-overflow-scrolling: touch;
         }
         #locationsTable { 
             width: 100%; 
-            max-width: 100%; 
+            min-width: 0; 
             margin: 10px 0; 
             border-collapse: separate; 
             border-spacing: 0 8px; 
             border: 2px solid #00ff00; 
+            table-layout: auto; 
         }
         #locationsTable th, #locationsTable td { 
             border: 2px solid #00ff00; 
-            padding: 12px; 
+            padding: 8px; 
             text-align: left; 
             background-color: #1a3c34; 
             color: #00ff00; 
-            font-size: clamp(12px, 3vw, 14px);
+            font-size: clamp(11px, 2.8vw, 13px);
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: normal; 
+            max-width: 120px; 
         }
         #locationsTable th { 
             background-color: #0a2a2a; 
             position: sticky; 
             top: 0; 
             z-index: 10; 
+            font-weight: bold;
+            font-size: clamp(12px, 3vw, 14px);
         }
         #locationsTable tr:hover { 
             background-color: #2a4c44; 
@@ -147,6 +161,14 @@
             background-color: rgba(0, 255, 0, 0.15); 
             border: 2px solid #00ff00; 
             box-shadow: 0 0 15px #00ff00, 0 0 30px #00ff00; 
+        }
+        #locationsTable td:first-child {
+            width: 40px;
+            text-align: center;
+            padding: 4px;
+        }
+        #locationsTable td:last-child {
+            max-width: 140px;
         }
         .modal { 
             display: none; 
