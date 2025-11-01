@@ -723,7 +723,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let categoryColors = { ...defaultCategoryColors };
 
         /* SECTION 3: MAP SETUP */
-        const map = L.map('map', { crs: L.CRS.Simple, minZoom: -3, maxZoom: 4, zoomControl: true, scrollWheelZoom: true, doubleClickZoom: false, boxZoom: true, touchZoom: false, dragging: true });
+        const map = L.map('map', { crs: L.CRS.Simple, minZoom: -3, maxZoom: 4, zoomControl: true, scrollWheelZoom: true, doubleClickZoom: false, boxZoom: true, touchZoom: true, dragging: true });
         const imageBounds = [[0, 0], [4096, 4096]];
         const mapUrls = {
             named: 'https://i.postimg.cc/HpqMVWjB/Mappalachia-Map-of-Appalachia.jpg',
