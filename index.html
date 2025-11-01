@@ -16,13 +16,7 @@
         /* GLOBAL FIXES */
         html, body { overflow-x: hidden; width: 100%; margin: 0; padding: 0; }
         body { 
-            font-family: 'Courier New', monospace; 
-            margin: 0; 
-            padding: 16px; 
-            background-color: #0a2a2a; 
-            color: #00ff00; 
-            box-sizing: border-box;
-        }
+           font-family: 'Courier New', monospace; margin: 0; padding: 16px; background-color: #0a2a2a; color: #00ff00; box-sizing: border-box; }
         /* RESPONSIVE MAP — NO SIDE SCROLL */
         #map {
             height: 60vh;
@@ -118,40 +112,32 @@
         }
         #tableContainer { 
             width: 100%; 
-            max-width: 100%; 
+            max-width: 1000px; 
             margin: 0 auto; 
             overflow-x: auto; 
             overflow-y: hidden; 
-            -webkit-overflow-scrolling: touch;
         }
         #locationsTable { 
             width: 100%; 
-            min-width: 0; 
+            max-width: 100%; 
             margin: 10px 0; 
             border-collapse: separate; 
             border-spacing: 0 8px; 
             border: 2px solid #00ff00; 
-            table-layout: auto; 
         }
         #locationsTable th, #locationsTable td { 
             border: 2px solid #00ff00; 
-            padding: 8px; 
+            padding: 12px; 
             text-align: left; 
             background-color: #1a3c34; 
             color: #00ff00; 
-            font-size: clamp(11px, 2.8vw, 13px);
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            white-space: normal; 
-            max-width: 120px; 
+            font-size: clamp(12px, 3vw, 14px);
         }
         #locationsTable th { 
             background-color: #0a2a2a; 
             position: sticky; 
             top: 0; 
             z-index: 10; 
-            font-weight: bold;
-            font-size: clamp(12px, 3vw, 14px);
         }
         #locationsTable tr:hover { 
             background-color: #2a4c44; 
@@ -161,14 +147,6 @@
             background-color: rgba(0, 255, 0, 0.15); 
             border: 2px solid #00ff00; 
             box-shadow: 0 0 15px #00ff00, 0 0 30px #00ff00; 
-        }
-        #locationsTable td:first-child {
-            width: 40px;
-            text-align: center;
-            padding: 4px;
-        }
-        #locationsTable td:last-child {
-            max-width: 140px;
         }
         .modal { 
             display: none; 
@@ -745,7 +723,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let categoryColors = { ...defaultCategoryColors };
 
         /* SECTION 3: MAP SETUP */
-        const map = L.map('map', { crs: L.CRS.Simple, minZoom: -3, maxZoom: 4, zoomControl: true, scrollWheelZoom: true, doubleClickZoom: true, boxZoom: true, touchZoom: true, dragging: true });
+        const map = L.map('map', { crs: L.CRS.Simple, minZoom: -3, maxZoom: 4, zoomControl: true, scrollWheelZoom: true, doubleClickZoom: false, boxZoom: true, touchZoom: false, dragging: true });
         const imageBounds = [[0, 0], [4096, 4096]];
         const mapUrls = {
             named: 'https://i.postimg.cc/HpqMVWjB/Mappalachia-Map-of-Appalachia.jpg',
@@ -1447,11 +1425,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     safeFlyTo(newLatLng.lat, newLatLng.lng, 2);
                     forceReload();
                 }, () => {
-    marker.setLatLng(originalLatLng);
-    safeFlyTo(originalLatLng.lat, originalLatLng.lng, 2); // ZOOM TO CANCELED MARKER
+                    marker.setLatLng(originalLatLng);
+    safeFlyTo(originalLatLng.lat, originalLatLng.lng, 2);
     playSound('undo');
-    lastMovedMarker = null; // CLEAR TO PREVENT WRONG ZOOM
-    undoMoveBtn.style.display = 'none';
+
+    // STORE GLOBALLY SO UNDO WORKS ANYWHERE
+    lastMovedMarker = { marker, original: originalLatLng, index: locations.indexOf(loc) };
+    undoMoveBtn.style.display = 'inline-block';
 });
             };
             const onDragStart = (e) => {
@@ -2263,7 +2243,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 locations.splice(currentIndex, 1);
                 recalculateXP();
                 closeModal(itemModal);
-                safeFlyTo(loc.lat, loc.lng, 2); // CONSISTENT ZOOM LEVEL 2
+                safeFlyTo(loc.lat, loc.lng, map.getZoom() + 2);
                 saveLocations();
                 forceReload();
                 undoBtn.style.display = 'inline-block';
@@ -2281,7 +2261,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 forceReload();
                 undoBtn.style.display = 'none';
                 closeModal(itemModal);
-                safeFlyTo(locations[locations.length - 1].lat, locations[locations.length - 1].lng, map.getZoom() + 1);
+                safeFlyTo(loc.lat, loc.lng, map.getZoom() + 2);
                 showTempMessage('Undo successful!', 3000);
                 playSound('undo');
             }
@@ -2297,8 +2277,7 @@ document.addEventListener('DOMContentLoaded', function() {
         undoMoveBtn.style.display = 'none';
         saveLocations();
         forceReload();
-        closeModal(itemModal);
-        safeFlyTo(loc.lat, loc.lng, 2); // ZOOM LEVEL 2
+        safeFlyTo(loc.lat, loc.lng, map.getZoom() + 2);
         showTempMessage('Move undone!', 3000);
         playSound('undo');
     }
