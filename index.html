@@ -829,7 +829,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('createCategoryModal').style.display = 'none';
             renderCategoryToggles();
             updateCategoryDropdowns();
-            syncCategoryFilterWithToggles(); // ← SYNC
+            syncCategoryFilterWithToggles();
             loadData();
             playSound('saving');
         };
@@ -862,22 +862,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
                     loadData(combinedSearch.value, categoryFilter.value);
                     playSound('selectcategory');
-                    syncCategoryFilterWithToggles(); // ← SYNC
+                    syncCategoryFilterWithToggles();
                 });
             });
         }
 
         function updateCategoryDropdowns() {
+            const currentFilter = categoryFilter.value;
             const categories = [...Object.keys(defaultCategoryIcons), ...Object.keys(customCategories)].sort();
             const makeOption = cat => `<option value="${cat}">${cat} ${categoryIcons[cat] || ''}</option>`;
             categoryFilter.innerHTML = '<option value="">All Categories</option>' + categories.map(makeOption).join('');
             itemCategorySelect.innerHTML = categories.map(makeOption).join('');
-            if (currentCategoryFilter && categories.includes(currentCategoryFilter)) {
-                categoryFilter.value = currentCategoryFilter;
-            }
+            categoryFilter.value = (currentFilter === '' || categories.includes(currentFilter)) ? currentFilter : '';
         }
 
-        // NEW: SYNC DROPDOWN WITH TOGGLE MENU
         function syncCategoryFilterWithToggles() {
             const activeCount = activeCategories.size;
             const totalCount = Object.keys(categoryIcons).length;
@@ -1768,6 +1766,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 itemDescInput.value = desc;
             }
             if (!desc) return;
+
+            const wasNewLog = currentIndex < 0;
+
             if (currentIndex >= 0) {
                 const loc = locations[currentIndex];
                 const wasCommunity = !!loc.cid;
@@ -1792,14 +1793,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 locations.push(newLoc);
                 recalculateXP();
             }
+
             closeModal(itemModal);
             saveLocations();
-            categoryFilter.value = ''; // ← RESET TO ALL
             playSound('saving');
             showTempMessage('Saved!', 2000);
             const finalLoc = currentIndex >= 0 ? locations[currentIndex] : locations[locations.length - 1];
             safeFlyTo(finalLoc.lat, finalLoc.lng, 2);
             forceReload();
+
+            if (wasNewLog) {
+                categoryFilter.value = '';
+            }
         };
 
         deleteBtn.onclick = () => {
@@ -1879,6 +1884,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 safeFlyTo(newLoc.lat, newLoc.lng, map.getZoom());
                 showTempMessage('Duplicated with new ID!', 3000);
                 playSound('duplicate');
+                categoryFilter.value = ''; // ← NEW ITEM → Reset to "All"
             }
         };
 
@@ -1912,7 +1918,7 @@ document.addEventListener('DOMContentLoaded', function() {
         map.on('dblclick', e => {
             L.DomEvent.stopPropagation(e);
             tempLatLng = { lat: e.latlng.lat, lng: e.latlng.lng };
-            categoryFilter.value = ''; // ← RESET TO ALL CATEGORIES
+            categoryFilter.value = ''; // ← NEW LOG → Reset to "All"
             openModal('Log Item');
             playSound('click');
         });
@@ -1933,7 +1939,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         updateCategoryDropdowns();
         renderCategoryToggles();
-        syncCategoryFilterWithToggles(); // ← RESPECT TOGGLE MENU ON LOAD
+        syncCategoryFilterWithToggles();
         loadData(currentSearch, categoryFilter.value);
         refreshTableVisibility();
         drawGrid();
