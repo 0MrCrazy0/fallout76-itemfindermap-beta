@@ -13,9 +13,29 @@
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/mrcrazyapps/fallout76-item-finder/main/icon-192.png">
     <meta name="theme-color" content="#00ff00">
     <style>
-        body { font-family: 'Courier New', monospace; margin: 20px; background-color: #0a2a2a; color: #00ff00; overflow-x: hidden; }
+        /* GLOBAL FIXES */
+        html, body { overflow-x: hidden; width: 100%; margin: 0; padding: 0; }
+        body { font-family: 'Courier New', monospace; margin: 20px; background-color: #0a2a2a; color: #00ff00; }
+        /* RESPONSIVE MAP — NO SIDE SCROLL */
+        #map {
+            height: 668px;
+            max-width: 100%;
+            width: 100%;
+            border: 2px solid #00ff00;
+            margin: 0 auto 20px auto;
+            box-shadow: 0 0 15px #00ff00;
+            background-color: #000000;
+            position: relative;
+            box-sizing: border-box;
+        }
+        @media (min-width: 768px) {
+            #map {
+                height: 768px;
+                max-width: 1768px;
+                margin: 0 auto 20px auto;
+            }
+        }
         h1 { color: #00ff00; text-align: center; text-shadow: 0 0 10px #00ff00; font-size: 2.2em; margin-bottom: 12px; }
-        #map { height: 750px; border: 2px solid #00ff00; margin-bottom: 20px; box-shadow: 0 0 15px #00ff00; background-color: #000000; position: relative; }
         .controls { margin-bottom: 20px; text-align: center; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
         input[type="text"], select { padding: 8px; width: 100%; max-width: 200px; box-sizing: border-box; border: 2px solid #00ff00; border-radius: 0; background-color: #1a3c34; color: #00ff00; font-family: 'Courier New', monospace; }
         #combinedSearch { max-width: 250px; transition: background-color 0.3s, box-shadow 0.3s; }
@@ -36,12 +56,12 @@
         .close { color: #00ff00; float: right; font-size: 24px; font-weight: bold; line-height: 1; cursor: pointer; }
         .close:hover { color: #0a2a2a; }
         label { display: block; margin: 8px 0 4px; }
-        textarea, input[type="text"] { width: 100%; padding: 8px; border: 2px solid #00ff00; border-radius: 0; background-color: #0a2a2a; color: #00ff00; font-family: 'Courier New', monospace; box-sizing: border-box; }
+        textarea, input[type="text"] { width: 100%; padding: 16px; border: 2px solid #00ff00; border-radius: 0; background-color: #0a2a2a; color: #00ff00; font-family: 'Courier New', monospace; box-sizing: border-box; }
         textarea { height: 120px; }
         body.modal-open { overflow: hidden; position: fixed; width: 100%; height: 100%; }
         .custom-icon { display: flex; align-items: center; justify-content: center; }
         .marker-background { width: 30px; height: 30px; border-radius: 50%; opacity: 0.9; display: flex; align-items: center; justify-content: center; background-color: #808080; }
-        .custom-icon.glowing { box-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00; }
+        .custom-icon.glowing { z-index: 10000 !important; filter: drop-shadow(0 0 10px #00ff00) !important; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .tab-button { display: inline-block; margin: 0 5px; padding: 5px 10px; }
@@ -49,7 +69,7 @@
         .small { font-size: 0.9em; color: #aaf0a0; }
         .marker-cluster div { width: 30px; height: 30px; margin-left: 5px; margin-top: 5px; text-align: center; border-radius: 15px; font: bold 12px/30px "Helvetica Neue", Arial, Helvetica, sans-serif; background-color: #ffff00; color: #000000; }
         #xpStatus { text-align: center; margin-bottom: 20px; }
-        progress { accent-color: #00ff00; width: 200px; }
+        progress { accent-color: #00ff00; width: 200px; display: block; margin: 0 auto; }
         #categoryCheckboxes label { display: flex; align-items: center; margin: 5px 0; }
         #categoryCheckboxes input[type="checkbox"] { margin-right: 10px; }
         #buttonGroup { display: inline-block; }
@@ -73,7 +93,6 @@
         .confirm-popup .cancel { background: #444; color: #fff; }
         .flash-green { animation: flashGreen 0.6s ease-out; }
         @keyframes flashGreen { 0% { border-color: #00ff00; } 50% { border-color: #00ff88; box-shadow: 0 0 15px #00ff88; } 100% { border-color: #00ff00; } }
-        /* DARK MODE */
         body.dark-mode { background-color: #000; }
         body.dark-mode .modal-content,
         body.dark-mode #map,
@@ -110,7 +129,7 @@
     <div class="controls">
         <!-- SEARCH BAR WITH CLEAR BUTTON -->
         <div style="position:relative; display:inline-block; max-width:250px;">
-            <input type="text" id="combinedSearch" placeholder="description/category/grid..">
+            <input type="text" id="combinedSearch" placeholder="item name or grid..">
             <button id="clearSearchBtn" style="position:absolute; right:5px; top:50%; transform:translateY(-50%); background:none; border:none; color:#00ff00; font-size:18px; cursor:pointer; display:none;">×</button>
         </div>
         <select id="categoryFilter"><option value="">All Categories</option></select>
@@ -126,7 +145,6 @@
             <button id="exportJsonBtn">Export Markers</button>
             <button id="importBtn">Import Markers</button>
             <button id="downloadCommunityBtn" style="background:#00ff88; color:#000; font-weight:700;">Update Community Map</button>
-            <!-- UNDO IMPORT BUTTON -->
             <button id="undoImportBtn" style="display:none; background:#cc8400; color:#000; font-weight:700;">UNDO IMPORT</button>
             <button id="saveMapJpegBtn">Save Map as JPEG</button>
             <button id="toggleDarkModeBtn">Dark Mode: Off</button>
@@ -248,7 +266,7 @@
             </div>
         </div>
     </div>
-
+	
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     (function() {
@@ -299,7 +317,6 @@ document.addEventListener('DOMContentLoaded', function() {
         let communityVersion = localStorage.getItem(MAP_VERSION_KEY) || "1.0";
         let termsAccepted = localStorage.getItem(TERMS_ACCEPTED_KEY) === 'true';
         let lastImportBackup = null;
-
         /* SECTION 2: CATEGORY ICONS & COLORS */
         const defaultCategoryIcons = {
         'weapons': '🔫', 'armor': '🛡️', 'aid': '💉', 'food/drink': '🍽️', 'ammunition': '💥',
@@ -324,7 +341,6 @@ document.addEventListener('DOMContentLoaded', function() {
             'regions': '#00ff00', 'named locations': '#ffffff'
         };
         let categoryColors = { ...defaultCategoryColors };
-
         /* SECTION 3: MAP SETUP */
         const map = L.map('map', { crs: L.CRS.Simple, minZoom: -3, maxZoom: 4, zoomControl: true, scrollWheelZoom: true, doubleClickZoom: true, boxZoom: true, touchZoom: true, dragging: true });
         const imageBounds = [[0, 0], [4096, 4096]];
@@ -339,7 +355,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const nonClusteredMarkers = L.layerGroup();
         map.addLayer(clusteredMarkers);
         map.addLayer(nonClusteredMarkers);
-
         /* SECTION 4: STATE */
         let lastDeleted = null;
         let lastMovedMarker = null;
@@ -362,7 +377,6 @@ document.addEventListener('DOMContentLoaded', function() {
         let currentSearch = localStorage.getItem('currentSearch') || '';
         let currentCategoryFilter = localStorage.getItem('currentCategoryFilter') || '';
         let darkMode = localStorage.getItem('darkMode') === 'true';
-
         /* SECTION 5: GRID SYSTEM */
         let gridLayer = L.layerGroup().addTo(map);
         function drawGrid() {
@@ -429,7 +443,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const emojiRegex = /^\p{Emoji}$/u;
             return emojiRegex.test(str.trim());
         }
-
         /* SECTION 6: DOM ELEMENTS */
         const itemModal = document.getElementById('itemModal');
         const deleteBtn = document.getElementById('deleteItemBtn');
@@ -471,7 +484,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const toggleDarkModeBtn = document.getElementById('toggleDarkModeBtn');
         const voiceSearchBtn = document.getElementById('voiceSearchBtn');
         const undoImportBtn = document.getElementById('undoImportBtn');
-
         toggleSoundsBtn.textContent = soundsEnabled ? 'Sounds: On' : 'Sounds: Off';
         toggleClusterBtn.textContent = `Clustering: ${clusteringEnabled ? 'On' : 'Off'}`;
         toggleMapBtn.textContent = currentMap === 'named' ? 'Show No-Name Map' : 'Show Named Map';
@@ -480,7 +492,6 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleButtonGroup.textContent = 'Show Tools';
         combinedSearch.value = currentSearch;
         categoryFilter.value = currentCategoryFilter;
-
         /* SECTION 7: UI TOGGLES */
         const toggleTitleBtn = document.getElementById('toggleTitleBtn');
         const mainTitle = document.getElementById('mainTitle');
@@ -503,7 +514,6 @@ document.addEventListener('DOMContentLoaded', function() {
             toggleDarkModeBtn.textContent = darkMode ? 'Dark Mode: On' : 'Dark Mode: Off';
             playSound('click');
         };
-
         /* SECTION 8: VOICE SEARCH */
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognition) {
@@ -550,7 +560,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 playSound('error');
             };
         }
-
         /* SECTION 9: SEARCH */
         let typingTimeout;
         let lastFilteredCount = -1;
@@ -595,7 +604,6 @@ document.addEventListener('DOMContentLoaded', function() {
             combinedSearch.focus();
             playSound('modalClose');
         };
-
         /* SECTION 10: NETWORK */
         function fetchWithTimeout(url, ms = 10000) {
             return Promise.race([
@@ -609,7 +617,7 @@ document.addEventListener('DOMContentLoaded', function() {
             codesDiv.innerHTML = `
             <em>Visit the site to view Alpha, Bravo, and Charlie codes for this week.
             Weekly launch codes are always up to date!</em><br>
-         
+        
             <div class="nuke-emoji-wrapper">
                 <a href="https://www.falloutbuilds.com/fo76/nuke-codes/"
                    target="_blank"
@@ -621,7 +629,6 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
         }
-
         /* SECTION 11: TERMS MODAL */
         const termsModal = document.createElement('div');
         termsModal.className = 'modal';
@@ -663,7 +670,6 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             setButtonsEnabled(true);
         }
-
         /* SECTION 11.7: UPDATE ALERT MODAL */
         if (localStorage.getItem(UPDATE_VERSION_KEY) !== CURRENT_UPDATE_VERSION) {
             const updateModal = document.createElement('div');
@@ -721,7 +727,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.setItem(UPDATE_VERSION_KEY, CURRENT_UPDATE_VERSION);
             };
         }
-
         /* SECTION 11.5: INSTRUCTIONS & NUKE CODES TABS */
         document.getElementById('showInstructionsTab').onclick = () => {
             document.getElementById('instructionsContent').classList.add('active');
@@ -750,7 +755,6 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('showNukeCodesTab').click();
             playSound('click');
         };
-
         /* SECTION 11.6: RESET WITH BACKUP */
         resetAppBtn.onclick = () => {
             const keepUserMarkers = confirm(
@@ -798,7 +802,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }, 500);
         };
-
         /* SECTION 12: CATEGORY MANAGEMENT */
         newCategoryEmoji.addEventListener('input', function(e) {
             const val = e.target.value;
@@ -833,7 +836,6 @@ document.addEventListener('DOMContentLoaded', function() {
             loadData();
             playSound('saving');
         };
-
         function refreshTableVisibility() {
             const isMobile = window.innerWidth <= 768;
             toggleTableBtn.style.display = isMobile ? 'block' : 'none';
@@ -842,7 +844,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 toggleTableBtn.textContent = tableVisible ? 'Hide Content Table' : 'Show Content Table';
             }
         }
-
         function renderCategoryToggles() {
             const container = document.getElementById('categoryCheckboxes');
             if (!container) return;
@@ -866,7 +867,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
         }
-
         function updateCategoryDropdowns() {
             const currentFilter = categoryFilter.value;
             const categories = [...Object.keys(defaultCategoryIcons), ...Object.keys(customCategories)].sort();
@@ -875,7 +875,6 @@ document.addEventListener('DOMContentLoaded', function() {
             itemCategorySelect.innerHTML = categories.map(makeOption).join('');
             categoryFilter.value = (currentFilter === '' || categories.includes(currentFilter)) ? currentFilter : '';
         }
-
         function syncCategoryFilterWithToggles() {
             const activeCount = activeCategories.size;
             const totalCount = Object.keys(categoryIcons).length;
@@ -889,7 +888,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             loadData(combinedSearch.value, categoryFilter.value);
         }
-
         /* SECTION 13: MARKER RENDERING */
         function isGlowing(loc) {
             return loc.addedTime && (Date.now() - loc.addedTime) < 120000;
@@ -918,7 +916,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
         }
-
         const messageQueue = [];
         let activeMessageControl = null;
         function showTempMessage(html, ms = 3000) {
@@ -945,12 +942,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }, ms);
         }
-
         window.editMarkerFromPopup = function(index) {
             map.closePopup();
             openModal('Edit Item', index);
         };
-
         function attachDragHandler(marker, loc) {
             let originalLatLng = null;
             let isDragging = false;
@@ -1029,12 +1024,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 </button>
             `, { maxWidth: 300 });
         }
-
         function addMarkerToMap(loc) {
             const marker = L.marker([loc.lat, loc.lng], {
                 icon: createMarkerIcon(loc),
                 id: loc.id,
-                draggable: true
+                draggable: true,
+                zIndexOffset: isGlowing(loc) ? 10000 : 0
             });
             attachDragHandler(marker, loc);
             const isTextOnly = ['named locations', 'regions'].includes(loc.category);
@@ -1043,8 +1038,13 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 nonClusteredMarkers.addLayer(marker);
             }
+            if (isGlowing(loc)) {
+                setTimeout(() => {
+                    marker.setZIndexOffset(10000);
+                    marker.setIcon(createMarkerIcon(loc));
+                }, 100);
+            }
         }
-
         /* SECTION 14: TABLE */
         function updateCounterDisplay() {
             const latestVersion = localStorage.getItem(MAP_VERSION_KEY) || "1.0";
@@ -1052,7 +1052,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const pageItems = locations.filter(l => activeCategories.has(l.category)).slice((tablePage - 1) * pageSize, tablePage * pageSize).length;
             counter.innerHTML = `<strong>Map Version ${latestVersion}</strong> - <strong>${totalFiltered}</strong> logged locations - <strong>${pageItems}</strong> showing.`;
         }
-
         function refreshTable(search = '', catFilter = '') {
             const tbody = document.querySelector('#locationsTable tbody');
             if (!tbody) return;
@@ -1111,7 +1110,6 @@ document.addEventListener('DOMContentLoaded', function() {
             nextPageBtn.disabled = tablePage >= totalPages;
             updateCounterDisplay();
         }
-
         setInterval(() => {
             if (document.visibilityState === 'visible') {
                 [clusteredMarkers, nonClusteredMarkers].forEach(group => {
@@ -1122,8 +1120,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             const currentIcon = marker.getIcon();
                             if (shouldGlow && !currentIcon.options.className.includes('glowing')) {
                                 marker.setIcon(createMarkerIcon(loc));
+                                marker.setZIndexOffset(10000);
                             } else if (!shouldGlow && currentIcon.options.className.includes('glowing')) {
                                 marker.setIcon(createMarkerIcon(loc));
+                                marker.setZIndexOffset(0);
                             }
                         }
                     });
@@ -1131,7 +1131,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 refreshTable(combinedSearch.value, categoryFilter.value);
             }
         }, 1000);
-
         /* SECTION 15: MODALS & CONFIRM */
         function showConfirmPopup(message, onConfirm, onCancel) {
             const popup = document.createElement('div');
@@ -1155,7 +1154,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 playSound('error');
             };
         }
-
         function openModal(title, index = -1, isDupe = false) {
             modalTitle.textContent = title;
             currentIndex = index;
@@ -1183,22 +1181,17 @@ document.addEventListener('DOMContentLoaded', function() {
             document.body.classList.add('modal-open');
             playSound('click');
         }
-
         function closeModal(modal) {
             modal.style.display = 'none';
             document.body.classList.remove('modal-open');
             playSound('modalClose');
         }
-
+        // MODAL ONLY CLOSES WITH X BUTTON — NO OUTSIDE CLICK
         document.querySelectorAll('.modal .close').forEach(closeBtn => {
-            closeBtn.onclick = () => closeModal(closeBtn.closest('.modal'));
+            closeBtn.onclick = () => {
+                closeModal(closeBtn.closest('.modal'));
+            };
         });
-        window.onclick = e => {
-            if (e.target.classList.contains('modal')) {
-                closeModal(e.target);
-            }
-        };
-
         /* SECTION 16: XP */
         function recalculateXP() {
             xp = locations.length * xpPerMarker;
@@ -1215,7 +1208,6 @@ document.addEventListener('DOMContentLoaded', function() {
             xpProgress.max = xpPerLevel;
             xpText.textContent = `${xp} / ${xpPerLevel}`;
         }
-
         /* SECTION 17: CORE DATA */
         function loadData(search = '', catFilter = '') {
             clusteredMarkers.clearLayers();
@@ -1227,7 +1219,6 @@ document.addEventListener('DOMContentLoaded', function() {
             drawGrid();
             saveAppState();
         }
-
         function forceReload() {
             saveAppState();
             loadData(combinedSearch.value, categoryFilter.value);
@@ -1235,7 +1226,6 @@ document.addEventListener('DOMContentLoaded', function() {
             updateCategoryDropdowns();
             refreshTableVisibility();
         }
-
         function saveAppState() {
             localStorage.setItem('currentSearch', combinedSearch.value);
             localStorage.setItem('currentCategoryFilter', categoryFilter.value);
@@ -1246,12 +1236,10 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.setItem('currentMap', currentMap);
             localStorage.setItem(MAP_VERSION_KEY, communityVersion);
         }
-
         function saveLocations() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(locations));
             saveAppState();
         }
-
         function normalizeString(s) { return (s || '').toString().trim().toLowerCase(); }
         function escapeHtml(unsafe) { return (unsafe || '').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m]); }
         function safeFlyTo(lat, lng, zoom = 2) {
@@ -1259,7 +1247,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (lat < 0 || lat > 4096 || lng < 0 || lng > 4096) return;
             map.flyTo([lat, lng], zoom);
         }
-
         /* SECTION 18: EXPORT / IMPORT / COMMUNITY UPDATE */
         exportBtn.onclick = () => {
             playSound('saving');
@@ -1287,7 +1274,6 @@ document.addEventListener('DOMContentLoaded', function() {
             URL.revokeObjectURL(url);
             alert(wantsAll ? 'Exported **ALL** logged locations!' : 'Exported **USER-ONLY** locations!');
         };
-
         // === FIXED IMPORT WITH PRESERVE/RESET LOGIC + UNDO ===
         importBtn.onclick = () => {
             const input = document.createElement('input');
@@ -1435,7 +1421,6 @@ document.addEventListener('DOMContentLoaded', function() {
             };
             input.click();
         };
-
         // === FIXED COMMUNITY UPDATE + UNDO ===
         downloadCommunityBtn.onclick = () => {
             playSound('click');
@@ -1446,12 +1431,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 `• YOUR edits & personal markers are 100% SAFE\n\n` +
                 `Continue?`
             )) return;
-
             downloadCommunityBtn.disabled = true;
             downloadCommunityBtn.textContent = 'Updating...';
-
             const url = `https://raw.githubusercontent.com/0mrcrazy0/fallout76-itemfindermap-beta/main/communitymap.json`;
-
             fetchWithTimeout(url)
                 .then(r => {
                     if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -1565,7 +1547,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     downloadCommunityBtn.textContent = 'Update Community Map';
                 });
         };
-
         // === UNDO IMPORT LOGIC ===
         function backupBeforeImport() {
             lastImportBackup = {
@@ -1577,37 +1558,29 @@ document.addEventListener('DOMContentLoaded', function() {
             undoImportBtn.style.display = 'inline-block';
             showTempMessage('Import backup saved. Use "Undo Import" if needed.', 4000);
         }
-
         function undoLastImport() {
             if (!lastImportBackup) {
                 alert("No import to undo.");
                 return;
             }
             if (!confirm("Undo last import? This will restore your previous state.")) return;
-
             locations = lastImportBackup.locations;
             customCategories = lastImportBackup.customCategories;
             communityVersion = lastImportBackup.communityVersion;
             activeCategories = lastImportBackup.activeCategories;
-
             localStorage.setItem(STORAGE_KEY, JSON.stringify(locations));
             localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(customCategories));
             localStorage.setItem(MAP_VERSION_KEY, communityVersion);
             localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
-
             lastImportBackup = null;
             undoImportBtn.style.display = 'none';
-
             recalculateXP();
             forceReload();
             updateCounterDisplay();
-
             showTempMessage('Import undone! Previous state restored.', 4000);
             playSound('undo');
         }
-
         undoImportBtn.onclick = undoLastImport;
-
         /* SECTION 19: JPEG SAVE & PAGINATION */
         saveJpegBtn.onclick = () => {
             playSound('saving');
@@ -1623,7 +1596,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 playSound('error');
             });
         };
-
         prevPageBtn.onclick = () => {
             if (tablePage > 1) {
                 tablePage--;
@@ -1641,7 +1613,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 playSound('click');
             }
         };
-
         /* SECTION 20: TOGGLE BUTTONS */
         toggleTableBtn.onclick = () => {
             tableVisible = !tableVisible;
@@ -1683,7 +1654,6 @@ document.addEventListener('DOMContentLoaded', function() {
             toggleButtonGroup.textContent = isHidden ? 'Hide Tools' : 'Show Tools';
             playSound('click');
         };
-
         /* SECTION 21: CATEGORY TOGGLE MODAL BUTTONS */
         toggleCategoryModalBtn.onclick = () => {
             categoryToggleModal.style.display = 'block';
@@ -1751,8 +1721,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('#createCategoryModal .close, #deleteCategoryModal .close').forEach(closeBtn => {
             closeBtn.onclick = () => closeModal(closeBtn.closest('.modal'));
         });
-
-        /* SECTION 22: ITEM MODAL — SAVE, DELETE, UNDO, DUPLICATE, SHARE */
+                /* SECTION 22: ITEM MODAL — SAVE, DELETE, UNDO, DUPLICATE, SHARE */
         document.getElementById('saveItemBtn').onclick = () => {
             const category = itemCategorySelect.value;
             let desc = itemDescInput.value.trim();
@@ -1766,9 +1735,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 itemDescInput.value = desc;
             }
             if (!desc) return;
-
             const wasNewLog = currentIndex < 0;
-
             if (currentIndex >= 0) {
                 const loc = locations[currentIndex];
                 const wasCommunity = !!loc.cid;
@@ -1793,7 +1760,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 locations.push(newLoc);
                 recalculateXP();
             }
-
             closeModal(itemModal);
             saveLocations();
             playSound('saving');
@@ -1801,12 +1767,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const finalLoc = currentIndex >= 0 ? locations[currentIndex] : locations[locations.length - 1];
             safeFlyTo(finalLoc.lat, finalLoc.lng, 2);
             forceReload();
-
             if (wasNewLog) {
                 categoryFilter.value = '';
             }
         };
-
         deleteBtn.onclick = () => {
             if (currentIndex >= 0) {
                 const loc = locations[currentIndex];
@@ -1851,43 +1815,47 @@ document.addEventListener('DOMContentLoaded', function() {
                 playSound('undo');
             }
         };
-
-                // FIXED DUPLICATE: NEW CID, NO CONFLICTS
+        // FIXED DUPLICATE: NEW CID + AUTO GRID + X:Y
         duplicateBtn.onclick = () => {
             if (currentIndex >= 0) {
                 const loc = locations[currentIndex];
                 const offset = 30 / Math.pow(2, map.getZoom());
+                const newLat = loc.lat + offset;
+                const newLng = loc.lng + offset;
+                const grid = getGridFromLatLng(newLat, newLng);
+                const x = Math.round(newLng);
+                const y = Math.round(newLat);
+                const newDesc = grid ? `Grid ${grid} (X: ${x}, Y: ${y})` : `X: ${x}, Y: ${y}`;
 
                 const newCid = generateCid({
                     category: loc.category,
-                    desc: loc.desc,
-                    lat: loc.lat + offset,
-                    lng: loc.lng + offset
+                    desc: newDesc,
+                    lat: newLat,
+                    lng: newLng
                 });
 
                 const newLoc = {
                     ...loc,
                     id: generateUniqueId(),
-                    lat: loc.lat + offset,
-                    lng: loc.lng + offset,
+                    lat: newLat,
+                    lng: newLng,
+                    desc: newDesc,
                     addedTime: Date.now(),
                     userEdited: true,
                     cid: newCid
                 };
-
                 locations.push(newLoc);
                 recalculateXP();
                 saveLocations();
                 forceReload();
                 closeModal(itemModal);
                 const newIndex = locations.findIndex(l => l.id === newLoc.id);
-                safeFlyTo(newLoc.lat, newLoc.lng, map.getZoom());
-                showTempMessage('Duplicated with new ID!', 3000);
+                safeFlyTo(newLat, newLng, map.getZoom());
+                showTempMessage('Duplicated + Grid updated!', 3000);
                 playSound('duplicate');
                 categoryFilter.value = ''; // ← NEW ITEM → Reset to "All"
             }
         };
-
         shareItemBtn.onclick = () => {
             const loc = locations[currentIndex];
             const lat = loc.lat.toFixed(0);
@@ -1902,7 +1870,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 prompt('Copy this link:', url);
             });
         };
-
         /* SECTION 23: FILTER & MAP EVENTS */
         categoryFilter.addEventListener('change', () => {
             const val = categoryFilter.value;
@@ -1922,30 +1889,146 @@ document.addEventListener('DOMContentLoaded', function() {
             openModal('Log Item');
             playSound('click');
         });
-
-        /* SECTION 24: URL PARAMS & INITIAL LOAD */
+        // === SHARED URL: ZOOM ONLY — NO MARKER, NO LOGGING ===
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('lat') && urlParams.has('lng')) {
             const lat = parseFloat(urlParams.get('lat'));
             const lng = parseFloat(urlParams.get('lng'));
             const grid = urlParams.get('grid') || getGridFromLatLng(lat, lng);
             const desc = urlParams.get('desc') ? decodeURIComponent(urlParams.get('desc')) : '';
-            setTimeout(() => {
-                safeFlyTo(lat, lng, 3);
-                showTempMessage(`Shared: ${desc || grid}`, 5000);
-                playSound('click');
-            }, 1000);
+            map.whenReady(() => {
+                setTimeout(() => {
+                    safeFlyTo(lat, lng, 3);
+                    showTempMessage(`Shared: ${desc || grid}`, 5000);
+                    playSound('click');
+                }, 800);
+            });
+            // NO MARKER CREATED
+            // URL params are ignored after zoom
         }
+        // FINAL INITIALIZATION — AFTER MAP IS READY
+        map.whenReady(() => {
+            updateCategoryDropdowns();
+            renderCategoryToggles();
+            syncCategoryFilterWithToggles();
+            loadData(currentSearch, categoryFilter.value);
+            refreshTableVisibility();
+            drawGrid();
+            updateXPBar();
+            window.addEventListener('resize', refreshTableVisibility);
+            refreshTableVisibility();
+        });
+        /* SECTION 25: FLY MODE — CLEAN & STABLE */
+        let flyModeInterval = null;
+        const FLY_SPEED = 180;
+        const EDGE_THRESHOLD = 45;
+        let flyModeActive = false;
+        function startFlyMode(e) {
+            const container = map.getContainer();
+            if (!container.contains(e.target)) {
+                if (flyModeActive) stopFlyMode();
+                return;
+            }
+            const rect = container.getBoundingClientRect();
+            const clientX = e.clientX || (e.touches?.[0]?.clientX);
+            const clientY = e.clientY || (e.touches?.[0]?.clientY);
+            if (!clientX || !clientY) return;
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+            const width = rect.width;
+            const height = rect.height;
+            let dx = 0, dy = 0;
+            if (x < EDGE_THRESHOLD) dx = -1;
+            else if (x > width - EDGE_THRESHOLD) dx = 1;
+            if (y < EDGE_THRESHOLD) dy = -1;
+            else if (y > height - EDGE_THRESHOLD) dy = 1;
+            if (dx === 0 && dy === 0) {
+                if (flyModeActive) stopFlyMode();
+                return;
+            }
+            if (e.type === 'touchmove') e.preventDefault();
+            if (!flyModeActive) {
+                flyModeActive = true;
+                showTempMessage('Fly Mode Active', 1500);
+            }
+            if (flyModeInterval) return;
+            flyModeInterval = setInterval(() => {
+                const center = map.getCenter();
+                const point = map.latLngToContainerPoint(center);
+                point.x += dx * FLY_SPEED / 16;
+                point.y += dy * FLY_SPEED / 16;
+                let newLatLng = map.containerPointToLatLng(point);
+                newLatLng.lat = Math.max(0, Math.min(4096, newLatLng.lat));
+                newLatLng.lng = Math.max(0, Math.min(4096, newLatLng.lng));
+                map.panTo(newLatLng, { animate: true, duration: 0.08 });
+            }, 60);
+        }
+        function stopFlyMode() {
+            if (!flyModeActive) return;
+            if (flyModeInterval) {
+                clearInterval(flyModeInterval);
+                flyModeInterval = null;
+            }
+            flyModeActive = false;
+            showTempMessage('Fly Mode Off', 1000);
+        }
+        map.getContainer().addEventListener('mousemove', startFlyMode);
+        map.getContainer().addEventListener('mouseleave', stopFlyMode);
+        map.getContainer().addEventListener('touchmove', startFlyMode, { passive: false });
+        map.getContainer().addEventListener('touchend', stopFlyMode);
+        map.getContainer().addEventListener('touchcancel', stopFlyMode);
 
-        updateCategoryDropdowns();
-        renderCategoryToggles();
-        syncCategoryFilterWithToggles();
-        loadData(currentSearch, categoryFilter.value);
-        refreshTableVisibility();
-        drawGrid();
-        updateXPBar();
-        window.addEventListener('resize', refreshTableVisibility);
-        refreshTableVisibility();
+        /* SECTION 26: RIGHT-CLICK MAP → SHARE LOCATION */
+        map.on('contextmenu', function(e) {
+            L.DomEvent.stopPropagation(e);
+            const latlng = e.latlng;
+            const grid = getGridFromLatLng(latlng.lat, latlng.lng);
+            const lat = Math.round(latlng.lat);
+            const lng = Math.round(latlng.lng);
+            const desc = grid ? `Player at Grid ${grid}` : `Player at X:${lng}, Y:${lat}`;
+            const popup = L.popup()
+                .setLatLng(latlng)
+                .setContent(`
+                    <div style="background:#0a2a2a; color:#00ff00; padding:8px; border:2px solid #00ff00; font-family:'Courier New',monospace; font-size:13px; min-width:180px;">
+                        <b>Share This Location</b><br>
+                        <small style="color:#aaf0a0;">${desc}</small><br><br>
+                        <button id="shareLocationBtn" style="background:#00ff00; color:#000; border:none; padding:4px 8px; font-weight:bold; cursor:pointer; width:100%;">Copy Link</button>
+                    </div>
+                `)
+                .openOn(map);
+            setTimeout(() => {
+                const btn = document.getElementById('shareLocationBtn');
+                if (btn) {
+                    btn.onclick = () => {
+                        const url = `${window.location.origin}${window.location.pathname}?lat=${lat}&lng=${lng}&grid=${grid || ''}&desc=${encodeURIComponent(desc)}`;
+                        navigator.clipboard.writeText(url).then(() => {
+                            showTempMessage('Location link copied!', 3000);
+                            map.closePopup();
+                            playSound('click');
+                        }).catch(() => {
+                            prompt('Copy this link:', url);
+                        });
+                    };
+                }
+            }, 50);
+            // NO MARKER CREATED
+        });
+        map.on('touchend', () => clearTimeout(longPressTimer));
+        map.on('touchmove', () => clearTimeout(longPressTimer));
+
+        /* FINAL INITIALIZATION — AFTER MAP IS READY */
+                map.whenReady(() => {
+            updateCategoryDropdowns();
+            renderCategoryToggles();
+            syncCategoryFilterWithToggles();
+            loadData(currentSearch, categoryFilter.value);
+            refreshTableVisibility();
+            drawGrid();
+            updateXPBar();
+            window.addEventListener('resize', refreshTableVisibility);
+            refreshTableVisibility();
+        });
+
     })();
 });
  /* --------------------------------------------------------------------------
