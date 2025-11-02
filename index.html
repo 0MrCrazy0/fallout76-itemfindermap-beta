@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Fallout 76 Item Finder Vbeta</title>
+    <title>Fallout 76 Item Finder V35-beta</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
@@ -13,489 +13,100 @@
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/mrcrazyapps/fallout76-item-finder/main/icon-192.png">
     <meta name="theme-color" content="#00ff00">
     <style>
-        /* GLOBAL FIXES */
-        html, body { overflow-x: hidden; width: 100%; margin: 0; padding: 0; }
-        body { 
-           font-family: 'Courier New', monospace; margin: 0; padding: 16px; background-color: #0a2a2a; color: #00ff00; box-sizing: border-box; }
-        /* RESPONSIVE MAP — NO SIDE SCROLL */
-        #map {
-            height: 60vh;
-            max-height: 600px;
-            min-height: 500px;
-            max-width: 100%;
-            width: 100%;
-            border: 2px solid #00ff00;
-            margin: 0 auto 20px auto;
-            box-shadow: 0 0 15px #00ff00;
-            background-color: #000000;
-            position: relative;
-            box-sizing: border-box;
-        }
-        @media (min-width: 768px) {
-            #map {
-                height: 768px;
-                max-width: 1768px;
-                margin: 0 auto 20px auto;
-                max-height: 800px;
-            }
-        }
-        @media (max-width: 767px) {
-            #map {
-                height: 60vh;
-                max-height: 600px;
-            }
-        }
+        body { font-family: 'Courier New', monospace; margin: 20px; background-color: #0a2a2a; color: #00ff00; overflow-x: hidden; }
         h1 { color: #00ff00; text-align: center; text-shadow: 0 0 10px #00ff00; font-size: 2.2em; margin-bottom: 12px; }
-        .controls { 
-            margin-bottom: 20px; 
-            text-align: center; 
-            display: flex; 
-            flex-wrap: wrap; 
-            justify-content: center; 
-            gap: 10px; 
-            padding: 0 8px;
-        }
-        input[type="text"], select { 
-            padding: 8px; 
-            width: 100%; 
-            max-width: 200px; 
-            box-sizing: border-box; 
-            border: 2px solid #00ff00; 
-            border-radius: 0; 
-            background-color: #1a3c34; 
-            color: #00ff00; 
-            font-family: 'Courier New', monospace; 
-            font-size: clamp(14px, 3.5vw, 16px);
-        }
-        #combinedSearch { 
-            max-width: 250px; 
-            transition: background-color 0.3s, box-shadow 0.3s; 
-        }
-        #combinedSearch.grid-highlight, #combinedSearch.item-highlight { 
-            background-color: #0a3a0a !important; 
-            box-shadow: 0 0 15px #00ff00, inset 0 0 10px rgba(0, 255, 0, 0.3); 
-            animation: pulseSearch 1.5s ease-out; 
-        }
-        @keyframes pulseSearch { 
-            0%, 100% { box-shadow: 0 0 15px #00ff00, inset 0 0 10px rgba(0, 255, 0, 0.3); } 
-            50% { box-shadow: 0 0 25px #00ff00, inset 0 0 15px rgba(0, 255, 0, 0.5); } 
-        }
-        button { 
-            padding: 8px 16px; 
-            width: 100%; 
-            max-width: 200px; 
-            box-sizing: border-box; 
-            background-color: #1a3c34; 
-            color: #00ff00; 
-            border: 2px solid #00ff00; 
-            border-radius: 0; 
-            cursor: pointer; 
-            font-family: 'Courier New', monospace; 
-            transition: background-color 0.3s; 
-            margin: 5px; 
-            font-size: clamp(14px, 3.5vw, 16px);
-        }
-        button:hover { 
-            background-color: #00ff00; 
-            color: #0a2a2a; 
-        }
-        button.reset-btn { 
-            background-color: #F7615E !important; 
-            color: #000 !important; 
-            font-weight: 700; 
-        }
-        p { 
-            max-width: 800px; 
-            margin: 0 auto 20px; 
-            text-align: center; 
-            text-shadow: 0 0 5px #00ff00; 
-        }
-        #tableContainer { 
-            width: 100%; 
-            max-width: 1000px; 
-            margin: 0 auto; 
-            overflow-x: auto; 
-            overflow-y: hidden; 
-        }
-        #locationsTable { 
-            width: 100%; 
-            max-width: 100%; 
-            margin: 10px 0; 
-            border-collapse: separate; 
-            border-spacing: 0 8px; 
-            border: 2px solid #00ff00; 
-        }
-        #locationsTable th, #locationsTable td { 
-            border: 2px solid #00ff00; 
-            padding: 12px; 
-            text-align: left; 
-            background-color: #1a3c34; 
-            color: #00ff00; 
-            font-size: clamp(12px, 3vw, 14px);
-        }
-        #locationsTable th { 
-            background-color: #0a2a2a; 
-            position: sticky; 
-            top: 0; 
-            z-index: 10; 
-        }
-        #locationsTable tr:hover { 
-            background-color: #2a4c44; 
-            cursor: pointer; 
-        }
-        #locationsTable tr.glowing { 
-            background-color: rgba(0, 255, 0, 0.15); 
-            border: 2px solid #00ff00; 
-            box-shadow: 0 0 15px #00ff00, 0 0 30px #00ff00; 
-        }
-        .modal { 
-            display: none; 
-            position: fixed; 
-            z-index: 10000; 
-            left: 0; 
-            top: 0; 
-            width: 100%; 
-            height: 100%; 
-            overflow: hidden; 
-            background-color: rgba(0, 42, 42, 0.8); 
-        }
-        .modal-content { 
-            background-color: #1a3c34; 
-            margin: 8% auto; 
-            padding: 16px; 
-            border: 2px solid #00ff00; 
-            width: 100%; 
-            max-width: 360px; 
-            box-sizing: border-box; 
-            border-radius: 0; 
-            color: #00ff00; 
-            font-family: 'Courier New', monospace; 
-            overflow-y: auto; 
-            max-height: 80vh; 
-            -webkit-overflow-scrolling: touch; 
-        }
-        .close { 
-            color: #00ff00; 
-            float: right; 
-            font-size: 24px; 
-            font-weight: bold; 
-            line-height: 1; 
-            cursor: pointer; 
-        }
-        .close:hover { 
-            color: #0a2a2a; 
-        }
-        label { 
-            display: block; 
-            margin: 8px 0 4px; 
-        }
-        textarea, input[type="text"] { 
-            width: 100%; 
-            padding: 16px; 
-            border: 2px solid #00ff00; 
-            border-radius: 0; 
-            background-color: #0a2a2a; 
-            color: #00ff00; 
-            font-family: 'Courier New', monospace; 
-            box-sizing: border-box; 
-            font-size: clamp(14px, 3.5vw, 16px);
-        }
-        textarea { 
-            height: 120px; 
-        }
-        body.modal-open { 
-            overflow: hidden; 
-            position: fixed; 
-            width: 100%; 
-            height: 100%; 
-        }
-        .custom-icon { 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-        }
-        .marker-background { 
-            width: 30px; 
-            height: 30px; 
-            border-radius: 50%; 
-            opacity: 0.9; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            background-color: #808080; 
-        }
-        .custom-icon.glowing { 
-            z-index: 10000 !important; 
-            filter: drop-shadow(0 0 10px #00ff00) !important; 
-        }
-        .tab-content { 
-            display: none; 
-        }
-        .tab-content.active { 
-            display: block; 
-        }
-        .tab-button { 
-            display: inline-block; 
-            margin: 0 5px; 
-            padding: 5px 10px; 
-        }
-        .tab-button.active { 
-            background-color: #00ff00; 
-            color: #0a2a2a; 
-        }
-        .small { 
-            font-size: 0.9em; 
-            color: #aaf0a0; 
-        }
-        .marker-cluster div { 
-            width: 30px; 
-            height: 30px; 
-            margin-left: 5px; 
-            margin-top: 5px; 
-            text-align: center; 
-            border-radius: 15px; 
-            font: bold 12px/30px "Helvetica Neue", Arial, Helvetica, sans-serif; 
-            background-color: #ffff00; 
-            color: #000000; 
-        }
-        #xpStatus { 
-            text-align: center; 
-            margin-bottom: 20px; 
-        }
-        progress { 
-            accent-color: #00ff00; 
-            width: 200px; 
-            display: block; 
-            margin: 0 auto; 
-        }
-        #categoryCheckboxes label { 
-            display: flex; 
-            align-items: center; 
-            margin: 5px 0; 
-        }
-        #categoryCheckboxes input[type="checkbox"] { 
-            margin-right: 10px; 
-        }
-        #buttonGroup { 
-            display: inline-block; 
-        }
-        #tablePagination { 
-            text-align: center; 
-            margin: 10px 0; 
-            display: block; 
-            width: 100%; 
-        }
-        #tablePagination button { 
-            margin: 0 5px; 
-        }
-        .leaflet-popup-content { 
-            max-height: 200px; 
-            overflow-y: auto; 
-            -webkit-overflow-scrolling: touch; 
-        }
-        .leaflet-popup-content-wrapper { 
-            background-color: #1a3c34; 
-            color: #00ff00; 
-            font-family: 'Courier New', monospace; 
-        }
-        .leaflet-popup-close-button { 
-            color: #00ff00 !important; 
-            font-size: 16px !important; 
-        }
-        .leaflet-popup-close-button:hover { 
-            color: #0a2a2a !important; 
-        }
-        .highlight-spacer { 
-            height: 2px; 
-            background: linear-gradient(to right, transparent, rgba(0, 255, 0, 0.3), transparent); 
-        }
-        .spacer-row { 
-            height: 5px; 
-            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent); 
-        }
-        .grid-line { 
-            pointer-events: none; 
-            stroke: rgba(0, 255, 0, 0.35); 
-            stroke-width: 1; 
-            stroke-dasharray: 4, 4; 
-        }
-        .grid-label { 
-            font-family: 'Courier New', monospace; 
-            font-size: 16px; 
-            font-weight: bold; 
-            fill: #00ff00; 
-            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; 
-            pointer-events: none; 
-            text-anchor: middle; 
-            dominant-baseline: central; 
-        }
-        #gridNotification { 
-            position: fixed; 
-            bottom: 20px; 
-            right: 20px; 
-            background: #0a3a0a; 
-            color: #00ff00; 
-            padding: 14px 22px; 
-            border: 2px solid #00ff00; 
-            border-radius: 0; 
-            font-weight: bold; 
-            font-family: 'Courier New', monospace; 
-            font-size: 15px; 
-            box-shadow: 0 0 20px #00ff00, 0 0 40px rgba(0, 255, 0, 0.3); 
-            z-index: 10000; 
-            opacity: 0; 
-            transform: translateY(20px); 
-            transition: opacity 0.4s ease, transform 0.3s ease; 
-            pointer-events: none; 
-        }
-        #gridNotification.show { 
-            opacity: 1; 
-            transform: translateY(0); 
-        }
-        #gridNotification::before { 
-            content: ''; 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            right: 0; 
-            bottom: 0; 
-            background: linear-gradient(135deg, rgba(0, 255, 0, 0.1), transparent); 
-            pointer-events: none; 
-            border-radius: 0; 
-        }
-        .confirm-popup { 
-            position: absolute; 
-            top: 50%; 
-            left: 50%; 
-            transform: translate(-50%, -50%); 
-            z-index: 10001; 
-            background: rgba(0, 0, 0, 0.95); 
-            color: #00ff00; 
-            padding: 16px 24px; 
-            border: 3px solid #00ff00; 
-            border-radius: 0; 
-            font-family: 'Courier New', monospace; 
-            font-weight: bold; 
-            box-shadow: 0 0 20px #00ff00, 0 0 40px rgba(0, 255, 0, 0.5); 
-            text-align: center; 
-            max-width: 320px; 
-        }
-        .confirm-popup .buttons { 
-            display: flex; 
-            justify-content: center; 
-            gap: 16px; 
-            margin-top: 12px; 
-        }
-        .confirm-popup button { 
-            padding: 8px 16px; 
-            font-weight: bold; 
-            min-width: 70px; 
-        }
-        .confirm-popup .ok { 
-            background: #00ff00; 
-            color: #000; 
-        }
-        .confirm-popup .cancel { 
-            background: #444; 
-            color: #fff; 
-        }
-        .flash-green { 
-            animation: flashGreen 0.6s ease-out; 
-        }
-        @keyframes flashGreen { 
-            0% { border-color: #00ff00; } 
-            50% { border-color: #00ff88; box-shadow: 0 0 15px #00ff88; } 
-            100% { border-color: #00ff00; } 
-        }
-        body.dark-mode { 
-            background-color: #000; 
-        }
+        #map { height: 750px; border: 2px solid #00ff00; margin-bottom: 20px; box-shadow: 0 0 15px #00ff00; background-color: #000000; position: relative; }
+        .controls { margin-bottom: 20px; text-align: center; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+        input[type="text"], select { padding: 8px; width: 100%; max-width: 200px; box-sizing: border-box; border: 2px solid #00ff00; border-radius: 0; background-color: #1a3c34; color: #00ff00; font-family: 'Courier New', monospace; }
+        #combinedSearch { max-width: 250px; transition: background-color 0.3s, box-shadow 0.3s; }
+        #combinedSearch.grid-highlight, #combinedSearch.item-highlight { background-color: #0a3a0a !important; box-shadow: 0 0 15px #00ff00, inset 0 0 10px rgba(0, 255, 0, 0.3); animation: pulseSearch 1.5s ease-out; }
+        @keyframes pulseSearch { 0%, 100% { box-shadow: 0 0 15px #00ff00, inset 0 0 10px rgba(0, 255, 0, 0.3); } 50% { box-shadow: 0 0 25px #00ff00, inset 0 0 15px rgba(0, 255, 0, 0.5); } }
+        button { padding: 8px 16px; width: 100%; max-width: 200px; box-sizing: border-box; background-color: #1a3c34; color: #00ff00; border: 2px solid #00ff00; border-radius: 0; cursor: pointer; font-family: 'Courier New', monospace; transition: background-color 0.3s; margin: 5px; }
+        button:hover { background-color: #00ff00; color: #0a2a2a; }
+        button.reset-btn { background-color: #F7615E !important; color: #000 !important; font-weight: 700; }
+        p { max-width: 800px; margin: 0 auto 20px; text-align: center; text-shadow: 0 0 5px #00ff00; }
+        #tableContainer { width: 100%; max-width: 1000px; margin: 0 auto; overflow-x: auto; overflow-y: hidden; }
+        #locationsTable { width: 100%; max-width: 100%; margin: 10px 0; border-collapse: separate; border-spacing: 0 8px; border: 2px solid #00ff00; }
+        #locationsTable th, #locationsTable td { border: 2px solid #00ff00; padding: 12px; text-align: left; background-color: #1a3c34; color: #00ff00; }
+        #locationsTable th { background-color: #0a2a2a; position: sticky; top: 0; z-index: 10; }
+        #locationsTable tr:hover { background-color: #2a4c44; cursor: pointer; }
+        #locationsTable tr.glowing { background-color: rgba(0, 255, 0, 0.15); border: 2px solid #00ff00; box-shadow: 0 0 15px #00ff00, 0 0 30px #00ff00; }
+        .modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; overflow: hidden; background-color: rgba(0, 42, 42, 0.8); }
+        .modal-content { background-color: #1a3c34; margin: 8% auto; padding: 16px; border: 2px solid #00ff00; width: 100%; max-width: 360px; box-sizing: border-box; border-radius: 0; color: #00ff00; font-family: 'Courier New', monospace; overflow-y: auto; max-height: 80vh; -webkit-overflow-scrolling: touch; }
+        .close { color: #00ff00; float: right; font-size: 24px; font-weight: bold; line-height: 1; cursor: pointer; }
+        .close:hover { color: #0a2a2a; }
+        label { display: block; margin: 8px 0 4px; }
+        textarea, input[type="text"] { width: 100%; padding: 8px; border: 2px solid #00ff00; border-radius: 0; background-color: #0a2a2a; color: #00ff00; font-family: 'Courier New', monospace; box-sizing: border-box; }
+        textarea { height: 120px; }
+        body.modal-open { overflow: hidden; position: fixed; width: 100%; height: 100%; }
+        .custom-icon { display: flex; align-items: center; justify-content: center; }
+        .marker-background { width: 30px; height: 30px; border-radius: 50%; opacity: 0.9; display: flex; align-items: center; justify-content: center; background-color: #808080; }
+        .custom-icon.glowing { box-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-button { display: inline-block; margin: 0 5px; padding: 5px 10px; }
+        .tab-button.active { background-color: #00ff00; color: #0a2a2a; }
+        .small { font-size: 0.9em; color: #aaf0a0; }
+        .marker-cluster div { width: 30px; height: 30px; margin-left: 5px; margin-top: 5px; text-align: center; border-radius: 15px; font: bold 12px/30px "Helvetica Neue", Arial, Helvetica, sans-serif; background-color: #ffff00; color: #000000; }
+        #xpStatus { text-align: center; margin-bottom: 20px; }
+        progress { accent-color: #00ff00; width: 200px; }
+        #categoryCheckboxes label { display: flex; align-items: center; margin: 5px 0; }
+        #categoryCheckboxes input[type="checkbox"] { margin-right: 10px; }
+        #buttonGroup { display: inline-block; }
+        #tablePagination { text-align: center; margin: 10px 0; display: block; width: 100%; }
+        #tablePagination button { margin: 0 5px; }
+        .leaflet-popup-content { max-height: 200px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .leaflet-popup-content-wrapper { background-color: #1a3c34; color: #00ff00; font-family: 'Courier New', monospace; }
+        .leaflet-popup-close-button { color: #00ff00 !important; font-size: 16px !important; }
+        .leaflet-popup-close-button:hover { color: #0a2a2a !important; }
+        .highlight-spacer { height: 2px; background: linear-gradient(to right, transparent, rgba(0, 255, 0, 0.3), transparent); }
+        .spacer-row { height: 5px; background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent); }
+        .grid-line { pointer-events: none; stroke: rgba(0, 255, 0, 0.35); stroke-width: 1; stroke-dasharray: 4, 4; }
+        .grid-label { font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; fill: #00ff00; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; pointer-events: none; text-anchor: middle; dominant-baseline: central; }
+        #gridNotification { position: fixed; bottom: 20px; right: 20px; background: #0a3a0a; color: #00ff00; padding: 14px 22px; border: 2px solid #00ff00; border-radius: 0; font-weight: bold; font-family: 'Courier New', monospace; font-size: 15px; box-shadow: 0 0 20px #00ff00, 0 0 40px rgba(0, 255, 0, 0.3); z-index: 10000; opacity: 0; transform: translateY(20px); transition: opacity 0.4s ease, transform 0.3s ease; pointer-events: none; }
+        #gridNotification.show { opacity: 1; transform: translateY(0); }
+        #gridNotification::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, rgba(0, 255, 0, 0.1), transparent); pointer-events: none; border-radius: 0; }
+        .confirm-popup { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10001; background: rgba(0, 0, 0, 0.95); color: #00ff00; padding: 16px 24px; border: 3px solid #00ff00; border-radius: 0; font-family: 'Courier New', monospace; font-weight: bold; box-shadow: 0 0 20px #00ff00, 0 0 40px rgba(0, 255, 0, 0.5); text-align: center; max-width: 320px; }
+        .confirm-popup .buttons { display: flex; justify-content: center; gap: 16px; margin-top: 12px; }
+        .confirm-popup button { padding: 8px 16px; font-weight: bold; min-width: 70px; }
+        .confirm-popup .ok { background: #00ff00; color: #000; }
+        .confirm-popup .cancel { background: #444; color: #fff; }
+		.coord-hover { z-index: 1000; }
+.coord-hover.show { opacity: 1 !important; }
+.hover-coords .coord-hover { opacity: 1 !important; }
+        .flash-green { animation: flashGreen 0.6s ease-out; }
+		@keyframes pulse {
+  0% { box-shadow: 0 0 8px #0f0, 0 0 16px #0f0, 0 0 24px #0f0; }
+  50% { box-shadow: 0 0 12px #0f0, 0 0 24px #0f0, 0 0 36px #0f0; }
+  100% { box-shadow: 0 0 8px #0f0, 0 0 16px #0f0, 0 0 24px #0f0; }
+}
+.text-marker.glowing > div { animation: pulse 1.5s infinite; }
+        @keyframes flashGreen { 0% { border-color: #00ff00; } 50% { border-color: #00ff88; box-shadow: 0 0 15px #00ff88; } 100% { border-color: #00ff00; } }
+        /* DARK MODE */
+        body.dark-mode { background-color: #000; }
         body.dark-mode .modal-content,
         body.dark-mode #map,
         body.dark-mode input, body.dark-mode select, body.dark-mode button,
         body.dark-mode #locationsTable th, body.dark-mode #locationsTable td {
-            background-color: #0a0a0a !important; 
-            color: #00ff00 !important; 
-            border-color: #00ff00 !important;
+            background-color: #0a0a0a !important; color: #00ff00 !important; border-color: #00ff00 !important;
         }
-        body.dark-mode button:hover { 
-            background-color: #00ff00 !important; 
-            color: #000 !important; 
-        }
+        body.dark-mode button:hover { background-color: #00ff00 !important; color: #000 !important; }
         @media (max-width: 768px) {
-            #map { 
-                height: 60vh; 
-                max-height: 600px; 
-            }
-            .controls { 
-                flex-direction: column; 
-                align-items: center; 
-            }
-            input[type="text"], select, button { 
-                width: 100%; 
-                max-width: 100%; 
-                margin: 5px 0; 
-                font-size: clamp(14px, 4vw, 16px); 
-                padding: clamp(10px, 2vw, 12px); 
-            }
-            #combinedSearch { 
-                max-width: 100%; 
-            }
-            .modal-content { 
-                max-width: 90%; 
-                padding: 12px; 
-                font-size: clamp(14px, 3.5vw, 16px); 
-                max-height: 80vh; 
-                overflow-y: auto; 
-                -webkit-overflow-scrolling: touch; 
-            }
-            .close { 
-                font-size: clamp(20px, 5vw, 22px); 
-            }
-            .grid-label { 
-                font-size: 12px; 
-            }
-            #gridNotification { 
-                bottom: 10px; 
-                right: 10px; 
-                font-size: 13px; 
-                padding: 10px 16px; 
-                box-shadow: 0 0 15px #00ff00; 
-            }
-            .confirm-popup { 
-                padding: 12px 16px; 
-                font-size: 14px; 
-                max-width: 90%; 
-            }
+            #map { height: 600px; }
+            .controls { flex-direction: column; align-items: center; }
+            input[type="text"], select, button { width: 100%; max-width: 100%; margin: 5px 0; font-size: clamp(14px, 4vw, 16px); padding: clamp(10px, 2vw, 12px); }
+            #combinedSearch { max-width: 100%; }
+            .modal-content { max-width: 90%; padding: 12px; font-size: clamp(14px, 3.5vw, 16px); max-height: 80vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+            .close { font-size: clamp(20px, 5vw, 22px); }
+            .grid-label { font-size: 12px; }
+            #gridNotification { bottom: 10px; right: 10px; font-size: 13px; padding: 10px 16px; box-shadow: 0 0 15px #00ff00; }
+            .confirm-popup { padding: 12px 16px; font-size: 14px; max-width: 90%; }
         }
-        .nuke-emoji-wrapper { 
-            text-align: center; 
-            margin: 12px 0; 
-        }
-        .nuke-emoji-btn { 
-            display: inline-block; 
-            padding: 14px 18px; 
-            background: #001100; 
-            color: #00ff00 !important; 
-            font-size: 3.2em; 
-            text-decoration: none; 
-            border: 3px solid #00ff00; 
-            border-radius: 50%; 
-            box-shadow: 0 0 14px #00ff00; 
-            transition: all 0.25s ease; 
-            cursor: pointer; 
-        }
-        .nuke-emoji-btn:hover { 
-            background: #002200; 
-            transform: scale(1.12) rotate(8deg); 
-            box-shadow: 0 0 22px #00ff00, 0 0 34px #00ff00; 
-        }
-        .nuke-emoji-btn:active { 
-            transform: scale(0.96); 
-        }
-        #voiceSearchBtn[disabled], #voiceSearchBtn[style*="opacity: 0.6"] { 
-            pointer-events: auto !important; 
-        }
+        .nuke-emoji-wrapper { text-align: center; margin: 12px 0; }
+        .nuke-emoji-btn { display: inline-block; padding: 14px 18px; background: #001100; color: #00ff00 !important; font-size: 3.2em; text-decoration: none; border: 3px solid #00ff00; border-radius: 50%; box-shadow: 0 0 14px #00ff00; transition: all 0.25s ease; cursor: pointer; }
+        .nuke-emoji-btn:hover { background: #002200; transform: scale(1.12) rotate(8deg); box-shadow: 0 0 22px #00ff00, 0 0 34px #00ff00; }
+        .nuke-emoji-btn:active { transform: scale(0.96); }
+        #voiceSearchBtn[disabled], #voiceSearchBtn[style*="opacity: 0.6"] { pointer-events: auto !important; }
     </style>
 </head>
 <body>
@@ -508,7 +119,7 @@
     <div class="controls">
         <!-- SEARCH BAR WITH CLEAR BUTTON -->
         <div style="position:relative; display:inline-block; max-width:250px;">
-            <input type="text" id="combinedSearch" placeholder="item name or grid..">
+            <input type="text" id="combinedSearch" placeholder="desc/cate/grid..">
             <button id="clearSearchBtn" style="position:absolute; right:5px; top:50%; transform:translateY(-50%); background:none; border:none; color:#00ff00; font-size:18px; cursor:pointer; display:none;">×</button>
         </div>
         <select id="categoryFilter"><option value="">All Categories</option></select>
@@ -524,6 +135,7 @@
             <button id="exportJsonBtn">Export Markers</button>
             <button id="importBtn">Import Markers</button>
             <button id="downloadCommunityBtn" style="background:#00ff88; color:#000; font-weight:700;">Update Community Map</button>
+            <!-- UNDO IMPORT BUTTON -->
             <button id="undoImportBtn" style="display:none; background:#cc8400; color:#000; font-weight:700;">UNDO IMPORT</button>
             <button id="saveMapJpegBtn">Save Map as JPEG</button>
             <button id="toggleDarkModeBtn">Dark Mode: Off</button>
@@ -554,7 +166,7 @@
             <label>Category:</label>
             <select id="itemCategory"></select>
             <label>Description:</label>
-            <textarea id="itemDesc" placeholder="Enter item and location details"></textarea>
+            <textarea id="itemDesc" placeholder="Enter item and location details or leave blank auto puts gid location"></textarea>
             <div style="margin-top:12px;">
                 <button id="saveItemBtn">Save</button>
                 <button id="shareItemBtn" class="btn" style="background:#ff0; color:#000; font-weight:bold;">Share Link</button>
@@ -690,13 +302,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!loc.cid && loc.category && loc.desc && loc.lat && loc.lng) {
                 loc.cid = generateCid(loc);
             }
+            if (loc.locked === undefined) loc.locked = false;
         });
         localStorage.setItem(STORAGE_KEY, JSON.stringify(locations));
         let customCategories = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_KEY)) || {};
         let communityVersion = localStorage.getItem(MAP_VERSION_KEY) || "1.0";
         let termsAccepted = localStorage.getItem(TERMS_ACCEPTED_KEY) === 'true';
         let lastImportBackup = null;
-
         /* SECTION 2: CATEGORY ICONS & COLORS */
         const defaultCategoryIcons = {
         'weapons': '🔫', 'armor': '🛡️', 'aid': '💉', 'food/drink': '🍽️', 'ammunition': '💥',
@@ -721,9 +333,8 @@ document.addEventListener('DOMContentLoaded', function() {
             'regions': '#00ff00', 'named locations': '#ffffff'
         };
         let categoryColors = { ...defaultCategoryColors };
-
         /* SECTION 3: MAP SETUP */
-        const map = L.map('map', { crs: L.CRS.Simple, minZoom: -3, maxZoom: 4, zoomControl: true, scrollWheelZoom: true, doubleClickZoom: false, boxZoom: true, touchZoom: true, dragging: true });
+        const map = L.map('map', { crs: L.CRS.Simple, minZoom: -3, maxZoom: 4, zoomControl: true, scrollWheelZoom: true, doubleClickZoom: true, boxZoom: true, touchZoom: true, dragging: true, keyboard: true });
         const imageBounds = [[0, 0], [4096, 4096]];
         const mapUrls = {
             named: 'https://i.postimg.cc/HpqMVWjB/Mappalachia-Map-of-Appalachia.jpg',
@@ -736,10 +347,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const nonClusteredMarkers = L.layerGroup();
         map.addLayer(clusteredMarkers);
         map.addLayer(nonClusteredMarkers);
-
         /* SECTION 4: STATE */
         let lastDeleted = null;
-        let lastMovedMarker = null;
         let currentIndex = -1;
         let tempLatLng = { lat: 0, lng: 0 };
         let clusteringEnabled = localStorage.getItem('clusteringEnabled') !== 'false';
@@ -759,7 +368,6 @@ document.addEventListener('DOMContentLoaded', function() {
         let currentSearch = localStorage.getItem('currentSearch') || '';
         let currentCategoryFilter = localStorage.getItem('currentCategoryFilter') || '';
         let darkMode = localStorage.getItem('darkMode') === 'true';
-
         /* SECTION 5: GRID SYSTEM */
         let gridLayer = L.layerGroup().addTo(map);
         function drawGrid() {
@@ -826,12 +434,21 @@ document.addEventListener('DOMContentLoaded', function() {
             const emojiRegex = /^\p{Emoji}$/u;
             return emojiRegex.test(str.trim());
         }
-
+        function updateDescWithGrid(desc, lat, lng) {
+            const grid = getGridFromLatLng(lat, lng);
+            const x = Math.round(lng);
+            const y = Math.round(lat);
+            const newCoords = grid ? `Grid ${grid} (X: ${x}, Y: ${y})` : `X: ${x}, Y: ${y}`;
+            const regex = /(Grid [A-J]\d+ \(X: \d+, Y: \d+\))|(X: \d+, Y: \d+)/;
+            if (regex.test(desc)) {
+                return desc.replace(regex, newCoords);
+            }
+            return desc + '\n' + newCoords;
+        }
         /* SECTION 6: DOM ELEMENTS */
         const itemModal = document.getElementById('itemModal');
         const deleteBtn = document.getElementById('deleteItemBtn');
         const undoBtn = document.getElementById('undoItemBtn');
-        const undoMoveBtn = document.getElementById('undoMoveBtn');
         const duplicateBtn = document.getElementById('duplicateItemBtn');
         const shareItemBtn = document.getElementById('shareItemBtn');
         const modalTitle = document.getElementById('modalTitle');
@@ -876,7 +493,6 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleButtonGroup.textContent = 'Show Tools';
         combinedSearch.value = currentSearch;
         categoryFilter.value = currentCategoryFilter;
-
         /* SECTION 7: UI TOGGLES */
         const toggleTitleBtn = document.getElementById('toggleTitleBtn');
         const mainTitle = document.getElementById('mainTitle');
@@ -899,7 +515,6 @@ document.addEventListener('DOMContentLoaded', function() {
             toggleDarkModeBtn.textContent = darkMode ? 'Dark Mode: On' : 'Dark Mode: Off';
             playSound('click');
         };
-
         /* SECTION 8: VOICE SEARCH */
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognition) {
@@ -946,7 +561,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 playSound('error');
             };
         }
-
         /* SECTION 9: SEARCH */
         let typingTimeout;
         let lastFilteredCount = -1;
@@ -991,7 +605,6 @@ document.addEventListener('DOMContentLoaded', function() {
             combinedSearch.focus();
             playSound('modalClose');
         };
-
         /* SECTION 10: NETWORK */
         function fetchWithTimeout(url, ms = 10000) {
             return Promise.race([
@@ -1005,7 +618,7 @@ document.addEventListener('DOMContentLoaded', function() {
             codesDiv.innerHTML = `
             <em>Visit the site to view Alpha, Bravo, and Charlie codes for this week.
             Weekly launch codes are always up to date!</em><br>
-       
+         
             <div class="nuke-emoji-wrapper">
                 <a href="https://www.falloutbuilds.com/fo76/nuke-codes/"
                    target="_blank"
@@ -1017,7 +630,6 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
         }
-
         /* SECTION 11: TERMS MODAL */
         const termsModal = document.createElement('div');
         termsModal.className = 'modal';
@@ -1059,7 +671,6 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             setButtonsEnabled(true);
         }
-
         /* SECTION 11.7: UPDATE ALERT MODAL */
         if (localStorage.getItem(UPDATE_VERSION_KEY) !== CURRENT_UPDATE_VERSION) {
             const updateModal = document.createElement('div');
@@ -1117,7 +728,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.setItem(UPDATE_VERSION_KEY, CURRENT_UPDATE_VERSION);
             };
         }
-
         /* SECTION 11.5: INSTRUCTIONS & NUKE CODES TABS */
         document.getElementById('showInstructionsTab').onclick = () => {
             document.getElementById('instructionsContent').classList.add('active');
@@ -1146,7 +756,6 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('showNukeCodesTab').click();
             playSound('click');
         };
-
         /* SECTION 11.6: RESET WITH BACKUP */
         resetAppBtn.onclick = () => {
             const keepUserMarkers = confirm(
@@ -1194,7 +803,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }, 500);
         };
-
         /* SECTION 12: CATEGORY MANAGEMENT */
         newCategoryEmoji.addEventListener('input', function(e) {
             const val = e.target.value;
@@ -1225,7 +833,6 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('createCategoryModal').style.display = 'none';
             renderCategoryToggles();
             updateCategoryDropdowns();
-            syncCategoryFilterWithToggles();
             loadData();
             playSound('saving');
         };
@@ -1256,32 +863,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
                     loadData(combinedSearch.value, categoryFilter.value);
                     playSound('selectcategory');
-                    syncCategoryFilterWithToggles();
                 });
             });
         }
         function updateCategoryDropdowns() {
-            const currentFilter = categoryFilter.value;
             const categories = [...Object.keys(defaultCategoryIcons), ...Object.keys(customCategories)].sort();
             const makeOption = cat => `<option value="${cat}">${cat} ${categoryIcons[cat] || ''}</option>`;
             categoryFilter.innerHTML = '<option value="">All Categories</option>' + categories.map(makeOption).join('');
             itemCategorySelect.innerHTML = categories.map(makeOption).join('');
-            categoryFilter.value = (currentFilter === '' || categories.includes(currentFilter)) ? currentFilter : '';
-        }
-        function syncCategoryFilterWithToggles() {
-            const activeCount = activeCategories.size;
-            const totalCount = Object.keys(categoryIcons).length;
-            if (activeCount === totalCount) {
-                categoryFilter.value = '';
-            } else if (activeCount === 1) {
-                const [cat] = activeCategories;
-                categoryFilter.value = cat;
-            } else {
-                categoryFilter.value = '';
+            if (currentCategoryFilter && categories.includes(currentCategoryFilter)) {
+                categoryFilter.value = currentCategoryFilter;
             }
-            loadData(combinedSearch.value, categoryFilter.value);
         }
-
         /* SECTION 13: MARKER RENDERING */
         function isGlowing(loc) {
             return loc.addedTime && (Date.now() - loc.addedTime) < 120000;
@@ -1292,9 +885,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 const words = loc.desc.split('\n')[0].trim().split(' ');
                 const shortText = words.slice(0, 3).join(' ') + (words.length > 3 ? '...' : '');
                 const width = Math.min(120, Math.max(60, shortText.length * 9));
+                const glowStyle = isGlowing(loc) ? 'box-shadow: 0 0 8px #0f0, 0 0 16px #0f0, 0 0 24px #0f0; animation: pulse 1.5s infinite;' : '';
+                const html = `<div style="background:#000; color:#fff; padding:3px 6px; border:2px solid #0f0; border-radius:4px; font-weight:bold; font-size:11px; white-space:nowrap; width:${width}px; text-align:center; overflow:hidden; text-overflow:ellipsis; ${glowStyle}">${escapeHtml(shortText)}</div>`;
                 return L.divIcon({
                     className: 'text-marker',
-                    html: `<div style="background:#000; color:#fff; padding:3px 6px; border:2px solid #0f0; border-radius:4px; font-weight:bold; font-size:11px; white-space:nowrap; width:${width}px; text-align:center; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(shortText)}</div>`,
+                    html: html,
                     iconSize: [width + 12, 26],
                     iconAnchor: [(width + 12)/2, 13]
                 });
@@ -1340,53 +935,7 @@ document.addEventListener('DOMContentLoaded', function() {
             map.closePopup();
             openModal('Edit Item', index);
         };
-
-        /* CONFIRM POPUP FOR MARKER MOVE */
-        function showConfirmPopup(message, onConfirm, onCancel) {
-            const popup = document.createElement('div');
-            popup.className = 'confirm-popup';
-            popup.innerHTML = `
-                <div>${message}</div>
-                <div class="buttons">
-                    <button class="ok">OK</button>
-                    <button class="cancel">Cancel</button>
-                </div>
-            `;
-            document.body.appendChild(popup);
-
-            const okBtn = popup.querySelector('.ok');
-            const cancelBtn = popup.querySelector('.cancel');
-
-            const cleanup = () => {
-                if (popup && popup.parentNode) {
-                    popup.parentNode.removeChild(popup);
-                }
-            };
-
-            okBtn.onclick = () => {
-                cleanup();
-                if (onConfirm) onConfirm();
-            };
-
-            cancelBtn.onclick = () => {
-                cleanup();
-                if (onCancel) onCancel();
-            };
-
-            setTimeout(() => {
-                const closeOnClickOutside = (e) => {
-                    if (!popup.contains(e.target)) {
-                        cleanup();
-                        document.removeEventListener('click', closeOnClickOutside);
-                        if (onCancel) onCancel();
-                    }
-                };
-                document.addEventListener('click', closeOnClickOutside);
-            }, 0);
-        }
-
         function attachDragHandler(marker, loc) {
-            let originalLatLng = null;
             let isDragging = false;
             const onDragging = (e) => {
                 if (!isDragging) return;
@@ -1414,29 +963,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 showConfirmPopup('Save new position?', () => {
                     loc.lat = newLatLng.lat;
                     loc.lng = newLatLng.lng;
+                    loc.desc = updateDescWithGrid(loc.desc, loc.lat, loc.lng);
                     loc.addedTime = Date.now();
                     loc.userEdited = true;
                     if (loc.cid && !loc.userCid) loc.userCid = loc.cid;
-                    lastMovedMarker = { marker, original: originalLatLng, index: locations.indexOf(loc) };
-                    undoMoveBtn.style.display = 'inline-block';
                     saveLocations();
                     playSound('saving');
                     showTempMessage(`Moved: ${loc.icon} ${loc.category}`, 5000);
-                    safeFlyTo(newLatLng.lat, newLatLng.lng, 2);
+                    safeFlyTo(newLatLng.lat, newLatLng.lng, map.getZoom());
                     forceReload();
                 }, () => {
-                    marker.setLatLng(originalLatLng);
-    safeFlyTo(originalLatLng.lat, originalLatLng.lng, 2);
-    playSound('undo');
-
-    // STORE GLOBALLY SO UNDO WORKS ANYWHERE
-    lastMovedMarker = { marker, original: originalLatLng, index: locations.indexOf(loc) };
-    undoMoveBtn.style.display = 'inline-block';
-});
+                    marker.setLatLng({ lat: loc.lat, lng: loc.lng });
+                    safeFlyTo(loc.lat, loc.lng, map.getZoom());
+                });
             };
             const onDragStart = (e) => {
+                if (loc.locked) return;
                 if (e.touches) L.DomEvent.preventDefault(e);
-                originalLatLng = marker.getLatLng();
                 isDragging = true;
                 map.dragging.disable();
                 L.DomUtil.addClass(marker._icon, 'dragging');
@@ -1449,7 +992,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 L.DomEvent.on(document, 'touchmove', onDragging);
                 L.DomEvent.on(document, 'touchend', onDragEnd);
             };
-            marker.on('dragstart', onDragStart);
             marker.on('contextmenu', (e) => {
                 L.DomEvent.stopPropagation(e);
                 const index = locations.findIndex(l => l.id === marker.options.id);
@@ -1459,24 +1001,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     playSound('click');
                 }
             });
+            if (!loc.locked) {
+                marker.on('dragstart', onDragStart);
+            }
             marker.bindPopup(`
-    <b>${loc.icon} ${loc.category.toUpperCase()}</b><br>
-    <div style="max-height:80px; overflow-y:auto; margin:4px 0; padding-right:8px;">
-        ${escapeHtml(loc.desc)}
-    </div>
-    <button onclick="editMarkerFromPopup(${locations.indexOf(loc)})"
-            style="margin-top:6px; padding:4px 10px; background:#00ff00; color:#000; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;">
-        Edit
-    </button>
-`, { maxWidth: 260, autoPan: true });
+                <b>${loc.icon} ${loc.category.toUpperCase()}</b><br>
+                <div style="max-height:80px; overflow-y:auto; margin:4px 0; padding-right:8px;">
+                    ${escapeHtml(loc.desc)}
+                </div>
+                <button onclick="editMarkerFromPopup(${locations.indexOf(loc)})"
+                        style="margin-top:6px; padding:4px 10px; background:#00ff00; color:#000; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;">
+                    Edit
+                </button>
+            `, { maxWidth: 260, autoPan: true });
         }
-
         function addMarkerToMap(loc) {
             const marker = L.marker([loc.lat, loc.lng], {
                 icon: createMarkerIcon(loc),
                 id: loc.id,
-                draggable: true,
-                zIndexOffset: isGlowing(loc) ? 10000 : 0
+                draggable: !loc.locked
             });
             attachDragHandler(marker, loc);
             const isTextOnly = ['named locations', 'regions'].includes(loc.category);
@@ -1492,7 +1035,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 100);
             }
         }
-
         /* SECTION 14: TABLE */
         function updateCounterDisplay() {
             const latestVersion = localStorage.getItem(MAP_VERSION_KEY) || "1.0";
@@ -1501,6 +1043,8 @@ document.addEventListener('DOMContentLoaded', function() {
             counter.innerHTML = `<strong>Map Version ${latestVersion}</strong> - <strong>${totalFiltered}</strong> logged locations - <strong>${pageItems}</strong> showing.`;
         }
         function refreshTable(search = '', catFilter = '') {
+            const thead = document.querySelector('#locationsTable thead tr');
+            thead.innerHTML = '<th>Lock</th><th>Icon</th><th>Category</th><th>Description</th>';
             const tbody = document.querySelector('#locationsTable tbody');
             if (!tbody) return;
             tbody.innerHTML = '';
@@ -1523,15 +1067,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 const tr = document.createElement('tr');
                 if (isGlowing(loc)) tr.classList.add('glowing');
                 const shortDesc = loc.desc.split('\n')[0].trim();
+                const lockEmoji = loc.locked ? '🔐' : '🔓';
+                const lockCell = `<td style="text-align:center;"><span style="font-size:18px; cursor:pointer;" onclick="toggleLockFromTable(${locations.indexOf(loc)})" title="${loc.locked ? 'Locked' : 'Unlocked'}">${lockEmoji}</span></td>`;
                 const iconCell = ['named locations', 'regions'].includes(loc.category)
                     ? `<div style="background:#000; color:#fff; padding:2px 6px; border:1px solid #0f0; border-radius:3px; font-weight:bold; font-size:11px; display:inline-block; max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(shortDesc)}</div>`
                     : `<div style="background-color:${categoryColors[loc.category] || '#808080'}; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:#000; font-weight:bold; font-size:16px;">${loc.icon}</div>`;
-                tr.innerHTML = `
+                tr.innerHTML = lockCell + `
                     <td>${iconCell}</td>
                     <td>${escapeHtml(loc.category)} ${loc.icon}</td>
                     <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(shortDesc)}</td>
                 `;
                 tr.onclick = (e) => {
+                    if (e.target.tagName === 'SPAN') return;
                     e.preventDefault();
                     const mapEl = document.getElementById('map');
                     mapEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1558,6 +1105,14 @@ document.addEventListener('DOMContentLoaded', function() {
             nextPageBtn.disabled = tablePage >= totalPages;
             updateCounterDisplay();
         }
+        window.toggleLockFromTable = function(index) {
+            const loc = locations[index];
+            loc.locked = !loc.locked;
+            saveLocations();
+            forceReload();
+            showTempMessage(loc.locked ? 'Marker locked — unlock to edit!' : 'Marker unlocked!', 4000);
+            playSound('click');
+        };
         setInterval(() => {
             if (document.visibilityState === 'visible') {
                 [clusteredMarkers, nonClusteredMarkers].forEach(group => {
@@ -1573,94 +1128,111 @@ document.addEventListener('DOMContentLoaded', function() {
                                 marker.setIcon(createMarkerIcon(loc));
                                 marker.setZIndexOffset(0);
                             }
+                            if (loc.locked) {
+                                marker.dragging?.disable();
+                            } else {
+                                marker.dragging?.enable();
+                            }
                         }
                     });
                 });
                 refreshTable(combinedSearch.value, categoryFilter.value);
             }
         }, 1000);
-
         /* SECTION 15: MODALS & CONFIRM */
-        function showRedirectPopup() {
-            if (document.getElementById('redirectPopup')) return;
+        function showConfirmPopup(message, onConfirm, onCancel) {
             const popup = document.createElement('div');
-            popup.id = 'redirectPopup';
-            popup.style.cssText = `
-                position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-                background: #0a2a2a; color: #00ff00; padding: 24px; border: 3px solid #00ff00;
-                font-family: 'Courier New', monospace; text-align: center; z-index: 99999;
-                max-width: 90%; width: 380px; box-shadow: 0 0 40px #00ff00;
-            `;
+            popup.className = 'confirm-popup';
             popup.innerHTML = `
-                <h2 style="margin:0 0 16px; font-size:1.7em; text-shadow:0 0 12px #00ff00;">
-                    Player Shared a Location!
-                </h2>
-                <p style="margin:10px 0; font-size:1.15em; line-height:1.4;">
-                    Use the <strong>OFFICIAL APP</strong> to save markers:
-                </p>
-                <a href="https://0mrcrazy0.github.io/fallout76-itemfindermap/"
-                   id="officialAppBtn"
-                   style="display:inline-block; background:#00ff00; color:#000; padding:12px 28px;
-                          font-weight:bold; text-decoration:none; margin:16px 0; font-size:1.2em;
-                          border:2px solid #000;">
-                   Open Official App
-                </a>
-                <p style="color:#aaf0a0; font-size:0.95em; margin-top:16px; line-height:1.4;">
-                    Shared links are <strong>view-only</strong>.<br>
-                    You can explore, but cannot save.
-                </p>
+                <div>${message}</div>
+                <div class="buttons">
+                    <button class="ok">OK</button>
+                    <button class="cancel">Cancel</button>
+                </div>
             `;
             document.body.appendChild(popup);
-            document.getElementById('officialAppBtn').onclick = (e) => {
-                e.stopPropagation();
-                window.location.href = 'https://0mrcrazy0.github.io/fallout76-itemfindermap/';
+            const okBtn = popup.querySelector('.ok');
+            const cancelBtn = popup.querySelector('.cancel');
+            const cleanup = () => {
+                if (popup && popup.parentNode) {
+                    popup.parentNode.removeChild(popup);
+                }
             };
-            popup.onclick = (e) => e.stopPropagation();
+            okBtn.onclick = () => {
+                cleanup();
+                if (onConfirm) onConfirm();
+            };
+            cancelBtn.onclick = () => {
+                cleanup();
+                if (onCancel) onCancel();
+            };
+            setTimeout(() => {
+                const closeOnClickOutside = (e) => {
+                    if (!popup.contains(e.target)) {
+                        cleanup();
+                        document.removeEventListener('click', closeOnClickOutside);
+                        if (onCancel) onCancel();
+                    }
+                };
+                document.addEventListener('click', closeOnClickOutside);
+            }, 0);
         }
         function openModal(title, index = -1, isDupe = false) {
-    modalTitle.textContent = title;
-    currentIndex = index;
-    isDuplicateEdit = isDupe;
-    document.getElementById('saveItemBtn').style.display = 'inline-block';
-    if (index >= 0 && !isDupe) {
-        const loc = locations[index];
-        itemCategorySelect.value = loc.category || 'misc';
-        itemDescInput.value = loc.desc || '';
-        deleteBtn.style.display = 'inline-block';
-        duplicateBtn.style.display = 'inline-block';
-        undoBtn.style.display = lastDeleted ? 'inline-block' : 'none';
-        undoMoveBtn.style.display = lastMovedMarker ? 'inline-block' : 'none';
-        undoMoveBtn.style.backgroundColor = '#c8a2f8'; // LIGHT PURPLE
-        undoMoveBtn.style.color = '#000';
-        undoMoveBtn.style.fontWeight = '700';
-        shareItemBtn.style.display = 'inline-block';
-    } else {
-        itemCategorySelect.value = 'misc';
-        itemDescInput.value = '';
-        deleteBtn.style.display = 'none';
-        duplicateBtn.style.display = 'none';
-        undoBtn.style.display = 'none';
-        undoMoveBtn.style.display = lastMovedMarker ? 'inline-block' : 'none';
-        undoMoveBtn.style.backgroundColor = '#c8a2f8'; // LIGHT PURPLE
-        undoMoveBtn.style.color = '#000';
-        undoMoveBtn.style.fontWeight = '700';
-        shareItemBtn.style.display = 'none';
-    }
-    itemModal.style.display = 'block';
-    document.body.classList.add('modal-open');
-    playSound('click');
-}
+            modalTitle.innerHTML = `${title} <span id="modalLockToggle" style="font-size:22px; cursor:pointer; margin-left:10px;"></span>`;
+            currentIndex = index;
+            let isDuplicateEdit = isDupe;
+            document.getElementById('saveItemBtn').style.display = 'inline-block';
+            const lockToggle = document.getElementById('modalLockToggle');
+            if (index >= 0 && !isDupe) {
+                const loc = locations[index];
+                itemCategorySelect.value = loc.category || 'misc';
+                itemDescInput.value = loc.desc || '';
+                itemCategorySelect.disabled = loc.locked;
+                itemDescInput.disabled = loc.locked;
+                deleteBtn.style.display = loc.locked ? 'none' : 'inline-block';
+                duplicateBtn.style.display = loc.locked ? 'none' : 'inline-block';
+                undoBtn.style.display = lastDeleted ? 'inline-block' : 'none';
+                shareItemBtn.style.display = 'inline-block';
+                lockToggle.textContent = loc.locked ? '🔐' : '🔓';
+                lockToggle.title = loc.locked ? 'Locked — click to unlock' : 'Unlocked — click to lock';
+                lockToggle.onclick = (e) => {
+                    e.stopPropagation();
+                    loc.locked = !loc.locked;
+                    lockToggle.textContent = loc.locked ? '🔐' : '🔓';
+                    lockToggle.title = loc.locked ? 'Locked — click to unlock' : 'Unlocked — click to lock';
+                    itemCategorySelect.disabled = loc.locked;
+                    itemDescInput.disabled = loc.locked;
+                    deleteBtn.style.display = loc.locked ? 'none' : 'inline-block';
+                    duplicateBtn.style.display = loc.locked ? 'none' : 'inline-block';
+                    saveLocations();
+                    forceReload();
+                    showTempMessage(loc.locked ? 'Marker locked — unlock to edit!' : 'Marker unlocked!', 4000);
+                    playSound('click');
+                };
+                lockToggle.style.display = 'inline';
+            } else {
+                itemCategorySelect.value = 'misc';
+                itemDescInput.value = '';
+                itemCategorySelect.disabled = false;
+                itemDescInput.disabled = false;
+                deleteBtn.style.display = 'none';
+                duplicateBtn.style.display = 'none';
+                undoBtn.style.display = 'none';
+                shareItemBtn.style.display = 'none';
+                lockToggle.style.display = 'none';
+            }
+            itemModal.style.display = 'block';
+            document.body.classList.add('modal-open');
+            playSound('click');
+        }
         function closeModal(modal) {
             modal.style.display = 'none';
             document.body.classList.remove('modal-open');
             playSound('modalClose');
         }
         document.querySelectorAll('.modal .close').forEach(closeBtn => {
-            closeBtn.onclick = () => {
-                closeModal(closeBtn.closest('.modal'));
-            };
+            closeBtn.onclick = () => closeModal(closeBtn.closest('.modal'));
         });
-
         /* SECTION 16: XP */
         function recalculateXP() {
             xp = locations.length * xpPerMarker;
@@ -1677,7 +1249,6 @@ document.addEventListener('DOMContentLoaded', function() {
             xpProgress.max = xpPerLevel;
             xpText.textContent = `${xp} / ${xpPerLevel}`;
         }
-
         /* SECTION 17: CORE DATA */
         function loadData(search = '', catFilter = '') {
             clusteredMarkers.clearLayers();
@@ -1711,13 +1282,24 @@ document.addEventListener('DOMContentLoaded', function() {
             saveAppState();
         }
         function normalizeString(s) { return (s || '').toString().trim().toLowerCase(); }
-        function escapeHtml(unsafe) { return (unsafe || '').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m]); }
+        function escapeHtml(unsafe) { 
+            if (!unsafe) return '';
+            return unsafe.toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+        let flyTimeout;
         function safeFlyTo(lat, lng, zoom = 2) {
             if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) return;
             if (lat < 0 || lat > 4096 || lng < 0 || lng > 4096) return;
-            map.flyTo([lat, lng], zoom);
+            clearTimeout(flyTimeout);
+            flyTimeout = setTimeout(() => {
+                map.flyTo([lat, lng], zoom, { duration: 0.8 });
+            }, 100);
         }
-
         /* SECTION 18: EXPORT / IMPORT / COMMUNITY UPDATE */
         exportBtn.onclick = () => {
             playSound('saving');
@@ -1727,12 +1309,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 communityVersion: communityVersion,
                 customCategories: customCategories
             };
+            let exportedCount = 0;
             if (wantsAll) {
                 exportData.locations = locations;
                 exportData.note = 'ALL logged locations (community + user)';
+                exportedCount = locations.length;
             } else {
                 exportData.locations = locations.filter(loc => loc.userEdited === true);
                 exportData.note = 'USER-ONLY locations (your edits only)';
+                exportedCount = exportData.locations.length;
             }
             const dataStr = JSON.stringify(exportData, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
@@ -1743,7 +1328,11 @@ document.addEventListener('DOMContentLoaded', function() {
             link.download = `fallout76_${typeSuffix}_${exportData.locations.length}_locations_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
             link.click();
             URL.revokeObjectURL(url);
-            alert(wantsAll ? 'Exported **ALL** logged locations!' : 'Exported **USER-ONLY** locations!');
+            let report = wantsAll ? 'Exported **ALL** locations!' : 'Exported **USER-ONLY** locations!';
+            report += `\n\n• ${exportedCount} markers\n`;
+            report += `• ${Object.keys(customCategories).length} custom categories\n`;
+            report += `• Community version: ${communityVersion}`;
+            alert(report);
         };
         importBtn.onclick = () => {
             const input = document.createElement('input');
@@ -1775,7 +1364,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         const seenCids = new Set();
                         for (const imp of incoming) {
                             if (imp.cid && seenCids.has(imp.cid)) {
-                                throw new Error(`Duplicate CID "${imp.cid}" in import file`);
+                                console.warn(`Skipping duplicate CID "${imp.cid}" in import file`);
+                                continue;
                             }
                             if (imp.cid) seenCids.add(imp.cid);
                         }
@@ -1789,9 +1379,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         const toReplace = [];
                         let skippedUserEdited = 0;
                         let resetCount = 0;
+                        let addedCount = 0;
+                        let updatedCount = 0;
+                        let movedCount = 0;
+                        let descChangedCount = 0;
+                        let catChangedCount = 0;
                         incoming.forEach(imp => {
+                            if (seenCids.has(imp.cid) && incoming.filter(i => i.cid === imp.cid).length > 1) {
+                                return; // Skip duplicates
+                            }
                             const newId = generateUniqueId();
-                            const candidate = { ...imp, id: newId, addedTime: Date.now() };
+                            const candidate = { ...imp, id: newId, addedTime: Date.now(), locked: imp.locked || false };
                             if (imp.cid) {
                                 const existing = existingByCid.get(imp.cid);
                                 if (!preserveEdits) {
@@ -1799,9 +1397,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                         candidate.id = existing.id;
                                         toReplace.push(candidate);
                                         resetCount++;
+                                        updatedCount++;
+                                        if (Math.abs(existing.lat - imp.lat) > 1 || Math.abs(existing.lng - imp.lng) > 1) movedCount++;
+                                        if (existing.desc !== imp.desc) descChangedCount++;
+                                        if (existing.category !== imp.category) catChangedCount++;
                                     } else {
                                         candidate.userEdited = false;
                                         toAdd.push(candidate);
+                                        addedCount++;
                                     }
                                     return;
                                 }
@@ -1809,15 +1412,21 @@ document.addEventListener('DOMContentLoaded', function() {
                                     existing.category = imp.category || existing.category;
                                     existing.icon = imp.icon || existing.icon;
                                     existing.addedTime = Date.now();
+                                    existing.locked = imp.locked || false;
                                     skippedUserEdited++;
                                     return;
                                 }
                                 if (existing) {
                                     candidate.id = existing.id;
                                     toReplace.push(candidate);
+                                    updatedCount++;
+                                    if (Math.abs(existing.lat - imp.lat) > 1 || Math.abs(existing.lng - imp.lng) > 1) movedCount++;
+                                    if (existing.desc !== imp.desc) descChangedCount++;
+                                    if (existing.category !== imp.category) catChangedCount++;
                                 } else {
                                     candidate.userEdited = false;
                                     toAdd.push(candidate);
+                                    addedCount++;
                                 }
                                 return;
                             }
@@ -1828,9 +1437,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                     candidate.id = existingFallback.id;
                                     toReplace.push(candidate);
                                     resetCount++;
+                                    updatedCount++;
+                                    if (Math.abs(existingFallback.lat - imp.lat) > 1 || Math.abs(existingFallback.lng - imp.lng) > 1) movedCount++;
+                                    if (existingFallback.desc !== imp.desc) descChangedCount++;
+                                    if (existingFallback.category !== imp.category) catChangedCount++;
                                 } else {
                                     candidate.userEdited = true;
                                     toAdd.push(candidate);
+                                    addedCount++;
                                 }
                                 return;
                             }
@@ -1838,20 +1452,27 @@ document.addEventListener('DOMContentLoaded', function() {
                                 existingFallback.category = imp.category || existingFallback.category;
                                 existingFallback.icon = imp.icon || existingFallback.icon;
                                 existingFallback.addedTime = Date.now();
+                                existingFallback.locked = imp.locked || false;
                                 skippedUserEdited++;
                                 return;
                             }
                             if (existingFallback) {
                                 candidate.id = existingFallback.id;
                                 toReplace.push(candidate);
+                                updatedCount++;
+                                if (Math.abs(existingFallback.lat - imp.lat) > 1 || Math.abs(existingFallback.lng - imp.lng) > 1) movedCount++;
+                                if (existingFallback.desc !== imp.desc) descChangedCount++;
+                                if (existingFallback.category !== imp.category) catChangedCount++;
                             } else {
                                 candidate.userEdited = true;
                                 toAdd.push(candidate);
+                                addedCount++;
                             }
                         });
                         const replaceIds = toReplace.map(r => r.id);
                         locations = locations.filter(l => !replaceIds.includes(l.id));
                         locations = [...locations, ...toAdd, ...toReplace];
+                        let newCats = 0;
                         if (data.customCategories && typeof data.customCategories === 'object') {
                             Object.entries(data.customCategories).forEach(([name, emoji]) => {
                                 if (!customCategories[name] && !defaultCategoryIcons[name] && isValidEmoji(emoji)) {
@@ -1859,6 +1480,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     categoryIcons[name] = emoji;
                                     categoryColors[name] = '#f0e68c';
                                     activeCategories.add(name);
+                                    newCats++;
                                 }
                             });
                         }
@@ -1872,19 +1494,23 @@ document.addEventListener('DOMContentLoaded', function() {
                             forceReload();
                             updateCounterDisplay();
                         }, 100);
-                        let report = `Imported ${toAdd.length} new`;
-                        if (toReplace.length) report += ` | Updated ${toReplace.length}`;
-                        if (skippedUserEdited) report += ` | Preserved ${skippedUserEdited} edits`;
-                        if (resetCount) report += ` | Reset ${resetCount} community markers`;
-                        report += `\nTotal: ${locations.length} locations`;
+                        let report = `Imported ${incoming.length} markers from file!\n\n`;
+                        if (addedCount) report += `+ ${addedCount} new markers added\n`;
+                        if (updatedCount) report += `↻ ${updatedCount} markers updated\n`;
+                        if (movedCount) report += `  • ${movedCount} moved\n`;
+                        if (descChangedCount) report += `  • ${descChangedCount} description changes\n`;
+                        if (catChangedCount) report += `  • ${catChangedCount} category changes\n`;
+                        if (resetCount) report += `↺ ${resetCount} community markers reset\n`;
+                        if (skippedUserEdited) report += `✓ ${skippedUserEdited} user edits preserved\n`;
+                        if (newCats) report += `★ ${newCats} new custom categories\n`;
+                        report += `\nTotal locations: ${locations.length}\n`;
+                        report += `Community version: ${communityVersion}`;
                         alert(report);
                         playSound('saving');
                     } catch (err) {
                         console.error('Import error:', err);
                         alert(`Error: ${err.message || 'Invalid JSON'}`);
                         playSound('error');
-                    } finally {
-                        e.target.value = '';
                     }
                 };
                 reader.readAsText(file);
@@ -1930,7 +1556,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         const seenCids = new Set();
                         for (const imp of incoming) {
                             if (imp.cid && seenCids.has(imp.cid)) {
-                                throw new Error(`Duplicate CID "${imp.cid}" in import file`);
+                                console.warn(`Skipping duplicate CID "${imp.cid}" in community update`);
+                                continue;
                             }
                             if (imp.cid) seenCids.add(imp.cid);
                         }
@@ -1938,24 +1565,38 @@ document.addEventListener('DOMContentLoaded', function() {
                         const toAdd = [];
                         const toReplace = [];
                         let skippedUserEdited = 0;
+                        let addedCount = 0;
+                        let updatedCount = 0;
+                        let movedCount = 0;
+                        let descChangedCount = 0;
+                        let catChangedCount = 0;
                         incoming.forEach(imp => {
+                            if (seenCids.has(imp.cid) && incoming.filter(i => i.cid === imp.cid).length > 1) {
+                                return;
+                            }
                             const newId = generateUniqueId();
-                            const candidate = { ...imp, id: newId, addedTime: Date.now() };
+                            const candidate = { ...imp, id: newId, addedTime: Date.now(), locked: imp.locked || false };
                             if (imp.cid) {
                                 const existing = existingByCid.get(imp.cid);
                                 if (existing && userEditedCids.has(imp.cid)) {
                                     existing.category = imp.category || existing.category;
                                     existing.icon = imp.icon || existing.icon;
                                     existing.addedTime = Date.now();
+                                    existing.locked = imp.locked || false;
                                     skippedUserEdited++;
                                     return;
                                 }
                                 if (existing) {
                                     candidate.id = existing.id;
                                     toReplace.push(candidate);
+                                    updatedCount++;
+                                    if (Math.abs(existing.lat - imp.lat) > 1 || Math.abs(existing.lng - imp.lng) > 1) movedCount++;
+                                    if (existing.desc !== imp.desc) descChangedCount++;
+                                    if (existing.category !== imp.category) catChangedCount++;
                                 } else {
                                     candidate.userEdited = false;
                                     toAdd.push(candidate);
+                                    addedCount++;
                                 }
                                 return;
                             }
@@ -1965,15 +1606,21 @@ document.addEventListener('DOMContentLoaded', function() {
                                 existingFallback.category = imp.category || existingFallback.category;
                                 existingFallback.icon = imp.icon || existingFallback.icon;
                                 existingFallback.addedTime = Date.now();
+                                existingFallback.locked = imp.locked || false;
                                 skippedUserEdited++;
                                 return;
                             }
                             if (existingFallback) {
                                 candidate.id = existingFallback.id;
                                 toReplace.push(candidate);
+                                updatedCount++;
+                                if (Math.abs(existingFallback.lat - imp.lat) > 1 || Math.abs(existingFallback.lng - imp.lng) > 1) movedCount++;
+                                if (existingFallback.desc !== imp.desc) descChangedCount++;
+                                if (existingFallback.category !== imp.category) catChangedCount++;
                             } else {
                                 candidate.userEdited = true;
                                 toAdd.push(candidate);
+                                addedCount++;
                             }
                         });
                         const replaceIds = toReplace.map(r => r.id);
@@ -1999,7 +1646,15 @@ document.addEventListener('DOMContentLoaded', function() {
                             forceReload();
                             updateCounterDisplay();
                         }, 100);
-                        alert(`Community Map Updated!\nVersion: ${communityVersion}`);
+                        let report = `Community Map Updated!\nVersion: ${communityVersion}\n\n`;
+                        if (addedCount) report += `+ ${addedCount} new markers added\n`;
+                        if (updatedCount) report += `↻ ${updatedCount} markers updated\n`;
+                        if (movedCount) report += `  • ${movedCount} moved\n`;
+                        if (descChangedCount) report += `  • ${descChangedCount} description changes\n`;
+                        if (catChangedCount) report += `  • ${catChangedCount} category changes\n`;
+                        if (skippedUserEdited) report += `✓ ${skippedUserEdited} user edits preserved\n`;
+                        report += `\nTotal locations: ${locations.length}`;
+                        alert(report);
                         playSound('saving');
                     } catch (err) {
                         console.error('Community update error:', err);
@@ -2112,6 +1767,12 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.setItem('gridEnabled', gridEnabled);
             toggleGridBtn.textContent = `Grid: ${gridEnabled ? 'On' : 'Off'}`;
             drawGrid();
+            if (gridEnabled) {
+                map.getContainer().classList.add('hover-coords');
+            } else {
+                map.getContainer().classList.remove('hover-coords');
+                coordHoverControl.getContainer().classList.remove('show');
+            }
             playSound('click');
         };
         toggleButtonGroup.onclick = () => {
@@ -2130,7 +1791,6 @@ document.addEventListener('DOMContentLoaded', function() {
             activeCategories = new Set(Object.keys(categoryIcons));
             localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
             renderCategoryToggles();
-            syncCategoryFilterWithToggles();
             loadData(combinedSearch.value, categoryFilter.value);
             playSound('click');
         };
@@ -2138,7 +1798,6 @@ document.addEventListener('DOMContentLoaded', function() {
             activeCategories = new Set();
             localStorage.setItem('activeCategories', JSON.stringify([]));
             renderCategoryToggles();
-            syncCategoryFilterWithToggles();
             loadData(combinedSearch.value, categoryFilter.value);
             playSound('click');
         };
@@ -2186,7 +1845,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('#createCategoryModal .close, #deleteCategoryModal .close').forEach(closeBtn => {
             closeBtn.onclick = () => closeModal(closeBtn.closest('.modal'));
         });
-                document.getElementById('saveItemBtn').onclick = () => {
+        document.getElementById('saveItemBtn').onclick = () => {
             const category = itemCategorySelect.value;
             let desc = itemDescInput.value.trim();
             if (!desc) {
@@ -2202,6 +1861,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const wasNewLog = currentIndex < 0;
             if (currentIndex >= 0) {
                 const loc = locations[currentIndex];
+                if (loc.locked) {
+                    showTempMessage('Marker locked — unlock to edit!', 4000);
+                    playSound('error');
+                    return;
+                }
                 const wasCommunity = !!loc.cid;
                 loc.category = category;
                 loc.desc = desc;
@@ -2219,6 +1883,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     icon: categoryIcons[category] || 'UNKNOWN',
                     addedTime: Date.now(),
                     userEdited: true,
+                    locked: false,
                     cid: generateCid({ category, desc, lat: tempLatLng.lat, lng: tempLatLng.lng })
                 };
                 locations.push(newLoc);
@@ -2229,21 +1894,25 @@ document.addEventListener('DOMContentLoaded', function() {
             playSound('saving');
             showTempMessage('Saved!', 2000);
             const finalLoc = currentIndex >= 0 ? locations[currentIndex] : locations[locations.length - 1];
-            safeFlyTo(finalLoc.lat, finalLoc.lng, 2);
+            safeFlyTo(finalLoc.lat, finalLoc.lng, map.getZoom());
             forceReload();
             if (wasNewLog) {
                 categoryFilter.value = '';
             }
+            setTimeout(() => { isDraggingAny = false; }, 600);
         };
-
         deleteBtn.onclick = () => {
             if (currentIndex >= 0) {
                 const loc = locations[currentIndex];
+                if (loc.locked) {
+                    showTempMessage('Marker locked — unlock to delete!', 4000);
+                    playSound('error');
+                    return;
+                }
                 lastDeleted = { ...loc };
                 locations.splice(currentIndex, 1);
                 recalculateXP();
                 closeModal(itemModal);
-                safeFlyTo(loc.lat, loc.lng, map.getZoom() + 2);
                 saveLocations();
                 forceReload();
                 undoBtn.style.display = 'inline-block';
@@ -2251,7 +1920,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 playSound('delete');
             }
         };
-
         undoBtn.onclick = () => {
             if (lastDeleted) {
                 locations.push(lastDeleted);
@@ -2261,39 +1929,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 forceReload();
                 undoBtn.style.display = 'none';
                 closeModal(itemModal);
-                safeFlyTo(loc.lat, loc.lng, map.getZoom() + 2);
                 showTempMessage('Undo successful!', 3000);
                 playSound('undo');
             }
         };
-
-        undoMoveBtn.onclick = () => {
-    if (lastMovedMarker && lastMovedMarker.index >= 0) {
-        const loc = locations[lastMovedMarker.index];
-        loc.lat = lastMovedMarker.original.lat;
-        loc.lng = lastMovedMarker.original.lng;
-        lastMovedMarker.marker.setLatLng(lastMovedMarker.original);
-        lastMovedMarker = null;
-        undoMoveBtn.style.display = 'none';
-        saveLocations();
-        forceReload();
-        safeFlyTo(loc.lat, loc.lng, map.getZoom() + 2);
-        showTempMessage('Move undone!', 3000);
-        playSound('undo');
-    }
-};
-
-        // FIXED DUPLICATE: NEW CID + AUTO GRID + X:Y
         duplicateBtn.onclick = () => {
             if (currentIndex >= 0) {
                 const loc = locations[currentIndex];
-                const offset = 30 / Math.pow(2, map.getZoom());
-                const newLat = loc.lat + offset;
-                const newLng = loc.lng + offset;
-                const grid = getGridFromLatLng(newLat, newLng);
-                const x = Math.round(newLng);
-                const y = Math.round(newLat);
-                const newDesc = grid ? `Grid ${grid} (X: ${x}, Y: ${y})` : `X: ${x}, Y: ${y}`;
+                if (loc.locked) {
+                    showTempMessage('Marker locked — unlock to duplicate!', 4000);
+                    playSound('error');
+                    return;
+                }
+                const baseOffset = 40 / Math.pow(2, map.getZoom());
+                const angleStep = 60;
+                const dupCount = locations.filter(l => l.cid === loc.cid && l.id !== loc.id).length;
+                const angle = dupCount * angleStep * Math.PI / 180;
+                const offsetX = baseOffset * Math.cos(angle);
+                const offsetY = baseOffset * Math.sin(angle);
+                const newLat = loc.lat + offsetY;
+                const newLng = loc.lng + offsetX;
+                const newDesc = updateDescWithGrid(loc.desc, newLat, newLng);
                 const newCid = generateCid({
                     category: loc.category,
                     desc: newDesc,
@@ -2308,6 +1964,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     desc: newDesc,
                     addedTime: Date.now(),
                     userEdited: true,
+                    locked: false,
                     cid: newCid
                 };
                 locations.push(newLoc);
@@ -2315,31 +1972,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 saveLocations();
                 forceReload();
                 closeModal(itemModal);
-                const newIndex = locations.findIndex(l => l.id === newLoc.id);
-                safeFlyTo(newLat, newLng, map.getZoom());
-                showTempMessage('Duplicated + Grid updated!', 3000);
+                safeFlyTo(newLoc.lat, newLoc.lng, map.getZoom());
+                showTempMessage('Duplicated — Grid updated!', 3000);
                 playSound('duplicate');
-                categoryFilter.value = ''; // Reset to "All"
             }
         };
-
         shareItemBtn.onclick = () => {
             const loc = locations[currentIndex];
-            const lat = Math.round(loc.lat);
-            const lng = Math.round(loc.lng);
+            const lat = loc.lat.toFixed(0);
+            const lng = loc.lng.toFixed(0);
             const grid = getGridFromLatLng(lat, lng);
             const desc = loc.desc.split('\n')[0].trim();
             const url = `${window.location.origin}${window.location.pathname}?lat=${lat}&lng=${lng}&grid=${grid}&desc=${encodeURIComponent(desc)}`;
             navigator.clipboard.writeText(url).then(() => {
                 showTempMessage('Share link copied!', 3000);
                 playSound('click');
-                closeModal(itemModal);
             }).catch(() => {
                 prompt('Copy this link:', url);
-                closeModal(itemModal);
             });
         };
-
         /* SECTION 23: FILTER & MAP EVENTS */
         categoryFilter.addEventListener('change', () => {
             const val = categoryFilter.value;
@@ -2347,21 +1998,148 @@ document.addEventListener('DOMContentLoaded', function() {
             loadData(combinedSearch.value, val);
             playSound('selectcategory');
         });
-
+        let isDraggingAny = false;
+        map.on('dragstart', () => { isDraggingAny = true; });
+        map.on('dragend', () => { setTimeout(() => { isDraggingAny = false; }, 400); });
+        map.on('movestart', () => { isDraggingAny = true; });
+        map.on('moveend', () => { setTimeout(() => { isDraggingAny = false; }, 400); });
+        /* HOVER COORDS CONTROL (BOTTOM LEFT) */
+        const coordHoverControl = L.control({ position: 'bottomleft' });
+        coordHoverControl.onAdd = function() {
+            const div = L.DomUtil.create('div', 'coord-hover');
+            div.innerHTML = '';
+            div.style.cssText = 'background:rgba(0,0,0,0.7); color:#0f0; padding:6px 10px; border:1px solid #0f0; border-radius:4px; font:bold 12px monospace; pointer-events:none; opacity:0; transition:opacity 0.3s; margin:10px;';
+            return div;
+        };
+        coordHoverControl.addTo(map);
+        const hoverCoordsHandler = (e) => {
+            if (isDraggingAny) return;
+            let lat, lng;
+            if (e.touches) {
+                const touch = e.touches[0];
+                lat = map.mouseEventToLatLng({ clientX: touch.clientX, clientY: touch.clientY }).lat;
+                lng = map.mouseEventToLatLng({ clientX: touch.clientX, clientY: touch.clientY }).lng;
+            } else {
+                lat = e.latlng.lat;
+                lng = e.latlng.lng;
+            }
+            const grid = getGridFromLatLng(lat, lng);
+            const x = Math.round(lng);
+            const y = Math.round(lat);
+            coordHoverControl.getContainer().innerHTML = `Grid: ${grid || 'N/A'} (X: ${x}, Y: ${y})`;
+            coordHoverControl.getContainer().classList.add('show');
+        };
+        map.on('mousemove', hoverCoordsHandler);
+        map.on('touchmove', hoverCoordsHandler);
+        map.getContainer().addEventListener('mouseleave', () => {
+            coordHoverControl.getContainer().classList.remove('show');
+        });
         map.on('click', e => {
-            const grid = getGridFromLatLng(e.latlng.lat, e.latlng.lng);
-            if (grid) showGridNotification(grid);
+            if (isDraggingAny) {
+                isDraggingAny = false;
+                return;
+            }
+            if (!gridEnabled) {
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
+                const grid = getGridFromLatLng(lat, lng);
+                const x = Math.round(lng);
+                const y = Math.round(lat);
+                coordHoverControl.getContainer().innerHTML = `Grid: ${grid || 'N/A'} (X: ${x}, Y: ${y})`;
+                coordHoverControl.getContainer().classList.add('show');
+                setTimeout(() => coordHoverControl.getContainer().classList.remove('show'), 3000);
+            }
+            if (gridEnabled) {
+                const grid = getGridFromLatLng(e.latlng.lat, e.latlng.lng);
+                if (grid) showGridNotification(grid);
+            }
             playSound('click');
         });
-
+        map.on('contextmenu', e => {
+            L.DomEvent.preventDefault(e);
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+            const grid = getGridFromLatLng(lat, lng);
+            const x = Math.round(lng);
+            const y = Math.round(lat);
+            const desc = grid ? `Grid ${grid} (X: ${x}, Y: ${y})` : `X: ${x}, Y: ${y}`;
+            const url = `${window.location.origin}${window.location.pathname}?lat=${y}&lng=${x}&grid=${grid}&desc=${encodeURIComponent(desc)}`;
+            navigator.clipboard.writeText(url).then(() => {
+                showTempMessage('Right-click location copied!', 3000);
+                playSound('click');
+            }).catch(() => {
+                prompt('Copy this link:', url);
+            });
+            if (grid) showGridNotification(grid);
+        });
         map.on('dblclick', e => {
             L.DomEvent.stopPropagation(e);
             tempLatLng = { lat: e.latlng.lat, lng: e.latlng.lng };
-            categoryFilter.value = '';
             openModal('Log Item');
             playSound('click');
         });
-
+        /* EDGE PAN HANDLER */
+        const edgePanBuffer = 50;
+        let edgePanInterval = null;
+        map.getContainer().addEventListener('mousemove', e => {
+            if (isDraggingAny) return;
+            const rect = map.getContainer().getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const w = rect.width;
+            const h = rect.height;
+            let dx = 0, dy = 0;
+            if (x < edgePanBuffer) dx = -10;
+            if (x > w - edgePanBuffer) dx = 10;
+            if (y < edgePanBuffer) dy = -10;
+            if (y > h - edgePanBuffer) dy = 10;
+            if (dx || dy) {
+                if (!edgePanInterval) {
+                    edgePanInterval = setInterval(() => {
+                        map.panBy([dx, dy]);
+                    }, 50);
+                }
+            } else if (edgePanInterval) {
+                clearInterval(edgePanInterval);
+                edgePanInterval = null;
+            }
+        });
+        map.getContainer().addEventListener('mouseleave', () => {
+            if (edgePanInterval) {
+                clearInterval(edgePanInterval);
+                edgePanInterval = null;
+            }
+        });
+        map.getContainer().addEventListener('touchmove', e => {
+            if (isDraggingAny) return;
+            const touch = e.touches[0];
+            const rect = map.getContainer().getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            const w = rect.width;
+            const h = rect.height;
+            let dx = 0, dy = 0;
+            if (x < edgePanBuffer) dx = -15;
+            if (x > w - edgePanBuffer) dx = 15;
+            if (y < edgePanBuffer) dy = -15;
+            if (y > h - edgePanBuffer) dy = 15;
+            if (dx || dy) {
+                map.panBy([dx, dy]);
+            }
+        });
+        toggleGridBtn.onclick = () => {
+            gridEnabled = !gridEnabled;
+            localStorage.setItem('gridEnabled', gridEnabled);
+            toggleGridBtn.textContent = `Grid: ${gridEnabled ? 'On' : 'Off'}`;
+            drawGrid();
+            if (gridEnabled) {
+                map.getContainer().classList.add('hover-coords');
+            } else {
+                map.getContainer().classList.remove('hover-coords');
+                coordHoverControl.getContainer().classList.remove('show');
+            }
+            playSound('click');
+        };
         /* SECTION 24: URL PARAMS & INITIAL LOAD */
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('lat') && urlParams.has('lng')) {
@@ -2369,244 +2147,23 @@ document.addEventListener('DOMContentLoaded', function() {
             const lng = parseFloat(urlParams.get('lng'));
             const grid = urlParams.get('grid') || getGridFromLatLng(lat, lng);
             const desc = urlParams.get('desc') ? decodeURIComponent(urlParams.get('desc')) : '';
-            map.whenReady(() => {
-                setTimeout(() => {
-                    safeFlyTo(lat, lng, 3);
-                    showTempMessage(`Shared: ${desc || grid}`, 5000);
-                    playSound('click');
-                }, 800);
-            });
+            setTimeout(() => {
+                safeFlyTo(lat, lng, 3);
+                showTempMessage(`Shared: ${desc || grid}`, 5000);
+                playSound('click');
+            }, 1000);
         }
-
-        /* SECTION 25: FLY MODE — CLEAN & STABLE */
-        let flyModeInterval = null;
-        const FLY_SPEED = 180;
-        const EDGE_THRESHOLD = 45;
-        let flyModeActive = false;
-        function startFlyMode(e) {
-            const container = map.getContainer();
-            if (!container.contains(e.target)) {
-                if (flyModeActive) stopFlyMode();
-                return;
-            }
-            const rect = container.getBoundingClientRect();
-            const clientX = e.clientX || (e.touches?.[0]?.clientX);
-            const clientY = e.clientY || (e.touches?.[0]?.clientY);
-            if (!clientX || !clientY) return;
-            const x = clientX - rect.left;
-            const y = clientY - rect.top;
-            const width = rect.width;
-            const height = rect.height;
-            let dx = 0, dy = 0;
-            if (x < EDGE_THRESHOLD) dx = -1;
-            else if (x > width - EDGE_THRESHOLD) dx = 1;
-            if (y < EDGE_THRESHOLD) dy = -1;
-            else if (y > height - EDGE_THRESHOLD) dy = 1;
-            if (dx === 0 && dy === 0) {
-                if (flyModeActive) stopFlyMode();
-                return;
-            }
-            if (e.type === 'touchmove') e.preventDefault();
-            if (!flyModeActive) {
-                flyModeActive = true;
-                showTempMessage('Fly Mode Active', 1500);
-            }
-            if (flyModeInterval) return;
-            flyModeInterval = setInterval(() => {
-                const center = map.getCenter();
-                const point = map.latLngToContainerPoint(center);
-                point.x += dx * FLY_SPEED / 16;
-                point.y += dy * FLY_SPEED / 16;
-                let newLatLng = map.containerPointToLatLng(point);
-                newLatLng.lat = Math.max(0, Math.min(4096, newLatLng.lat));
-                newLatLng.lng = Math.max(0, Math.min(4096, newLatLng.lng));
-                map.panTo(newLatLng, { animate: true, duration: 0.08 });
-            }, 60);
+        updateCategoryDropdowns();
+        renderCategoryToggles();
+        loadData(currentSearch, currentCategoryFilter);
+        refreshTableVisibility();
+        drawGrid();
+        updateXPBar();
+        window.addEventListener('resize', refreshTableVisibility);
+        refreshTableVisibility();
+        if (gridEnabled) {
+            map.getContainer().classList.add('hover-coords');
         }
-        function stopFlyMode() {
-            if (!flyModeActive) return;
-            if (flyModeInterval) {
-                clearInterval(flyModeInterval);
-                flyModeInterval = null;
-            }
-            flyModeActive = false;
-            showTempMessage('Fly Mode Off', 1000);
-        }
-        map.getContainer().addEventListener('mousemove', startFlyMode);
-        map.getContainer().addEventListener('mouseleave', stopFlyMode);
-        map.getContainer().addEventListener('touchmove', startFlyMode, { passive: false });
-        map.getContainer().addEventListener('touchend', stopFlyMode);
-        map.getContainer().addEventListener('touchcancel', stopFlyMode);
-
-        /* FINAL INITIALIZATION — AFTER MAP IS READY */
-        map.whenReady(() => {
-            const isSharedLink = window.location.search.includes('lat=');
-
-            if (isSharedLink) {
-                // === SHARED MODE: VIEW-ONLY ===
-                const urlParams = new URLSearchParams(window.location.search);
-                const lat = parseFloat(urlParams.get('lat'));
-                const lng = parseFloat(urlParams.get('lng'));
-                const grid = urlParams.get('grid') || getGridFromLatLng(lat, lng);
-                const desc = urlParams.get('desc') ? decodeURIComponent(urlParams.get('desc')) : '';
-
-                setTimeout(() => {
-                    safeFlyTo(lat, lng, 3);
-                    showTempMessage(`Player shared: ${desc || grid}`, 5000);
-                    playSound('click');
-                }, 800);
-
-                // ALLOW ONLY 2 BUTTONS
-                const allowedButtons = [
-                    document.getElementById('toggleMapBtn'),
-                    document.getElementById('toggleGridBtn')
-                ];
-
-                // HIDE ALL NON-ESSENTIAL UI
-                const elementsToHide = [
-                    document.getElementById('categoryFilter'),
-                    document.getElementById('toggleCategoryModalBtn'),
-                    document.getElementById('toggleClusterBtn'),
-                    document.getElementById('toggleButtonGroup'),
-                    document.getElementById('buttonGroup'),
-                    document.querySelector('.controls > div[style*="position:relative"]'),
-                    document.getElementById('tableContainer'),
-                    document.getElementById('toggleTableBtn'),
-                    document.getElementById('counter'),
-                    document.querySelector('h2')
-                ];
-                elementsToHide.forEach(el => { if (el) el.style.display = 'none'; });
-
-                // DISABLE ALL BUTTONS EXCEPT ALLOWED
-                document.querySelectorAll('button, input, select').forEach(el => {
-                    if (!allowedButtons.includes(el)) {
-                        el.disabled = true;
-                        el.style.opacity = '0.3';
-                        el.style.pointerEvents = 'none';
-                    }
-                });
-
-                // ENABLE ONLY ALLOWED BUTTONS
-                allowedButtons.forEach(btn => {
-                    if (btn) {
-                        btn.disabled = false;
-                        btn.style.opacity = '1';
-                        btn.style.pointerEvents = 'auto';
-                    }
-                });
-
-                // BLOCK DOUBLE-CLICK (LOG ITEM)
-                map.off('dblclick');
-                map.on('dblclick', (e) => {
-                    L.DomEvent.stopPropagation(e);
-                    showRedirectPopup();
-                });
-
-                // BLOCK RIGHT-CLICK (SHARE)
-                map.off('contextmenu');
-                map.on('contextmenu', (e) => {
-                    L.DomEvent.stopPropagation(e);
-                    L.DomEvent.preventDefault(e);
-                    showRedirectPopup();
-                });
-
-                // BLOCK MARKER DRAG
-                map.eachLayer(layer => {
-                    if (layer instanceof L.Marker && layer.dragging) {
-                        layer.dragging.disable();
-                    }
-                });
-                map.on('layeradd', (e) => {
-                    const layer = e.layer;
-                    if (layer instanceof L.Marker) {
-                        layer.dragging.disable();
-                        layer.off('dragstart drag dragend');
-                    }
-                });
-
-                // VIEW-ONLY BANNER
-                const banner = document.createElement('div');
-                banner.id = 'viewOnlyBanner';
-                banner.style.cssText = `
-                    position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
-                    background: #0a3a0a; color: #00ff00; padding: 8px 18px;
-                    border: 2px solid #00ff00; font-weight: bold; font-size: 15px;
-                    font-family: 'Courier New', monospace; z-index: 10000;
-                    box-shadow: 0 0 20px #00ff00; pointer-events: none;
-                    white-space: nowrap; border-radius: 0;
-                `;
-                banner.textContent = 'VIEW-ONLY: Player shared a location! Refresh the Page to zoom in again on the location!';
-                document.body.appendChild(banner);
-
-                // LEFT-CLICK CLOSES REDIRECT POPUP
-                let redirectPopupOpen = false;
-                const originalShowRedirect = showRedirectPopup;
-                showRedirectPopup = function() {
-                    if (redirectPopupOpen) return;
-                    redirectPopupOpen = true;
-                    originalShowRedirect();
-                };
-                map.on('click', () => {
-                    if (redirectPopupOpen) {
-                        const popup = document.getElementById('redirectPopup');
-                        if (popup) {
-                            document.body.removeChild(popup);
-                            redirectPopupOpen = false;
-                        }
-                    }
-                });
-
-                return; // STOP NORMAL LOAD
-            }
-
-            // === MAIN APP: FULL FEATURES ===
-            updateCategoryDropdowns();
-            renderCategoryToggles();
-            syncCategoryFilterWithToggles();
-            loadData(currentSearch, categoryFilter.value);
-            refreshTableVisibility();
-            drawGrid();
-            updateXPBar();
-            window.addEventListener('resize', refreshTableVisibility);
-            refreshTableVisibility();
-
-            // === MAIN APP: RIGHT-CLICK = SHARE LOCATION ===
-            map.off('contextmenu');
-            map.on('contextmenu', function(e) {
-                L.DomEvent.stopPropagation(e);
-                const latlng = e.latlng;
-                const grid = getGridFromLatLng(latlng.lat, latlng.lng);
-                const lat = Math.round(latlng.lat);
-                const lng = Math.round(latlng.lng);
-                const desc = grid ? `Player at Grid ${grid}` : `Player at X:${lng}, Y:${lat}`;
-                const popup = L.popup()
-                    .setLatLng(latlng)
-                    .setContent(`
-                        <div style="background:#0a2a2a; color:#00ff00; padding:10px; border:2px solid #00ff00; font-family:'Courier New',monospace; font-size:13px; min-width:180px; max-width:220px; text-align:center;">
-                            <b>Share This Location</b><br>
-                            <small style="color:#aaf0a0; display:block; margin:6px 0; font-size:12px;">${desc}</small>
-                            <button id="shareLocationBtn" style="background:#00ff00; color:#000; border:none; padding:6px 12px; font-weight:bold; cursor:pointer; font-size:14px; margin:4px auto; display:block; width:auto; min-width:120px;">Copy Link</button>
-                        </div>
-                    `)
-                    .openOn(map);
-                setTimeout(() => {
-                    const btn = document.getElementById('shareLocationBtn');
-                    if (btn) {
-                        btn.onclick = () => {
-                            const url = `${window.location.origin}${window.location.pathname}?lat=${lat}&lng=${lng}&grid=${grid || ''}&desc=${encodeURIComponent(desc)}`;
-                            navigator.clipboard.writeText(url).then(() => {
-                                showTempMessage('Location link copied!', 3000);
-                                map.closePopup();
-                                playSound('click');
-                            }).catch(() => {
-                                prompt('Copy this link:', url);
-                            });
-                        };
-                    }
-                }, 50);
-            });
-        });
-
     })();
 });
  /* --------------------------------------------------------------------------
@@ -2618,7 +2175,7 @@ document.addEventListener('DOMContentLoaded', function() {
        This app is provided "as is" for personal, non-commercial use by Fallout 76 players to track in-game items.
        The author is not responsible for any damages or losses resulting from the use of this application. Use at your own risk.
        For inquiries or permission requests, call someone who cares.
-       Last updated: November 01, 2025
+       Last updated: November 02, 2025
        -------------------------------------------------------------------------- */
 </script>
 </body>
