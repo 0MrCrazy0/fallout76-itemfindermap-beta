@@ -25,34 +25,106 @@
         button:hover { background-color: #00ff00; color: #0a2a2a; }
         button.reset-btn { background-color: #F7615E !important; color: #000 !important; font-weight: 700; }
         p { max-width: 800px; margin: 0 auto 20px; text-align: center; text-shadow: 0 0 5px #00ff00; }
-        #tableContainer { 
-            width: 100%; 
-            max-width: 1000px; 
-            margin: 0 auto; 
-            overflow-x: auto !important; 
-            overflow-y: hidden; 
+        /* TABLE CONTAINER */
+        #tableContainer {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            overflow-x: auto !important;
+            overflow-y: hidden;
             -webkit-overflow-scrolling: touch;
             contain: paint;
+            padding: 10px;
+            background: rgba(0,0,0,0.7);
+            border: 1px solid #0f0;
+            border-radius: 8px;
         }
-        #locationsTable { 
-            width: 100%; 
-            max-width: 100%; 
-            margin: 10px 0; 
-            border-collapse: separate; 
-            border-spacing: 0 8px; 
-            border: 2px solid #00ff00; 
-            min-width: 600px !important;
+        /* FAKE HEADER + CARD ROWS */
+        #customTableHeader {
+            display: table !important;
+            width: 100% !important;
             table-layout: fixed !important;
+            border-spacing: 0 12px !important;
+            margin-bottom: -12px !important;
         }
-        #locationsTable th, #locationsTable td { border: 2px solid #00ff00; padding: 12px; text-align: left; background-color: #1a3c34; color: #00ff00; }
-        #locationsTable th { background-color: #0a2a2a; position: sticky; top: 0; z-index: 10; }
-        #locationsTable tr:hover { background-color: #2a4c44; cursor: pointer; }
-        #locationsTable tr.glowing { background-color: rgba(0, 255, 0, 0.15); border: 2px solid #00ff00; box-shadow: 0 0 15px #00ff00, 0 0 30px #00ff00; }
+        #customTableHeader > div {
+            display: table-row !important;
+            background: rgba(0, 255, 0, 0.2) !important;
+            border: 1px solid #0f0 !important;
+            border-radius: 8px !important;
+        }
+        #customTableHeader > div > div {
+            display: table-cell !important;
+            padding: 10px !important;
+            text-align: center !important;
+            color: #0f0 !important;
+            font-weight: bold !important;
+        }
+        /* REAL TABLE - CARD ROWS ONLY */
+        #locationsTable {
+            width: 100% !important;
+            border-collapse: separate !important;
+            border-spacing: 0 12px !important;
+            table-layout: fixed !important;
+            margin: 0 !important;
+        }
+        #locationsTable thead { display: none !important; }
+        #locationsTable tbody { display: block !important; width: 100% !important; }
         #locationsTable tbody tr {
             display: table-row !important;
+            background: rgba(0, 0, 0, 0.4) !important;
+            border: 1px solid #0f0 !important;
+            border-radius: 8px !important;
+            transition: all 0.3s ease !important;
             width: 100% !important;
             box-sizing: border-box !important;
         }
+        #locationsTable tbody tr:hover {
+            background: rgba(0, 255, 0, 0.08) !important;
+            box-shadow: 0 0 8px #0f0 !important;
+        }
+        #locationsTable tbody tr.glowing {
+            background: rgba(0, 255, 0, 0.15) !important;
+            box-shadow: 0 0 12px #0f0, 0 0 20px #0f0 !important;
+            animation: tablePulse 1.5s infinite ease-in-out !important;
+            border: 2px solid #00ff88 !important;
+        }
+        @keyframes tablePulse {
+            0%, 100% { box-shadow: 0 0 12px #0f0, 0 0 20px #0f0; }
+            50% { box-shadow: 0 0 18px #0f0, 0 0 30px #0f0; }
+        }
+        #locationsTable tbody td {
+            padding: 10px !important;
+            vertical-align: middle !important;
+            text-align: center !important;
+            word-wrap: break-word !important;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        /* COLUMN WIDTHS */
+        #customTableHeader > div > div:nth-child(1),
+        #locationsTable tbody td:nth-child(1) { width: 10% !important; }
+        #customTableHeader > div > div:nth-child(2),
+        #locationsTable tbody td:nth-child(2) { width: 15% !important; }
+        #customTableHeader > div > div:nth-child(3),
+        #locationsTable tbody td:nth-child(3) { width: 25% !important; }
+        #customTableHeader > div > div:nth-child(4),
+        #locationsTable tbody td:nth-child(4) {
+            width: 50% !important;
+            text-align: left !important;
+            padding-left: 15px !important;
+            white-space: normal !important;
+        }
+        /* ICON / TEXT CELLS */
+        .icon-circle { 
+            width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 16px; font-weight: bold; color: #000;
+        }
+        .text-location { 
+            background: #000; color: #fff; padding: 2px 6px; border: 1px solid #0f0; border-radius: 3px; font-size: 11px; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; margin: 0 auto;
+        }
+        .lock-toggle { font-size: 18px; cursor: pointer; display: block; margin: 0 auto; }
+        /* MODALS */
         .modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; overflow: hidden; background-color: rgba(0, 42, 42, 0.8); }
         .modal-content { background-color: #1a3c34; margin: 8% auto; padding: 16px; border: 2px solid #00ff00; width: 100%; max-width: 360px; box-sizing: border-box; border-radius: 0; color: #00ff00; font-family: 'Courier New', monospace; overflow-y: auto; max-height: 80vh; -webkit-overflow-scrolling: touch; }
         .close { color: #00ff00; float: right; font-size: 24px; font-weight: bold; line-height: 1; cursor: pointer; }
@@ -61,6 +133,7 @@
         textarea, input[type="text"] { width: 100%; padding: 8px; border: 2px solid #00ff00; border-radius: 0; background-color: #0a2a2a; color: #00ff00; font-family: 'Courier New', monospace; box-sizing: border-box; }
         textarea { height: 120px; }
         body.modal-open { overflow: hidden; position: fixed; width: 100%; height: 100%; }
+        /* MARKERS */
         .custom-icon { display: flex; align-items: center; justify-content: center; }
         .marker-background { width: 30px; height: 30px; border-radius: 50%; opacity: 0.9; display: flex; align-items: center; justify-content: center; background-color: #808080; }
         .custom-icon.glowing { box-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00; }
@@ -81,33 +154,23 @@
         .leaflet-popup-content-wrapper { background-color: #1a3c34; color: #00ff00; font-family: 'Courier New', monospace; }
         .leaflet-popup-close-button { color: #00ff00 !important; font-size: 16px !important; }
         .leaflet-popup-close-button:hover { color: #0a2a2a !important; }
-        .highlight-spacer { height: 2px; background: linear-gradient(to right, transparent, rgba(0, 255, 0, 0.3), transparent); }
-        .spacer-row { height: 5px; background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent); }
         .grid-line { pointer-events: none; stroke: rgba(0, 255, 0, 0.35); stroke-width: 1; stroke-dasharray: 4, 4; }
         .grid-label { font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; fill: #00ff00; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; pointer-events: none; text-anchor: middle; dominant-baseline: central; }
         #gridNotification { position: fixed; bottom: 20px; right: 20px; background: #0a3a0a; color: #00ff00; padding: 14px 22px; border: 2px solid #00ff00; border-radius: 0; font-weight: bold; font-family: 'Courier New', monospace; font-size: 15px; box-shadow: 0 0 20px #00ff00, 0 0 40px rgba(0, 255, 0, 0.3); z-index: 10000; opacity: 0; transform: translateY(20px); transition: opacity 0.4s ease, transform 0.3s ease; pointer-events: none; }
         #gridNotification.show { opacity: 1; transform: translateY(0); }
-        #gridNotification::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, rgba(0, 255, 0, 0.1), transparent); pointer-events: none; border-radius: 0; }
-        .coord-hover { z-index: 1000; }
-        .coord-hover.show { opacity: 1 !important; }
-        .hover-coords .coord-hover { opacity: 1 !important; }
         .flash-green { animation: flashGreen 0.6s ease-out; }
-        @keyframes pulse {
-          0% { box-shadow: 0 0 8px #0f0, 0 0 16px #0f0, 0 0 24px #0f0; }
-          50% { box-shadow: 0 0 12px #0f0, 0 0 24px #0f0, 0 0 36px #0f0; }
-          100% { box-shadow: 0 0 8px #0f0, 0 0 16px #0f0, 0 0 24px #0f0; }
-        }
-        .text-marker.glowing > div { animation: pulse 1.5s infinite; }
         @keyframes flashGreen { 0% { border-color: #00ff00; } 50% { border-color: #00ff88; box-shadow: 0 0 15px #00ff88; } 100% { border-color: #00ff00; } }
         /* DARK MODE */
         body.dark-mode { background-color: #000; }
         body.dark-mode .modal-content,
         body.dark-mode #map,
         body.dark-mode input, body.dark-mode select, body.dark-mode button,
-        body.dark-mode #locationsTable th, body.dark-mode #locationsTable td {
+        body.dark-mode #locationsTable th, body.dark-mode #locationsTable td,
+        body.dark-mode #customTableHeader > div {
             background-color: #0a0a0a !important; color: #00ff00 !important; border-color: #00ff00 !important;
         }
         body.dark-mode button:hover { background-color: #00ff00 !important; color: #000 !important; }
+        /* MOBILE PORTRAIT FIX */
         @media (max-width: 768px) {
             #map { height: 600px; }
             .controls { flex-direction: column; align-items: center; }
@@ -117,11 +180,20 @@
             .close { font-size: clamp(20px, 5vw, 22px); }
             .grid-label { font-size: 12px; }
             #gridNotification { bottom: 10px; right: 10px; font-size: 13px; padding: 10px 16px; box-shadow: 0 0 15px #00ff00; }
-            #locationsTable { min-width: 500px !important; }
-            #locationsTable tbody td { 
-                font-size: 12px !important; 
-                padding: 8px !important; 
+            /* TABLE MOBILE */
+            #tableContainer { padding: 8px; }
+            #customTableHeader > div > div,
+            #locationsTable tbody td {
+                font-size: 11px !important;
+                padding: 6px 4px !important;
             }
+            #locationsTable tbody td:nth-child(4) {
+                font-size: 10px !important;
+                white-space: normal !important;
+                line-height: 1.3 !important;
+            }
+            .icon-circle { width: 24px !important; height: 24px !important; font-size: 13px !important; }
+            .text-location { font-size: 9px !important; max-width: 80px !important; }
         }
         .nuke-emoji-wrapper { text-align: center; margin: 12px 0; }
         .nuke-emoji-btn { display: inline-block; padding: 14px 18px; background: #001100; color: #00ff00 !important; font-size: 3.2em; text-decoration: none; border: 3px solid #00ff00; border-radius: 50%; box-shadow: 0 0 14px #00ff00; transition: all 0.25s ease; cursor: pointer; }
@@ -134,8 +206,8 @@
             opacity: 0;
             transition: opacity 0.4s ease;
         }
-        .map-ready #searchBar, .map-ready #buttonGroup, 
-        .map-ready #belowMapControls, .map-ready #toolsToggleRow, 
+        .map-ready #searchBar, .map-ready #buttonGroup,
+        .map-ready #belowMapControls, .map-ready #toolsToggleRow,
         .map-ready #topBar {
             visibility: visible;
             opacity: 1;
@@ -148,19 +220,19 @@
         <button id="toggleTitleBtn" style="padding:2px 6px; font-size:0.9em; max-width:40px; margin:0 auto;">-</button>
     </div>
     <h1 id="mainTitle">The Fallout 76 Item Finder! Quickly log items while exploring Appalachia.</h1>
-   
-    <!-- SEARCH BAR + VOICE (FLEX FOR PERFECT ALIGNMENT) -->
+  
+    <!-- SEARCH BAR + VOICE -->
     <div id="searchBar" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:center; margin:10px auto; padding:10px; background:rgba(0,0,0,0.5); border:1px solid #0f0; border-radius:8px; max-width:90%;">
         <input type="text" id="combinedSearch" placeholder="desc/cate/grid.." style="flex:1; min-width:200px; padding:8px; background:#000; color:#0f0; border:1px solid #0f0; border-radius:4px;">
         <button id="clearSearchBtn" style="background:none; border:none; color:#00ff00; font-size:18px; cursor:pointer; display:none; padding:0 8px;">×</button>
         <select id="categoryFilter" style="padding:8px; background:#000; color:#0f0; border:1px solid #0f0; border-radius:4px;"><option value="">All Categories</option></select>
         <button id="toggleCategoryModalBtn" style="padding:8px 12px; background:#1a3c34; color:#0f0; border:1px solid #0f0; border-radius:4px;">Toggle Categories</button>
     </div>
-   
+  
     <!-- MAP -->
     <div id="map"></div>
-   
-    <!-- TOOLS CONTAINER (CENTERED, FLEX WRAP) -->
+  
+    <!-- TOOLS CONTAINER -->
     <div class="tools-container" id="buttonGroup" style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px auto; padding:10px; background:rgba(0,0,0,0.5); border:1px solid #0f0; border-radius:8px; max-width:90%;">
         <button id="voiceSearchBtn">Voice Search</button>
         <button id="toggleClusterBtn">Clustering: On</button>
@@ -176,32 +248,32 @@
         <button id="undoImportBtn" style="display:none; background:#cc8400; color:#000; font-weight:700;">UNDO IMPORT</button>
         <button id="saveMapJpegBtn">Save Map as JPEG</button>
         <button id="toggleDarkModeBtn">Dark Mode: Off</button>
-        <!-- VOICE BUTTON MOVED TO SEARCH BAR BY SCRIPT -->
     </div>
-   
+  
     <!-- XP STATUS -->
     <div id="xpStatus" style="text-align:center; margin:10px; color:#0f0; font-weight:bold;">Explorer Level: <span id="levelSpan">1</span><br>XP: <progress id="xpProgress" value="0" max="1000" style="width:200px;"></progress> <span id="xpText">0 / 1000</span></div>
-   
+  
     <!-- CONTENT INVENTORY -->
     <h2 style="text-align:center; margin:15px 0 5px;">Content Inventory</h2>
     <p id="counter" style="text-align:center; margin:0 0 10px; color:#0f0;"></p>
     <button id="toggleTableBtn" style="display:none; margin:0 auto 10px; padding:8px 16px; background:#1a3c34; color:#0f0; border:1px solid #0f0; border-radius:4px;">Show Content Table</button>
-   
-    <div id="tableContainer" style="margin:0 auto 20px; max-width:90%; background:rgba(0,0,0,0.7); border:1px solid #0f0; border-radius:8px; padding:10px;">
+  
+    <div id="tableContainer">
         <div id="tablePagination" style="text-align:center; margin-bottom:10px;">
             <button id="prevPageBtn" disabled style="padding:6px 12px; background:#1a3c34; color:#0f0; border:1px solid #0f0; border-radius:4px;">Prev</button>
             <span id="pageInfo" style="margin:0 15px; color:#0f0; font-weight:bold;">Page 1 of 1</span>
             <button id="nextPageBtn" disabled style="padding:6px 12px; background:#1a3c34; color:#0f0; border:1px solid #0f0; border-radius:4px;">Next</button>
         </div>
-        <table id="locationsTable" style="width:100%; border-collapse:collapse; color:#0f0;">
-            <thead style="background:rgba(0,255,0,0.1);">
-                <tr><th style="padding:8px; border:1px solid #0f0;">Lock</th><th style="padding:8px; border:1px solid #0f0;">Icon</th><th style="padding:8px; border:1px solid #0f0;">Category</th><th style="padding:8px; border:1px solid #0f0;">Description</th></tr>
+        <div id="customTableHeader"></div>
+        <table id="locationsTable">
+            <thead>
+                <tr><th>Lock</th><th>Icon</th><th>Category</th><th>Description</th></tr>
             </thead>
             <tbody></tbody>
         </table>
     </div>
-   
-    <div id="gridNotification" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); color:#0f0; padding:8px 16px; border:1px solid #0f0; border-radius:6px; font:bold 14px monospace; z-index:10000; opacity:0; transition:opacity 0.3s; pointer-events:none;"></div>
+  
+    <div id="gridNotification"></div>
    
     <!-- ITEM MODAL -->
     <div id="itemModal" class="modal">
@@ -2426,3 +2498,4 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
+
