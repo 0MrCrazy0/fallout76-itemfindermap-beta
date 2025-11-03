@@ -249,7 +249,7 @@
                 <p>Check the "Update Community Map" button periodically for the latest map version or to reset the app if you encounter issues. Find this tip in the "How to Use" section.</p>
                 <button id="resetAppBtn" class="reset-btn" style="display:block; margin:20px auto; padding:10px 20px; background:#ff4444; color:#000; font-weight:700; border-radius:6px;">Reset App (for debugging only)</button>
                 <p style="text-align:center;" class="small"><br>Love the Item Finder? Support MrCrazy with a <a href="https://buymeacoffee.com/mrcrazy" target="_blank" style="color:#00ff00;">Nuka-Cola</a>!</p>
-                <p style="text-align:center;" class="small" id="appVersionText">The Fallout 76 Item Finder Map Version 35 Made By MrCrazy</p>
+                <p style="text-align:center;" class="small" id="appVersionText">The Fallout 76 Item Finder Map Version 36 Made By MrCrazy</p>
             </div>
             <div id="nukeCodesContent" class="tab-content">
                 <p><strong><br>Nuke Codes</strong></p>
@@ -314,7 +314,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const TERMS_ACCEPTED_KEY = 'fallout76_terms_accepted';
         const UPDATE_VERSION_KEY = 'fallout76_last_update_seen';
         const CURRENT_UPDATE_VERSION = 'v35-drag-commit';
-        const APP_VERSION = "35";
+        const APP_VERSION = "36";
         let soundsEnabled = localStorage.getItem('soundsEnabled') !== 'false';
         const baseSounds = {
             click: new Audio("https://rpg.hamsterrepublic.com/wiki-images/8/84/Select8-Bit.ogg"),
@@ -1050,7 +1050,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (loc.cid && !loc.userCid) loc.userCid = loc.cid;
                 saveLocations();
                 playSound('saving');
-                showTempMessage(`Moved + saved: ${loc.icon} ${loc.category}`, 4000);
+                showTempMessage(`Moved + saved! Lock to protect. ${loc.icon} ${loc.category}`, 4000);
                 safeFlyTo(newLatLng.lat, newLatLng.lng, map.getZoom());
                 forceReload();
             };
@@ -2413,7 +2413,7 @@ document.addEventListener('DOMContentLoaded', function() {
     })();
 });
      /* --------------------------------------------------------------------------
-           Fallout 76 Item Finder Map Version 35 - Disclaimer and Terms of Use
+           Fallout 76 Item Finder Map Version 36 - Disclaimer and Terms of Use
            --------------------------------------------------------------------------
            Copyright (c) 2025 MrCrazy. All rights reserved.
            This application, including all code, design, content, and the map images is the intellectual property of MrCrazy.
