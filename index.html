@@ -572,6 +572,43 @@
     .leaflet-popup-tip {
         margin-top: -6px !important;
     }
+	/* DEV NOTE: POPUP BUTTON — 100% VISIBLE ON MOBILE + DARK MODE */
+.leaflet-popup-content button,
+.leaflet-popup-content-wrapper button {
+    all: unset !important;
+    display: inline-block !important;
+    background: #00ff00 !important;
+    color: #000 !important;
+    border: none !important;
+    border-radius: 4px !important;
+    padding: 4px 10px !important;
+    font-family: 'Courier New', monospace !important;
+    font-weight: bold !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    text-align: center !important;
+    min-width: 50px !important;
+    cursor: pointer !important;
+    box-shadow: 0 0 5px rgba(0, 255, 0, 0.5) !important;
+    margin: 6px auto !important;
+}
+
+.leaflet-popup-content button:hover,
+.leaflet-popup-content-wrapper button:hover {
+    background: #00cc00 !important;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.8) !important;
+}
+
+/* DARK MODE — FORCE BLACK TEXT */
+body.dark-mode .leaflet-popup-content button,
+body.dark-mode .leaflet-popup-content-wrapper button {
+    color: #000 !important;
+    background: #00ff00 !important;
+}
+body.dark-mode .leaflet-popup-content button:hover,
+body.dark-mode .leaflet-popup-content-wrapper button:hover {
+    background: #00cc00 !important;
+}
     </style>
 </head>
 <body>
@@ -695,7 +732,7 @@
             <span class="close">X</span>
             <h1>Nuke Codes</h1>
             <div class="nuke-emoji-wrapper">
-                <a href="https://www.falloutbuilds.com/fo76/nuke-codes/" target="_blank" rel="noopener noreferrer" class="nuke-emoji-btn" title="Launch codes – click the rocket">ROCKET</a>
+                <a href="https://www.falloutbuilds.com/fo76/nuke-codes/" target="_blank" rel="noopener noreferrer" class="nuke-emoji-btn" title="Launch codes – click the rocket">🚀</a>
             </div>
             <p style="text-align:center; margin-top:20px;">
                 <strong>Weekly launch codes — always up to date!</strong>
@@ -814,14 +851,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         /* DEV NOTE: DEFAULT CATEGORIES & ICONS */
         const defaultCategoryIcons = {
-            'weapons': 'GUN', 'armor': 'SHIELD', 'aid': 'SYRINGE', 'food/drink': 'FORK', 'ammunition': 'EXPLOSION',
-            'apparel': 'SHIRT', 'plans': 'SCROLL', 'junk': 'TRASH', 'holotapes': 'DISC', 'misc': 'NOTE',
-            'plants': 'LEAF', 'eggs': 'EGG', 'creatures': 'WOLF', 'vendors': 'MONEY', 'exchanges': 'SCALES',
-            'vaults': 'GEAR', 'power armor': 'ROBOT', 'fusion core': 'BATTERY', 'nuke drop zones': 'RADIOACTIVE',
-            'nuke silos': 'ROCKET', 'magazines': 'BOOK', 'bobbleheads': 'DOLL', 'safe locations': 'SAFE',
-            'terminal locations': 'COMPUTER', 'treasure maps': 'MAP', 'resource deposits': 'PICKAXE',
-            'fishing locations': 'FISH', 'workshops': 'WRENCH', 'train stations': 'TRAIN', 'town locations': 'SCHOOL',
-            'event locations': 'PARTY', 'named locations': 'FLAG', 'regions': 'PIN'
+        'weapons': '🔫', 'armor': '🛡️', 'aid': '💉', 'food/drink': '🍽️', 'ammunition': '💥',
+        'apparel': '👕', 'plans': '📜', 'junk': '🗑️', 'holotapes': '📀', 'misc': '📝',
+        'plants': '🌿', 'eggs': '🥚', 'creatures': '🐺', 'vendors': '💰', 'exchanges': '⚖️',
+        'vaults': '⚙️', 'power armor': '👨‍🚀', 'fusion core': '🔋', 'nuke drop zones': '☢️',
+        'nuke silos': '🚀', 'magazines': '📚', 'bobbleheads': '🎎', 'safe locations': '🗄️',
+        'terminal locations': '🖥️', 'treasure maps': '🗺️', 'resource deposits': '⛏️',
+        'fishing locations': '🎣', 'workshops': '🔧', 'train stations': '🚂', 'town locations': '🏫',
+        'event locations': '🎉', 'named locations': '🚩', 'regions': '📍'
         };
         let categoryIcons = { ...defaultCategoryIcons, ...customCategories };
 
@@ -1510,7 +1547,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div style="margin:6px 0; text-align:center;">
                 <span class="popup-lock-toggle" onclick="toggleLockFromPopup(${locations.indexOf(loc)})">
-                    ${loc.locked ? 'LOCKED' : 'UNLOCKED'}
+                    ${loc.locked ? '🔐' : '🔓'}
                 </span>
             </div>
             <button onclick="editMarkerFromPopup(${locations.indexOf(loc)})"
@@ -1574,8 +1611,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const tr = document.createElement('tr');
             if (isGlowing(loc)) tr.classList.add('glowing');
             const shortDesc = loc.desc.split('\n')[0].trim();
-            const lockEmoji = loc.locked ? 'LOCKED' : 'UNLOCKED';
-            const lockCell = `<td><span class="lock-toggle" onclick="toggleLockFromTable(${locations.indexOf(loc)})" title="${loc.locked ? 'Locked' : 'Unlocked'}">${lockEmoji}</span></td>`;
+            const lockEmoji = loc.locked ? '🔐' : '🔓';
+            const lockCell = `<td><span class="lock-toggle" onclick="toggleLockFromTable(${locations.indexOf(loc)})" title="${loc.locked ? '🔐' : '🔓'}">${lockEmoji}</span></td>`;
             const iconCell = ['named locations', 'regions'].includes(loc.category)
                 ? `<td><div class="text-location">${escapeHtml(shortDesc)}</div></td>`
                 : `<td><div class="icon-circle" style="background-color:${categoryColors[loc.category] || '#808080'};">${loc.icon}</div></td>`;
@@ -1647,7 +1684,7 @@ document.addEventListener('DOMContentLoaded', function() {
         saveLocations();
         forceReload();
         map.closePopup();
-        showTempMessage(loc.locked ? 'Locked!' : 'Unlocked!', 3000);
+        showTempMessage(loc.locked ? '🔐' : '🔓', 3000);
         playSound('click');
     };
 
@@ -1718,7 +1755,7 @@ document.addEventListener('DOMContentLoaded', function() {
     /* DEV NOTE: MODAL OPEN */
     function openModal(title, index = -1, isDupe = false) {
         if (!modalTitle) return;
-        modalTitle.innerHTML = `${title} <span id="modalLockToggle" style="font-size:22px; cursor:pointer; margin-left:10px;">${index >= 0 ? (locations[index].locked ? 'LOCKED' : 'UNLOCKED') : 'LOCKED'}</span>`;
+        modalTitle.innerHTML = `${title} <span id="modalLockToggle" style="font-size:22px; cursor:pointer; margin-left:10px;">${index >= 0 ? (locations[index].locked ? '🔐' : '🔓') : '🔐'}</span>`;
         currentIndex = index;
         document.getElementById('saveItemBtn').style.display = 'inline-block';
         const lockToggle = document.getElementById('modalLockToggle');
@@ -1735,7 +1772,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (lockToggle) {
                 lockToggle.onclick = () => {
                     loc.locked = !loc.locked;
-                    lockToggle.textContent = loc.locked ? 'LOCKED' : 'UNLOCKED';
+                    lockToggle.textContent = loc.locked ? '🔐' : '🔓';
                     if (itemCategorySelect) itemCategorySelect.disabled = loc.locked;
                     if (itemDescInput) itemDescInput.disabled = loc.locked;
                     if (deleteBtn) deleteBtn.style.display = loc.locked ? 'none' : 'inline-block';
