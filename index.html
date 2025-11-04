@@ -394,7 +394,12 @@
             color: #00ff00 !important;
         }
 
-        /* DEV NOTE: ZOOM BUTTONS — FALLOUT 76 STYLE */
+        /* DEV NOTE: ZOOM BUTTONS — FALLOUT 76 STYLE + SAFE POSITION (60px, 60px) */
+        .leaflet-control-zoom {
+            top: 60px !important;
+            left: 60px !important;
+            margin: 0 !important;
+        }
         .leaflet-control-zoom a {
             background-color: #000000 !important;
             color: #00ff00 !important;
@@ -481,6 +486,10 @@
             }
             .icon-circle { width: 24px !important; height: 24px !important; font-size: 13px !important; }
             .text-location { font-size: 9px !important; max-width: 80px !important; }
+            .leaflet-control-zoom {
+                top: 50px !important;
+                left: 50px !important;
+            }
         }
 
         /* DEV NOTE: NUKE CODES EASTER EGG */
@@ -528,6 +537,14 @@
         .button-group.hidden { display: none !important; }
         #lockAllBtn { display: none; margin: 5px; }
         #toggleTableBtn { display: none !important; }
+
+        /* DEV NOTE: POPUP ARROW EVEN CLOSER */
+        .leaflet-popup {
+            margin-bottom: 25px !important;
+        }
+        .leaflet-popup-tip {
+            margin-top: -6px !important;
+        }
     </style>
 </head>
 <body>
@@ -795,17 +812,12 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         let categoryColors = { ...defaultCategoryColors };
 
-        /* DEV NOTE: LEAFLET MAP INITIALIZATION */
+        /* DEV NOTE: LEAFLET MAP INITIALIZATION — minZoom = -2 */
         const map = L.map('map', { 
             crs: L.CRS.Simple, 
-            minZoom: -3, maxZoom: 4, 
-            zoomControl: true, 
-            scrollWheelZoom: true, 
-            doubleClickZoom: true, 
-            boxZoom: true, 
-            touchZoom: true, 
-            dragging: true, 
-            keyboard: true 
+            minZoom: -2,    // More zoom out
+            maxZoom: 4, 
+            zoomControl: false  // We'll add it manually
         });
         const imageBounds = [[0, 0], [4096, 4096]];
         const mapUrls = {
@@ -815,6 +827,9 @@ document.addEventListener('DOMContentLoaded', function() {
         let currentMap = localStorage.getItem('currentMap') || 'named';
         let imageOverlay = L.imageOverlay(mapUrls[currentMap], imageBounds).addTo(map);
         map.fitBounds(imageBounds);
+
+        // DEV NOTE: Add zoom control at (60px, 60px) — OUTSIDE FLY MODE
+        L.control.zoom({ position: 'topleft' }).addTo(map);
 
         /* DEV NOTE: MARKER CLUSTERING */
         const clusteredMarkers = L.markerClusterGroup({ maxClusterRadius: 30, disableClusteringAtZoom: 2 });
@@ -1410,29 +1425,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 const latlng = map.mouseEventToLatLng({ clientX: clientX, clientY: clientY });
                 marker.setLatLng(latlng);
             };
-            const onDragEnd = () => {
-                if (!isDragging) return;
-                isDragging = false;
-                isDraggingAny = false;
-                map.dragging.enable();
-                L.DomUtil.removeClass(marker._icon, 'dragging');
-                L.DomEvent.off(document, 'mousemove', onDragging);
-                L.DomEvent.off(document, 'mouseup', onDragEnd);
-                L.DomEvent.off(document, 'touchmove', onDragging);
-                L.DomEvent.off(document, 'touchend', onDragEnd);
-                const newLatLng = marker.getLatLng();
-                loc.lat = newLatLng.lat;
-                loc.lng = newLatLng.lng;
-                loc.desc = updateDescWithGrid(loc.desc, loc.lat, loc.lng);
-                loc.addedTime = Date.now();
-                loc.userEdited = true;
-                if (loc.cid && !loc.userCid) loc.userCid = loc.cid;
-                saveLocations();
-                playSound('saving');
-                showTempMessage(`Moved + saved! Lock to protect. ${loc.icon} ${loc.category}`, 4000);
-                safeFlyTo(newLatLng.lat, newLatLng.lng, map.getZoom());
-                forceReload();
-                    };
+                    const onDragEnd = () => {
+            if (!isDragging) return;
+            isDragging = false;
+            isDraggingAny = false;
+            map.dragging.enable();
+            L.DomUtil.removeClass(marker._icon, 'dragging');
+            L.DomEvent.off(document, 'mousemove', onDragging);
+            L.DomEvent.off(document, 'mouseup', onDragEnd);
+            L.DomEvent.off(document, 'touchmove', onDragging);
+            L.DomEvent.off(document, 'touchend', onDragEnd);
+            const newLatLng = marker.getLatLng();
+            loc.lat = newLatLng.lat;
+            loc.lng = newLatLng.lng;
+            loc.desc = updateDescWithGrid(loc.desc, loc.lat, loc.lng);
+            loc.addedTime = Date.now();
+            loc.userEdited = true;
+            if (loc.cid && !loc.userCid) loc.userCid = loc.cid;
+            saveLocations();
+            playSound('saving');
+            showTempMessage(`Moved + saved! Lock to protect. ${loc.icon} ${loc.category}`, 4000);
+            safeFlyTo(newLatLng.lat, newLatLng.lng, map.getZoom());
+            forceReload();
+        };
         const onDragStart = (e) => {
             if (loc.locked || isDraggingAny) return;
             if (e.touches) L.DomEvent.preventDefault(e);
@@ -1475,7 +1490,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     style="margin-top:6px; padding:4px 10px; background:#00ff00; color:#000; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;">
                 Edit
             </button>
-        `, { maxWidth: 260, autoPan: true });
+        `, { maxWidth: 260, autoPan: true, offset: [0, -20] });
     }
 
     /* DEV NOTE: ADD MARKER TO MAP */
@@ -1545,19 +1560,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 const mapEl = document.getElementById('map');
                 if (mapEl) mapEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                // Smart delay based on current zoom
+                const currentZoom = map.getZoom();
+                const targetZoom = 4;
+                const zoomDiff = Math.abs(targetZoom - currentZoom);
+                const delay = 400 + (zoomDiff * 200); // 200ms per zoom level
+
                 setTimeout(() => {
-                    safeFlyTo(loc.lat, loc.lng, 2);
-                    playSound('click');
-                }, 300);
+                    safeFlyTo(loc.lat, loc.lng, targetZoom);
+                    setTimeout(() => {
+                        const allMarkers = [...clusteredMarkers.getLayers(), ...nonClusteredMarkers.getLayers()];
+                        const marker = allMarkers.find(m => m.options.id === loc.id);
+                        if (marker) {
+                            marker.openPopup();
+                            const popup = marker.getPopup();
+                            if (popup) {
+                                popup.options.offset = [0, -20];
+                                popup.update();
+                            }
+                        }
+                        playSound('click');
+                    }, 1000); // Wait for flyTo to settle
+                }, delay);
             };
             tr.oncontextmenu = (e) => {
                 e.preventDefault();
                 const mapEl = document.getElementById('map');
                 if (mapEl) mapEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 setTimeout(() => {
-                    safeFlyTo(loc.lat, loc.lng, 2);
+                    safeFlyTo(loc.lat, loc.lng, 4);
                     openModal('Edit Item', locations.findIndex(l => l.id === loc.id));
-                }, 300);
+                }, 600);
             };
             tbody.appendChild(tr);
         });
@@ -1903,7 +1937,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     } else {
                                         candidate.userEdited = false;
                                         toAdd.push(candidate);
-                                                                               addedCount++;
+                                        addedCount++;
                                     }
                                     return;
                                 }
