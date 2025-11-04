@@ -1,62 +1,136 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- DEV NOTE: Meta tags for mobile + PWA support -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Fallout 76 Item Finder V37</title>
+
+    <!-- DEV NOTE: Leaflet + Clustering + Screenshot Libraries -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- DEV NOTE: Icons & Theme -->
     <link rel="icon" href="https://raw.githubusercontent.com/mrcrazyapps/fallout76-item-finder/main/icon-192.png" sizes="192x192">
     <link rel="icon" href="https://raw.githubusercontent.com/mrcrazyapps/fallout76-item-finder/main/icon-512.png" sizes="512x512">
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/mrcrazyapps/fallout76-item-finder/main/icon-192.png">
     <meta name="theme-color" content="#00ff00">
+
     <style>
-        body { font-family: 'Courier New', monospace; margin: 20px; background-color: #0a2a2a; color: #00ff00; overflow-x: hidden; }
-        h1 { color: #00ff00; text-align: center; text-shadow: 0 0 10px #00ff00; font-size: 2.2em; margin-bottom: 12px; }
+        /* DEV NOTE: GLOBAL STYLES — FALLOUT 76 TERMINAL AESTHETIC */
+        body { 
+            font-family: 'Courier New', monospace; 
+            margin: 20px; 
+            background-color: #0a2a2a; /* Light Mode: Dark Green */
+            color: #00ff00; 
+            overflow-x: hidden; 
+        }
+
+        h1 { 
+            color: #00ff00; 
+            text-align: center; 
+            text-shadow: 0 0 10px #00ff00; 
+            font-size: 2.2em; 
+            margin-bottom: 12px; 
+        }
+
+        /* DEV NOTE: MAP STYLING — BLACK BACKGROUND, GREEN BORDER */
         #map { 
             height: 750px; 
             max-width: 95%; 
             margin: 0 auto 20px; 
             border: 2px solid #00ff00; 
             box-shadow: 0 0 15px #00ff00; 
-            background-color: #000000; 
+            background-color: #000000; /* Map background = black */
             position: relative; 
         }
-        .controls { margin-bottom: 20px; text-align: center; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-        input[type="text"], select { padding: 8px; width: 100%; max-width: 200px; box-sizing: border-box; border: 2px solid #00ff00; border-radius: 0; background-color: #1a3c34; color: #00ff00; font-family: 'Courier New', monospace; }
-        #combinedSearch { max-width: 250px; transition: background-color 0.3s, box-shadow 0.3s; }
-        #combinedSearch.grid-highlight, #combinedSearch.item-highlight { background-color: #0a3a0a !important; box-shadow: 0 0 15px #00ff00, inset 0 0 10px rgba(0, 255, 0, 0.3); animation: pulseSearch 1.5s ease-out; }
-        @keyframes pulseSearch { 0%, 100% { box-shadow: 0 0 15px #00ff00, inset 0 0 10px rgba(0, 255, 0, 0.3); } 50% { box-shadow: 0 0 25px #00ff00, inset 0 0 15px rgba(0, 255, 0, 0.5); } }
-        button { padding: 8px 16px; width: 100%; max-width: 200px; box-sizing: border-box; background-color: #1a3c34; color: #00ff00; border: 2px solid #00ff00; border-radius: 0; cursor: pointer; font-family: 'Courier New', monospace; transition: background-color 0.3s; margin: 5px; }
-        button:hover { background-color: #00ff00; color: #0a2a2a; }
-        button.reset-btn { background-color: #F7615E !important; color: #000 !important; font-weight: 700; }
-        /* BUTTON COLORS — UNIQUE & LIGHT */
-        #voiceSearchBtn { background: #66ccff !important; color: #000 !important; }
-        #toggleClusterBtn { background: #ffcc66 !important; color: #000 !important; }
-        #toggleMapBtn { background: #99ff99 !important; color: #000 !important; }
-        #toggleGridBtn { background: #ff99cc !important; color: #000 !important; }
-        #toggleButtonGroup { background: #cc99ff !important; color: #000 !important; }
-        #howToUseBtn { background: #ffff99 !important; color: #000 !important; }
-        #nukeCodesBtn { background: #ff6666 !important; color: #000 !important; }
-        #toggleSoundsBtn { background: #66ff99 !important; color: #000 !important; }
-        #exportJsonBtn { background: #99ccff !important; color: #000 !important; }
-        #importBtn { background: #ccff99 !important; color: #000 !important; }
-        #downloadCommunityBtn { background: #ffcc00 !important; color: #000 !important; font-weight:700; }
-        #saveMapJpegBtn { background: #ff9966 !important; color: #000 !important; }
-        #toggleDarkModeBtn { background: #cccccc !important; color: #000 !important; }
-        #lockAllBtn { background: #ffaa00 !important; color: #000 !important; }
-        /* MODAL BUTTONS */
+
+        /* DEV NOTE: FORM CONTROLS — GREEN BORDERS, BLACK INPUTS */
+        .controls { 
+            margin-bottom: 20px; 
+            text-align: center; 
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: center; 
+            gap: 10px; 
+        }
+        input[type="text"], select, textarea { 
+            padding: 8px; 
+            width: 100%; 
+            max-width: 200px; 
+            box-sizing: border-box; 
+            border: 2px solid #00ff00; 
+            border-radius: 0; 
+            background-color: #000; 
+            color: #00ff00; 
+            font-family: 'Courier New', monospace; 
+            font-size: 14px;
+        }
+        textarea { 
+            min-height: 80px; 
+            resize: vertical; 
+        }
+
+        /* DEV NOTE: SEARCH BAR HIGHLIGHT ANIMATION */
+        #combinedSearch { 
+            max-width: 250px; 
+            transition: background-color 0.3s, box-shadow 0.3s; 
+        }
+        #combinedSearch.grid-highlight, #combinedSearch.item-highlight { 
+            background-color: #0a3a0a !important; 
+            box-shadow: 0 0 15px #00ff00, inset 0 0 10px rgba(0, 255, 0, 0.3); 
+            animation: pulseSearch 1.5s ease-out; 
+        }
+        @keyframes pulseSearch { 
+            0%, 100% { box-shadow: 0 0 15px #00ff00, inset 0 0 10px rgba(0, 255, 0, 0.3); } 
+            50% { box-shadow: 0 0 25px #00ff00, inset 0 0 15px rgba(0, 255, 0, 0.5); } 
+        }
+
+        /* DEV NOTE: BUTTONS — UNIFIED GREEN + BOLD TEXT */
+        button { 
+            padding: 8px 16px; 
+            width: 100%; 
+            max-width: 200px; 
+            box-sizing: border-box; 
+            background-color: #1a3c34; 
+            color: #00ff00; 
+            border: 2px solid #00ff00; 
+            border-radius: 0; 
+            cursor: pointer; 
+            font-family: 'Courier New', monospace; 
+            transition: background-color 0.3s; 
+            margin: 5px; 
+            font-weight: bold; 
+        }
+        button:hover { 
+            background-color: #00ff00; 
+            color: #000; 
+        }
+        button.reset-btn { 
+            background-color: #F7615E !important; 
+            color: #000 !important; 
+            font-weight: 700; 
+        }
+
+        /* DEV NOTE: SPECIAL BUTTONS — SAVE, DELETE, ETC */
         #saveItemBtn { background: #00ff00 !important; color: #000 !important; }
         #shareItemBtn { background: #00b7eb !important; color: #000 !important; }
         #deleteItemBtn { background: #F7615E !important; color: #000 !important; }
         #undoItemBtn { background: #cc8400 !important; color: #000 !important; margin: 8px 8px !important; }
         #duplicateItemBtn { background: #5E99F7 !important; color: #000 !important; }
-        #modalLockToggle, .popup-lock-toggle { color: #ffa500; cursor: pointer; }
-        #modalLockToggle:hover, .popup-lock-toggle:hover { color: #00ff00; }
-        p { max-width: 800px; margin: 0 auto 20px; text-align: center; text-shadow: 0 0 5px #00ff00; }
-        /* TABLE CONTAINER */
+
+        /* DEV NOTE: LOCK TOGGLE IN POPUP/MODAL */
+        #modalLockToggle, .popup-lock-toggle { 
+            color: #ffa500; 
+            cursor: pointer; 
+        }
+        #modalLockToggle:hover, .popup-lock-toggle:hover { 
+            color: #00ff00; 
+        }
+
+        /* DEV NOTE: TABLE CONTAINER — CENTERED, RESPONSIVE */
         #tableContainer {
             width: 100%;
             max-width: 1000px;
@@ -71,17 +145,29 @@
             border-radius: 8px;
             display: block !important;
         }
+
+        /* DEV NOTE: PAGINATION — PERFECTLY CENTERED ON ALL DEVICES */
         .pagination { 
             display: flex; 
             flex-wrap: wrap;
             justify-content: center; 
             align-items: center; 
-            gap: 15px; 
+            gap: 10px; 
             margin: 15px 0; 
             width: 100%;
+            padding: 0 10px;
+            box-sizing: border-box;
         }
-        .counter { text-align: center; margin: 10px 0; font-weight: bold; width: 100%; margin-left: 0; margin-right: 0; }
-        /* FAKE HEADER */
+
+        /* DEV NOTE: COUNTER — YOUR CENTERING FIX RESTORED */
+        .counter { 
+            width: 200px !important;
+            margin: 10px auto !important;
+            text-align: center !important;
+            font-weight: bold !important;
+        }
+
+        /* DEV NOTE: FAKE TABLE HEADER — VISUAL CLARITY */
         #customTableHeader {
             display: table !important;
             width: 100% !important;
@@ -102,7 +188,8 @@
             color: #0f0 !important;
             font-weight: bold !important;
         }
-        /* REAL TABLE - FLEX LAYOUT */
+
+        /* DEV NOTE: REAL TABLE — FLEX LAYOUT FOR MOBILE */
         #locationsTable {
             width: 100% !important;
             border-collapse: separate !important;
@@ -135,6 +222,8 @@
             0%, 100% { box-shadow: 0 0 12px #0f0, 0 0 20px #0f0; }
             50% { box-shadow: 0 0 18px #0f0, 0 0 30px #0f0; }
         }
+
+        /* DEV NOTE: TABLE CELL FLEX SIZING */
         #locationsTable tbody td {
             flex: 1;
             display: flex;
@@ -156,7 +245,8 @@
             justify-content: flex-start !important;
             padding-left: 15px !important;
         }
-        /* ICON / TEXT CELLS */
+
+        /* DEV NOTE: ICONS & LOCK TOGGLE */
         .icon-circle { 
             width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 16px; font-weight: bold; color: #000;
         }
@@ -164,16 +254,43 @@
             background: #000; color: #fff; padding: 2px 6px; border: 1px solid #0f0; border-radius: 3px; font-size: 11px; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; margin: 0 auto;
         }
         .lock-toggle { font-size: 18px; cursor: pointer; display: block; margin: 0 auto; }
-        /* MODALS */
-        .modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; overflow: hidden; background-color: rgba(0, 42, 42, 0.8); }
-        .modal-content { background-color: #1a3c34; margin: 8% auto; padding: 16px; border: 2px solid #00ff00; width: 100%; max-width: 360px; box-sizing: border-box; border-radius: 0; color: #00ff00; font-family: 'Courier New', monospace; overflow-y: auto; max-height: 80vh; -webkit-overflow-scrolling: touch; }
-        .close { color: #00ff00; float: right; font-size: 24px; font-weight: bold; line-height: 1; cursor: pointer; }
+
+        /* DEV NOTE: MODALS — FULLSCREEN, GREEN BORDER */
+        .modal { 
+            display: none; 
+            position: fixed; 
+            z-index: 10000; 
+            left: 0; top: 0; 
+            width: 100%; height: 100%; 
+            overflow: hidden; 
+            background-color: rgba(0, 42, 42, 0.8); 
+        }
+        .modal-content { 
+            background-color: #1a3c34; 
+            margin: 8% auto; 
+            padding: 16px; 
+            border: 2px solid #00ff00; 
+            width: 100%; 
+            max-width: 360px; 
+            box-sizing: border-box; 
+            border-radius: 0; 
+            color: #00ff00; 
+            font-family: 'Courier New', monospace; 
+            overflow-y: auto; 
+            max-height: 80vh; 
+            -webkit-overflow-scrolling: touch; 
+        }
+        .close { 
+            color: #00ff00; 
+            float: right; 
+            font-size: 24px; 
+            font-weight: bold; 
+            line-height: 1; 
+            cursor: pointer; 
+        }
         .close:hover { color: #0a2a2a; }
-        label { display: block; margin: 8px 0 4px; }
-        textarea, input[type="text"] { width: 100%; padding: 8px; border: 2px solid #00ff00; border-radius: 0; background-color: #0a2a2a; color: #00ff00; font-family: 'Courier New', monospace; box-sizing: border-box; }
-        textarea { height: 120px; }
-        body.modal-open { overflow: hidden; position: fixed; width: 100%; height: 100%; }
-        /* MODAL BUTTONS — CENTERED & WRAPPED */
+
+        /* DEV NOTE: MODAL BUTTONS — CENTERED & WRAPPED */
         #itemModal .modal-content > div:last-child {
             display: flex;
             flex-wrap: wrap;
@@ -181,57 +298,77 @@
             gap: 10px;
             margin-top: 12px;
         }
-        /* MARKERS */
-        .custom-icon { display: flex; align-items: center; justify-content: center; }
-        .marker-background { width: 30px; height: 30px; border-radius: 50%; opacity: 0.9; display: flex; align-items: center; justify-content: center; background-color: #808080; }
-        .custom-icon.glowing { box-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .tab-button { display: inline-block; margin: 0 5px; padding: 5px 10px; }
-        .tab-button.active { background-color: #00ff00; color: #0a2a2a; }
-        .small { font-size: 0.9em; color: #aaf0a0; }
-        .marker-cluster div { width: 30px; height: 30px; margin-left: 5px; margin-top: 5px; text-align: center; border-radius: 15px; font: bold 12px/30px "Helvetica Neue", Arial, Helvetica, sans-serif; background-color: #ffff00; color: #000000; }
-        #xpStatus { text-align: center; margin-bottom: 20px; }
-        progress { accent-color: #00ff00; width: 200px; }
-        #categoryCheckboxes label { display: flex; align-items: center; margin: 5px 0; }
-        #categoryCheckboxes input[type="checkbox"] { margin-right: 10px; }
-        #buttonGroup { display: inline-block; }
-        #tablePagination { text-align: center; margin: 10px 0; display: block; width: 100%; }
-        #tablePagination button { margin: 0 5px; }
-        .leaflet-popup-content { max-height: 200px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-        .leaflet-popup-content-wrapper { background-color: #1a3c34; color: #00ff00; font-family: 'Courier New', monospace; }
-        .leaflet-popup-close-button { color: #00ff00 !important; font-size: 16px !important; }
-        .leaflet-popup-close-button:hover { color: #0a2a2a !important; }
-        .grid-line { pointer-events: none; stroke: rgba(0, 255, 0, 0.35); stroke-width: 1; stroke-dasharray: 4, 4; }
-        .grid-label { font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; fill: #00ff00; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; pointer-events: none; text-anchor: middle; dominant-baseline: central; }
-        #gridNotification { position: fixed; bottom: 20px; right: 20px; background: #0a3a0a; color: #00ff00; padding: 14px 22px; border: 2px solid #00ff00; border-radius: 0; font-weight: bold; font-family: 'Courier New', monospace; font-size: 15px; box-shadow: 0 0 20px #00ff00, 0 0 40px rgba(0, 255, 0, 0.3); z-index: 10000; opacity: 0; transform: translateY(20px); transition: opacity 0.4s ease, transform 0.3s ease; pointer-events: none; }
-        #gridNotification.show { opacity: 1; transform: translateY(0); }
-        .flash-green { animation: flashGreen 0.6s ease-out; }
-        @keyframes flashGreen { 0% { border-color: #00ff00; } 50% { border-color: #00ff88; box-shadow: 0 0 15px #00ff88; } 100% { border-color: #00ff00; } }
-        /* DARK MODE — MAP BRIGHT, UI DARK */
+
+        /* DEV NOTE: MARKER CLUSTERING */
+        .marker-cluster div { 
+            width: 30px; height: 30px; margin-left: 5px; margin-top: 5px; text-align: center; border-radius: 15px; 
+            font: bold 12px/30px "Helvetica Neue", Arial, Helvetica, sans-serif; 
+            background-color: #ffff00; color: #000000; 
+        }
+
+        /* DEV NOTE: GRID LINES & LABELS */
+        .grid-line { 
+            pointer-events: none; 
+            stroke: rgba(0, 255, 0, 0.35); 
+            stroke-width: 1; 
+            stroke-dasharray: 4, 4; 
+        }
+        .grid-label { 
+            font-family: 'Courier New', monospace; 
+            font-size: 16px; 
+            font-weight: bold; 
+            fill: #00ff00; 
+            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; 
+            pointer-events: none; 
+            text-anchor: middle; 
+            dominant-baseline: central; 
+        }
+
+        /* DEV NOTE: GRID NOTIFICATION POPUP */
+        #gridNotification { 
+            position: fixed; 
+            bottom: 20px; 
+            right: 20px; 
+            background: #0a3a0a; 
+            color: #00ff00; 
+            padding: 14px 22px; 
+            border: 2px solid #00ff00; 
+            border-radius: 0; 
+            font-weight: bold; 
+            font-family: 'Courier New', monospace; 
+            font-size: 15px; 
+            box-shadow: 0 0 20px #00ff00, 0 0 40px rgba(0, 255, 0, 0.3); 
+            z-index: 10000; 
+            opacity: 0; 
+            transform: translateY(20px); 
+            transition: opacity 0.4s ease, transform 0.3s ease; 
+            pointer-events: none; 
+        }
+        #gridNotification.show { 
+            opacity: 1; 
+            transform: translateY(0); 
+        }
+
+        /* DEV NOTE: DARK MODE — FULL BLACK TERMINAL */
         body.dark-mode {
-            background-color: #000 !important;
+            background-color: #000000 !important; /* FULL PAGE BLACK */
         }
         body.dark-mode #searchBar,
         body.dark-mode #buttonGroup,
         body.dark-mode #tableContainer,
         body.dark-mode .modal-content,
-        body.dark-mode .leaflet-popup-content-wrapper,
         body.dark-mode #xpStatus,
         body.dark-mode h1, body.dark-mode h2,
         body.dark-mode .counter {
-            background-color: #0a0a0a !important;
+            background-color: #000000 !important;
             border-color: #00ff00 !important;
         }
         body.dark-mode input,
         body.dark-mode select,
+        body.dark-mode textarea,
         body.dark-mode button,
-        body.dark-mode .leaflet-popup-content-wrapper,
-        body.dark-mode #locationsTable td,
-        body.dark-mode #customTableHeader > div,
         body.dark-mode .counter,
-        body.dark-mode h1, body.dark-mode h2,
-        body.dark-mode .grid-label {
+        body.dark-mode h1, body.dark-mode h2 {
             color: #00ff00 !important;
         }
         body.dark-mode button:hover {
@@ -242,22 +379,94 @@
         body.dark-mode .grid-line {
             stroke: rgba(0, 255, 0, 0.4) !important;
         }
-        /* MAP STAYS BRIGHT */
-        body.dark-mode .leaflet-container,
-        body.dark-mode .leaflet-tile-pane img {
-            filter: none !important;
-            background: #fff !important;
+
+        /* DEV NOTE: LEAFLET POPUP = ALWAYS LIGHT FALLOUT 76 STYLE */
+        .leaflet-popup-content-wrapper,
+        .leaflet-popup-tip {
+            background-color: #1a3c34 !important;
+            color: #00ff00 !important;
+            font-family: 'Courier New', monospace !important;
+            border: 2px solid #00ff00 !important;
         }
-        /* MOBILE */
+        body.dark-mode .leaflet-popup-content-wrapper,
+        body.dark-mode .leaflet-popup-tip {
+            background-color: #1a3c34 !important;
+            color: #00ff00 !important;
+        }
+
+        /* DEV NOTE: ZOOM BUTTONS — FALLOUT 76 STYLE */
+        .leaflet-control-zoom a {
+            background-color: #000000 !important;
+            color: #00ff00 !important;
+            border: 2px solid #00ff00 !important;
+            font-family: 'Courier New', monospace !important;
+            font-weight: bold !important;
+            text-shadow: 0 0 5px #00ff00 !important;
+            box-shadow: 0 0 8px #00ff00 !important;
+            border-radius: 0 !important;
+            width: 30px !important;
+            height: 30px !important;
+            line-height: 26px !important;
+            font-size: 18px !important;
+            text-align: center !important;
+        }
+        .leaflet-control-zoom a:hover {
+            background-color: #00ff00 !important;
+            color: #000000 !important;
+            box-shadow: 0 0 15px #00ff00, inset 0 0 10px #00ff00 !important;
+        }
+
+        /* DEV NOTE: MARKER GLOW ANIMATION */
+        .custom-icon.glowing { 
+            box-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00 !important; 
+            animation: glowPulse 1.5s infinite ease-in-out;
+        }
+        @keyframes glowPulse {
+            0%, 100% { box-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00; }
+            50% { box-shadow: 0 0 15px #00ff00, 0 0 30px #00ff00; }
+        }
+
+        /* DEV NOTE: MARKER BACKGROUND — ROUND */
+        .marker-background { 
+            width: 30px; height: 30px; 
+            border-radius: 50% !important; 
+            display: flex; align-items: center; justify-content: center; 
+            background-color: #808080; 
+        }
+
+        /* DEV NOTE: CATEGORY LIST — VERTICAL + SPACED */
+        #categoryCheckboxes label {
+            display: block !important;
+            margin: 8px 0 !important;
+            padding: 6px !important;
+            background: rgba(0,0,0,0.3);
+            border-radius: 4px;
+        }
+
+        /* DEV NOTE: NUKA-COLA LINK — READABLE */
+        .small a {
+            color: #00ff00 !important;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+        .small a:hover {
+            color: #00ff88 !important;
+            text-shadow: 0 0 8px #00ff00;
+        }
+
+        /* DEV NOTE: MOBILE RESPONSIVENESS */
         @media (max-width: 768px) {
             #map { height: 600px; max-width: 100%; }
             .controls { flex-direction: column; align-items: center; }
-            input[type="text"], select, button { width: 100%; max-width: 100%; margin: 5px 0; font-size: clamp(14px, 4vw, 16px); padding: clamp(10px, 2vw, 12px); }
+            input[type="text"], select, textarea, button { 
+                width: 100%; max-width: 100%; margin: 5px 0; 
+                font-size: clamp(14px, 4vw, 16px); 
+                padding: clamp(10px, 2vw, 12px); 
+            }
             #combinedSearch { max-width: 100%; }
             .modal-content { max-width: 90%; padding: 12px; font-size: clamp(14px, 3.5vw, 16px); max-height: 80vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
             .close { font-size: clamp(20px, 5vw, 22px); }
             #gridNotification { bottom: 10px; right: 10px; font-size: 13px; padding: 10px 16px; box-shadow: 0 0 15px #00ff00; }
-            /* TABLE MOBILE */
             #tableContainer { padding: 8px; }
             #customTableHeader > div > div,
             #locationsTable tbody td {
@@ -273,12 +482,35 @@
             .icon-circle { width: 24px !important; height: 24px !important; font-size: 13px !important; }
             .text-location { font-size: 9px !important; max-width: 80px !important; }
         }
+
+        /* DEV NOTE: NUKE CODES EASTER EGG */
         .nuke-emoji-wrapper { text-align: center; margin: 12px 0; }
-        .nuke-emoji-btn { display: inline-block; padding: 14px 18px; background: #001100; color: #00ff00 !important; font-size: 3.2em; text-decoration: none; border: 3px solid #00ff00; border-radius: 50%; box-shadow: 0 0 14px #00ff00; transition: all 0.25s ease; cursor: pointer; }
-        .nuke-emoji-btn:hover { background: #002200; transform: scale(1.12) rotate(8deg); box-shadow: 0 0 22px #00ff00, 0 0 34px #00ff00; }
+        .nuke-emoji-btn { 
+            display: inline-block; 
+            padding: 14px 18px; 
+            background: #001100; 
+            color: #00ff00 !important; 
+            font-size: 3.2em; 
+            text-decoration: none; 
+            border: 3px solid #00ff00; 
+            border-radius: 50%; 
+            box-shadow: 0 0 14px #00ff00; 
+            transition: all 0.25s ease; 
+            cursor: pointer; 
+        }
+        .nuke-emoji-btn:hover { 
+            background: #002200; 
+            transform: scale(1.12) rotate(8deg); 
+            box-shadow: 0 0 22px #00ff00, 0 0 34px #00ff00; 
+        }
         .nuke-emoji-btn:active { transform: scale(0.96); }
-        #voiceSearchBtn[disabled], #voiceSearchBtn[style*="opacity: 0.6"] { pointer-events: auto !important; }
-        /* NO FLASH */
+
+        /* DEV NOTE: VOICE SEARCH COMPATIBILITY */
+        #voiceSearchBtn[disabled], #voiceSearchBtn[style*="opacity: 0.6"] { 
+            pointer-events: auto !important; 
+        }
+
+        /* DEV NOTE: UI LOADING FLASH PREVENTION */
         #searchBar, #buttonGroup, #belowMapControls, #toolsToggleRow, #topBar {
             visibility: hidden;
             opacity: 0;
@@ -289,7 +521,8 @@
         .map-ready #topBar {
             visibility: visible; opacity: 1;
         }
-        /* CUSTOM UI FIXES */
+
+        /* DEV NOTE: CUSTOM UI LAYOUT FIXES */
         .top-bar.hidden { display: none; }
         .tools-toggle-row { display: flex; justify-content: center; margin: 10px 0; }
         .button-group.hidden { display: none !important; }
@@ -298,13 +531,13 @@
     </style>
 </head>
 <body>
-    <!-- Title Toggle -->
+    <!-- DEV NOTE: TITLE TOGGLE BUTTON -->
     <div style="text-align:center; margin-bottom:8px;">
         <button id="toggleTitleBtn" style="padding:2px 6px; font-size:0.9em; max-width:40px; margin:0 auto;">-</button>
     </div>
     <h1 id="mainTitle">The Fallout 76 Item Finder! Quickly log items while exploring Appalachia.</h1>
   
-    <!-- SEARCH BAR + VOICE -->
+    <!-- DEV NOTE: SEARCH BAR + VOICE + CATEGORY FILTER -->
     <div id="searchBar" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:center; margin:10px auto; padding:10px; background:rgba(0,0,0,0.5); border:1px solid #0f0; border-radius:8px; max-width:90%;">
         <input type="text" id="combinedSearch" placeholder="desc/cate/grid.." style="flex:1; min-width:200px; padding:8px; background:#000; color:#0f0; border:1px solid #0f0; border-radius:4px;">
         <button id="clearSearchBtn" style="background:none; border:none; color:#00ff00; font-size:18px; cursor:pointer; display:none; padding:0 8px;">X</button>
@@ -312,10 +545,10 @@
         <button id="toggleCategoryModalBtn" style="padding:8px 12px; background:#1a3c34; color:#0f0; border:1px solid #0f0; border-radius:4px;">Toggle Categories</button>
     </div>
   
-    <!-- MAP -->
+    <!-- DEV NOTE: MAIN MAP CONTAINER -->
     <div id="map"></div>
   
-    <!-- TOOLS CONTAINER -->
+    <!-- DEV NOTE: TOOLS PANEL — ALL BUTTONS -->
     <div class="tools-container" id="buttonGroup" style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px auto; padding:10px; background:rgba(0,0,0,0.5); border:1px solid #0f0; border-radius:8px; max-width:90%;">
         <button id="voiceSearchBtn">Voice Search</button>
         <button id="toggleClusterBtn">Clustering: On</button>
@@ -334,10 +567,13 @@
         <button id="lockAllBtn">Lock All</button>
     </div>
   
-    <!-- XP STATUS -->
-    <div id="xpStatus" style="text-align:center; margin:10px; color:#0f0; font-weight:bold;">Explorer Level: <span id="levelSpan">1</span><br>XP: <progress id="xpProgress" value="0" max="1000" style="width:200px;"></progress> <span id="xpText">0 / 1000</span></div>
+    <!-- DEV NOTE: XP PROGRESS BAR -->
+    <div id="xpStatus" style="text-align:center; margin:10px; color:#0f0; font-weight:bold;">
+        Explorer Level: <span id="levelSpan">1</span><br>
+        XP: <progress id="xpProgress" value="0" max="1000" style="width:200px;"></progress> <span id="xpText">0 / 1000</span>
+    </div>
   
-    <!-- CONTENT INVENTORY -->
+    <!-- DEV NOTE: CONTENT INVENTORY TABLE -->
     <h2 style="text-align:center; margin:15px 0 5px;">Content Inventory</h2>
     <p id="counter" class="counter"></p>
   
@@ -352,9 +588,10 @@
         </table>
     </div>
   
+    <!-- DEV NOTE: GRID NOTIFICATION POPUP -->
     <div id="gridNotification"></div>
   
-    <!-- ITEM MODAL -->
+    <!-- DEV NOTE: ITEM LOGGING MODAL -->
     <div id="itemModal" class="modal">
         <div class="modal-content">
             <span class="close">X</span>
@@ -373,43 +610,56 @@
         </div>
     </div>
   
-    <!-- INSTRUCTIONS + NUKE CODES MODAL -->
+    <!-- DEV NOTE: HOW TO USE MODAL — NO TABS, NO SHORTCUT -->
     <div id="instructionsModal" class="modal">
         <div class="modal-content">
             <span class="close">X</span>
             <h1>Fallout 76 Item Finder Info</h1>
-            <div style="text-align:center; margin-bottom:10px;">
-                <button id="showInstructionsTab" class="tab-button active">How to Use</button>
-                <button id="showNukeCodesTab" class="tab-button">Nuke Codes</button>
-            </div>
-            <div id="instructionsContent" class="tab-content active">
-                <p><br>Double left-click (or double tap on mobile) the map to log an item. <strong>New markers are LOCKED by default</strong> and glow for 2 minutes.</p>
-                <p><strong>Unlock markers</strong> to drag them—drop auto-saves new position + glows! Lock to protect from accidental moves.</p>
-                <p>Right-click or long-press (on mobile) on markers to edit, delete, or duplicate them (undo available after delete). Edit or delete from the Content Inventory.</p>
-                <p>Left-click any row in the Content Table to page scrolls to map + zooms to marker!</p>
-                <p>Right-click row opens Edit menu + zooms.</p>
-                <p>Use the search bar to filter by description or category or grid number.</p>
-                <p>Toggle between the named and no-name map versions using the "Toggle Map" button.</p>
-                <p>Click anywhere on the map to see the grid coordinate (e.g., C4) in a green popup!</p>
-                <p>Toggle the grid overlay with the "Grid" button.</p>
-                <p>Create custom categories in the Toggle Categories menu to organize your items.</p>
-                <p>Export User created or All logged locations to save data or import others' markers (duplicates are skipped).</p>
-                <p>Save a JPEG of the map to capture your current view with markers.</p>
-                <p>Gain XP for logging new items and level up like in Fallout 76! Lose XP for deleting items.</p>
-                <p>For offline use on Android or iOS, save this locally and open in Chrome, Firefox, or Safari. An internet connection is needed for the map and libraries on first load.</p>
-                <p>Check the "Update Community Map" button periodically for the latest map version or to reset the app if you encounter issues. Find this tip in the "How to Use" section.</p>
+
+            <p><strong>Double-tap</strong> (mobile) or <strong>double-click</strong> the map to log an item.</p>
+            <p><strong>New markers</strong> are <strong>LOCKED</strong> and <strong>glow for 2 minutes</strong>.</p>
+            <p><strong>Unlock</strong> to drag — drop auto-saves + glows again!</p>
+            <p><strong>Lock</strong> to protect from accidental moves.</p>
+            <p><strong>Right-click</strong> or <strong>long-press</strong> markers to <strong>edit, delete, or duplicate</strong> (undo available).</p>
+            <p><strong>Left-click</strong> any row in the <strong>Content Inventory</strong> to zoom to marker.</p>
+            <p><strong>Right-click</strong> row to open <strong>Edit menu + zoom</strong>.</p>
+            <p>Use the <strong>search bar</strong> to filter by description, category, or grid.</p>
+            <p>Toggle between <strong>named</strong> and <strong>no-name</strong> maps with the button.</p>
+            <p>Click anywhere to see <strong>grid coordinate</strong> (e.g., C4) in a green popup.</p>
+            <p>Toggle <strong>grid overlay</strong> with the Grid button.</p>
+            <p>Create <strong>custom categories</strong> in the Toggle Categories menu.</p>
+            <p><strong>Export</strong> your markers or <strong>import</strong> others (duplicates skipped).</p>
+            <p><strong>Save a JPEG</strong> of your current map view.</p>
+            <p><strong>Gain XP</strong> for logging items — level up like in Fallout 76!</p>
+            <p><strong>Lose XP</strong> when deleting items.</p>
+            <p>For <strong>offline use</strong>: Save locally and open in Chrome/Firefox/Safari.</p>
+            <p>Internet needed <strong>only on first load</strong> for map & libraries.</p>
+            <p><strong>Update Community Map</strong> regularly for latest version.</p>
+
+            <div style="text-align:center; margin:15px 0;">
                 <button id="resetAppBtn" class="reset-btn">Reset App (for debugging only)</button>
-                <p class="small"><br>Love the Item Finder? Support MrCrazy with a <a href="https://buymeacoffee.com/mrcrazy" target="_blank">Nuka-Cola</a>!</p>
-                <p class="small" id="appVersionText">The Fallout 76 Item Finder Map Version 37 Made By MrCrazy</p>
             </div>
-            <div id="nukeCodesContent" class="tab-content">
-                <p><strong><br>Nuke Codes</strong></p>
-                <div id="nuke-codes">Loading codes…</div>
+
+            <p class="small"><br>Love the Item Finder? Support MrCrazy with a <a href="https://buymeacoffee.com/mrcrazy" target="_blank">Nuka-Cola</a>!</p>
+            <p class="small" id="appVersionText">The Fallout 76 Item Finder Map Version 37 Made By MrCrazy</p>
+        </div>
+    </div>
+
+    <!-- DEV NOTE: NUKE CODES MODAL — STANDALONE -->
+    <div id="nukeCodesModal" class="modal">
+        <div class="modal-content">
+            <span class="close">X</span>
+            <h1>Nuke Codes</h1>
+            <div class="nuke-emoji-wrapper">
+                <a href="https://www.falloutbuilds.com/fo76/nuke-codes/" target="_blank" rel="noopener noreferrer" class="nuke-emoji-btn" title="Launch codes – click the rocket">ROCKET</a>
             </div>
+            <p style="text-align:center; margin-top:20px;">
+                <strong>Weekly launch codes — always up to date!</strong>
+            </p>
         </div>
     </div>
   
-    <!-- CATEGORY TOGGLE MODAL -->
+    <!-- DEV NOTE: CATEGORY TOGGLE MODAL -->
     <div id="categoryToggleModal" class="modal">
         <div class="modal-content">
             <span class="close">X</span>
@@ -425,15 +675,15 @@
         </div>
     </div>
   
-    <!-- CREATE CATEGORY MODAL -->
+    <!-- DEV NOTE: CREATE CATEGORY MODAL — SPACED & CLEAN -->
     <div id="createCategoryModal" class="modal">
         <div class="modal-content">
             <span class="close">X</span>
             <h2>Create New Category</h2>
-            <label>Category Name:</label>
-            <input type="text" id="newCategoryName" placeholder="Enter category name">
-            <label>Emoji (only one):</label>
-            <input type="text" id="newCategoryEmoji" placeholder="Paste emoji" maxlength="2" inputmode="text">
+            <label style="display:block; margin:10px 0 4px;">Category Name:</label>
+            <input type="text" id="newCategoryName" placeholder="Enter category name" style="width:100%; padding:8px; margin-bottom:10px;">
+            <label style="display:block; margin:10px 0 4px;">Emoji (only one):</label>
+            <input type="text" id="newCategoryEmoji" placeholder="Paste emoji" maxlength="2" inputmode="text" style="width:100%; padding:8px; margin-bottom:10px;">
             <p class="small">Paste one emoji. Only emojis allowed.</p>
             <div style="margin-top:12px; text-align:center;">
                 <button id="saveCategoryBtn">Save Category</button>
@@ -441,7 +691,7 @@
         </div>
     </div>
   
-    <!-- DELETE CATEGORY MODAL -->
+    <!-- DEV NOTE: DELETE CATEGORY MODAL -->
     <div id="deleteCategoryModal" class="modal">
         <div class="modal-content">
             <span class="close">X</span>
@@ -458,8 +708,10 @@
     </div>
 
 <script>
+/* DEV NOTE: MAIN APP LOGIC — FULLY COMMENTED */
 document.addEventListener('DOMContentLoaded', function() {
     (function() {
+        /* DEV NOTE: STORAGE KEYS */
         const STORAGE_KEY = 'fallout76_locations';
         const CUSTOM_CATEGORIES_KEY = 'fallout76_custom_categories';
         const MAP_VERSION_KEY = 'fallout76_map_version';
@@ -467,6 +719,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const UPDATE_VERSION_KEY = 'fallout76_last_update_seen';
         const CURRENT_UPDATE_VERSION = 'v37-final';
         const APP_VERSION = "37";
+
+        /* DEV NOTE: SOUND SYSTEM — 8-BIT FALLOUT VIBES */
         let soundsEnabled = localStorage.getItem('soundsEnabled') !== 'false';
         const baseSounds = {
             click: new Audio("https://rpg.hamsterrepublic.com/wiki-images/8/84/Select8-Bit.ogg"),
@@ -487,6 +741,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 baseSounds[type].play().catch(() => {});
             }
         }
+
+        /* DEV NOTE: ID & CID GENERATION */
         function generateUniqueId() { return 'id-' + crypto.randomUUID(); }
         function generateCid(loc) {
             const desc = (loc.desc || '').toString().toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '_');
@@ -494,6 +750,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const lng = Math.round(loc.lng);
             return `${loc.category}_${desc}_${lat}_${lng}`;
         }
+
+        /* DEV NOTE: LOAD LOCATIONS FROM LOCALSTORAGE */
         let locations = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         locations.forEach(loc => {
             if (!loc.id) loc.id = generateUniqueId();
@@ -503,10 +761,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (loc.locked === undefined) loc.locked = false;
         });
         localStorage.setItem(STORAGE_KEY, JSON.stringify(locations));
+
+        /* DEV NOTE: CUSTOM CATEGORIES & COMMUNITY VERSION */
         let customCategories = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_KEY)) || {};
         let communityVersion = localStorage.getItem(MAP_VERSION_KEY) || "1.0";
         let termsAccepted = localStorage.getItem(TERMS_ACCEPTED_KEY) === 'true';
         let lastImportBackup = null;
+
+        /* DEV NOTE: DEFAULT CATEGORIES & ICONS */
         const defaultCategoryIcons = {
             'weapons': 'GUN', 'armor': 'SHIELD', 'aid': 'SYRINGE', 'food/drink': 'FORK', 'ammunition': 'EXPLOSION',
             'apparel': 'SHIRT', 'plans': 'SCROLL', 'junk': 'TRASH', 'holotapes': 'DISC', 'misc': 'NOTE',
@@ -518,6 +780,8 @@ document.addEventListener('DOMContentLoaded', function() {
             'event locations': 'PARTY', 'named locations': 'FLAG', 'regions': 'PIN'
         };
         let categoryIcons = { ...defaultCategoryIcons, ...customCategories };
+
+        /* DEV NOTE: CATEGORY COLORS */
         const defaultCategoryColors = {
             'weapons': '#ff4444', 'armor': '#4682b4', 'aid': '#32cd32', 'food/drink': '#adff2f',
             'ammunition': '#ff8c00', 'apparel': '#dda0dd', 'plans': '#a0522d', 'junk': '#808080',
@@ -530,7 +794,19 @@ document.addEventListener('DOMContentLoaded', function() {
             'regions': '#00ff00', 'named locations': '#ffffff'
         };
         let categoryColors = { ...defaultCategoryColors };
-        const map = L.map('map', { crs: L.CRS.Simple, minZoom: -3, maxZoom: 4, zoomControl: true, scrollWheelZoom: true, doubleClickZoom: true, boxZoom: true, touchZoom: true, dragging: true, keyboard: true });
+
+        /* DEV NOTE: LEAFLET MAP INITIALIZATION */
+        const map = L.map('map', { 
+            crs: L.CRS.Simple, 
+            minZoom: -3, maxZoom: 4, 
+            zoomControl: true, 
+            scrollWheelZoom: true, 
+            doubleClickZoom: true, 
+            boxZoom: true, 
+            touchZoom: true, 
+            dragging: true, 
+            keyboard: true 
+        });
         const imageBounds = [[0, 0], [4096, 4096]];
         const mapUrls = {
             named: 'https://i.postimg.cc/HpqMVWjB/Mappalachia-Map-of-Appalachia.jpg',
@@ -539,10 +815,14 @@ document.addEventListener('DOMContentLoaded', function() {
         let currentMap = localStorage.getItem('currentMap') || 'named';
         let imageOverlay = L.imageOverlay(mapUrls[currentMap], imageBounds).addTo(map);
         map.fitBounds(imageBounds);
+
+        /* DEV NOTE: MARKER CLUSTERING */
         const clusteredMarkers = L.markerClusterGroup({ maxClusterRadius: 30, disableClusteringAtZoom: 2 });
         const nonClusteredMarkers = L.layerGroup();
         map.addLayer(clusteredMarkers);
         map.addLayer(nonClusteredMarkers);
+
+        /* DEV NOTE: STATE VARIABLES */
         let lastDeleted = null;
         let currentIndex = -1;
         let tempLatLng = { lat: 0, lng: 0 };
@@ -567,7 +847,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let titleVisible = localStorage.getItem('titleVisible') !== 'false';
         let toolsVisible = localStorage.getItem('toolsVisible') !== 'false';
 
-        // AUTO-LOCK: NEW MARKERS DEFAULT TO LOCKED
+        /* DEV NOTE: CREATE NEW LOCATION (AUTO-LOCKED) */
         function createNewLocation(lat, lng, category, desc) {
             return {
                 id: generateUniqueId(),
@@ -581,6 +861,7 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
 
+        /* DEV NOTE: GRID DRAWING */
         function drawGrid() {
             gridLayer.clearLayers();
             if (!gridEnabled) return;
@@ -605,6 +886,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        /* DEV NOTE: GRID CONVERSION FUNCTIONS */
         function getGridFromLatLng(lat, lng) {
             const gridSize = 10;
             const cellSize = 4096 / gridSize;
@@ -631,6 +913,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return { lat: centerY, lng: centerX };
         }
 
+        /* DEV NOTE: GRID NOTIFICATION */
         function showGridNotification(grid) {
             const notif = document.getElementById('gridNotification');
             if (!notif) return;
@@ -639,6 +922,7 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => notif.classList.remove('show'), 3000);
         }
 
+        /* DEV NOTE: SEARCH HIGHLIGHT ANIMATION */
         function highlightSearchBar(type = 'grid') {
             const search = document.getElementById('combinedSearch');
             if (!search) return;
@@ -647,12 +931,14 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => search.classList.remove(type === 'grid' ? 'grid-highlight' : 'item-highlight'), 1500);
         }
 
+        /* DEV NOTE: EMOJI VALIDATION */
         function isValidEmoji(str) {
             if (!str || str.length === 0) return false;
             const emojiRegex = /^[\p{Emoji}]+$/u;
             return emojiRegex.test(str.trim());
         }
 
+        /* DEV NOTE: AUTO-ADD GRID TO DESCRIPTION */
         function updateDescWithGrid(desc, lat, lng) {
             const grid = getGridFromLatLng(lat, lng);
             const x = Math.round(lng);
@@ -665,6 +951,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return desc + '\n' + newCoords;
         }
 
+        /* DEV NOTE: DOM ELEMENT REFERENCES */
         const itemModal = document.getElementById('itemModal');
         const deleteBtn = document.getElementById('deleteItemBtn');
         const undoBtn = document.getElementById('undoItemBtn');
@@ -705,6 +992,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const undoImportBtn = document.getElementById('undoImportBtn');
         const lockAllBtn = document.getElementById('lockAllBtn');
 
+        // NEW: Nuke Codes Modal
+        const nukeCodesModal = document.getElementById('nukeCodesModal');
+
+        /* DEV NOTE: INITIALIZE BUTTON TEXT */
         if (toggleSoundsBtn) toggleSoundsBtn.textContent = soundsEnabled ? 'Sounds: On' : 'Sounds: Off';
         if (toggleClusterBtn) toggleClusterBtn.textContent = `Clustering: ${clusteringEnabled ? 'On' : 'Off'}`;
         if (toggleMapBtn) toggleMapBtn.textContent = currentMap === 'named' ? 'Show No-Name Map' : 'Show Named Map';
@@ -717,7 +1008,7 @@ document.addEventListener('DOMContentLoaded', function() {
             toggleDarkModeBtn.textContent = darkMode ? 'Dark Mode: On' : 'Dark Mode: Off';
         }
 
-        // Lock All Button Visibility
+        /* DEV NOTE: LOCK ALL BUTTON VISIBILITY */
         function updateLockAllBtn() {
             const hasUnlocked = locations.some(l => !l.locked);
             if (lockAllBtn) {
@@ -736,6 +1027,7 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
 
+        /* DEV NOTE: VOICE SEARCH (CHROME/EDGE ONLY) */
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognition && voiceSearchBtn) {
             const recognition = new SpeechRecognition();
@@ -780,6 +1072,7 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
 
+        /* DEV NOTE: SEARCH BAR LOGIC */
         let typingTimeout;
         let lastFilteredCount = -1;
         if (combinedSearch) {
@@ -828,6 +1121,7 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
 
+        /* DEV NOTE: NETWORK TIMEOUT UTILITY */
         function fetchWithTimeout(url, ms = 10000) {
             return Promise.race([
                 fetch(url),
@@ -835,25 +1129,7 @@ document.addEventListener('DOMContentLoaded', function() {
             ]);
         }
 
-        function fetchNukeCodes() {
-            const codesDiv = document.getElementById('nuke-codes');
-            if (!codesDiv) return;
-            codesDiv.innerHTML = `
-            <em>Visit the site to view Alpha, Bravo, and Charlie codes for this week.
-            Weekly launch codes are always up to date!</em><br>
-       
-            <div class="nuke-emoji-wrapper">
-                <a href="https://www.falloutbuilds.com/fo76/nuke-codes/"
-                   target="_blank"
-                   rel="noopener noreferrer"
-                   class="nuke-emoji-btn"
-                   title="Launch codes – click the rocket">
-                   ROCKET
-                </a>
-            </div>
-        `;
-        }
-
+        /* DEV NOTE: TERMS OF USE MODAL */
         const termsModal = document.createElement('div');
         termsModal.className = 'modal';
         termsModal.style.display = 'block';
@@ -896,6 +1172,7 @@ document.addEventListener('DOMContentLoaded', function() {
             setButtonsEnabled(true);
         }
 
+        /* DEV NOTE: UPDATE NOTIFICATION MODAL */
         if (localStorage.getItem(UPDATE_VERSION_KEY) !== CURRENT_UPDATE_VERSION) {
             const updateModal = document.createElement('div');
             updateModal.className = 'modal';
@@ -962,50 +1239,32 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        const showInstructionsTab = document.getElementById('showInstructionsTab');
-        if (showInstructionsTab) {
-            showInstructionsTab.onclick = () => {
-                document.getElementById('instructionsContent').classList.add('active');
-                document.getElementById('nukeCodesContent').classList.remove('active');
-                showInstructionsTab.classList.add('active');
-                document.getElementById('showNukeCodesTab').classList.remove('active');
-                playSound('click');
-            };
-        }
-        const showNukeCodesTab = document.getElementById('showNukeCodesTab');
-        if (showNukeCodesTab) {
-            showNukeCodesTab.onclick = () => {
-                document.getElementById('nukeCodesContent').classList.add('active');
-                document.getElementById('instructionsContent').classList.remove('active');
-                showNukeCodesTab.classList.add('active');
-                document.getElementById('showInstructionsTab').classList.remove('active');
-                fetchNukeCodes();
-                playSound('click');
-            };
-        }
+        /* DEV NOTE: HOW TO USE BUTTON */
         if (howToUseBtn) {
             howToUseBtn.onclick = () => {
                 document.getElementById('instructionsModal').style.display = 'block';
                 document.body.classList.add('modal-open');
-                showInstructionsTab.click();
                 playSound('click');
             };
         }
+
+        /* DEV NOTE: NUKE CODES BUTTON IN TOOLS PANEL */
         if (nukeCodesBtn) {
             nukeCodesBtn.onclick = () => {
-                document.getElementById('instructionsModal').style.display = 'block';
+                document.getElementById('nukeCodesModal').style.display = 'block';
                 document.body.classList.add('modal-open');
-                showNukeCodesTab.click();
                 playSound('click');
             };
         }
+
+        /* DEV NOTE: RESET APP */
         if (resetAppBtn) {
             resetAppBtn.onclick = () => {
                 const keepUserMarkers = confirm(
                     "WARNING: This will DELETE ALL markers, categories, and settings.\n\n" +
                     "Keep your USER-CREATED markers?\n" +
-                    "• OK = Save them to a backup file\n" +
-                    "• CANCEL = Full reset (everything lost)\n\n" +
+                    "OK = Save them to a backup file\n" +
+                    "CANCEL = Full reset (everything lost)\n\n" +
                     "Continue?"
                 );
                 if (!keepUserMarkers) {
@@ -1047,82 +1306,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 500);
             };
         }
-        if (newCategoryEmoji) {
-            newCategoryEmoji.addEventListener('input', function(e) {
-                const val = e.target.value;
-                const clean = val.replace(/[^\p{Emoji}]/gu, '');
-                if (val !== clean) e.target.value = clean;
-            });
-        }
-        const saveCategoryBtn = document.getElementById('saveCategoryBtn');
-        if (saveCategoryBtn) {
-            saveCategoryBtn.onclick = () => {
-                const nameInput = document.getElementById('newCategoryName');
-                const emojiInput = document.getElementById('newCategoryEmoji');
-                if (!nameInput || !emojiInput) return;
-                const name = nameInput.value.trim();
-                const emoji = emojiInput.value.trim();
-                if (!name || categoryIcons[name]) {
-                    if (nameInput) nameInput.classList.add('flash-green');
-                    setTimeout(() => nameInput.classList.remove('flash-green'), 600);
-                    return;
-                }
-                if (!isValidEmoji(emoji)) {
-                    if (emojiInput) emojiInput.classList.add('flash-green');
-                    setTimeout(() => emojiInput.classList.remove('flash-green'), 600);
-                    return;
-                }
-                customCategories[name] = emoji;
-                categoryIcons[name] = emoji;
-                categoryColors[name] = '#f0e68c';
-                activeCategories.add(name);
-                localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(customCategories));
-                localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
-                document.getElementById('createCategoryModal').style.display = 'none';
-                renderCategoryToggles();
-                updateCategoryDropdowns();
-                loadData();
-                playSound('saving');
+
+        /* DEV NOTE: MODAL CLOSE HANDLERS — ONLY X BUTTON */
+        document.querySelectorAll('.modal .close').forEach(closeBtn => {
+            closeBtn.onclick = (e) => {
+                e.stopPropagation();
+                closeBtn.closest('.modal').style.display = 'none';
+                document.body.classList.remove('modal-open');
+                playSound('modalClose');
             };
-        }
+        });
 
-        function renderCategoryToggles() {
-            const container = document.getElementById('categoryCheckboxes');
-            if (!container) return;
-            container.innerHTML = '';
-            const allCats = [...Object.keys(defaultCategoryIcons), ...Object.keys(customCategories)].sort();
-            allCats.forEach(cat => {
-                const label = document.createElement('label');
-                const checked = activeCategories.has(cat) ? 'checked' : '';
-                label.innerHTML = `<input type="checkbox" value="${cat}" ${checked}><span>${cat} ${categoryIcons[cat] || ''}</span>`;
-                container.appendChild(label);
-            });
-            container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-                cb.addEventListener('change', () => {
-                    const val = cb.value;
-                    if (cb.checked) activeCategories.add(val);
-                    else activeCategories.delete(val);
-                    localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
-                    loadData(combinedSearch.value, categoryFilter.value);
-                    playSound('selectcategory');
-                });
-            });
-        }
-
-        function updateCategoryDropdowns() {
-            const categories = [...Object.keys(defaultCategoryIcons), ...Object.keys(customCategories)].sort();
-            const makeOption = cat => `<option value="${cat}">${cat} ${categoryIcons[cat] || ''}</option>`;
-            if (categoryFilter) categoryFilter.innerHTML = '<option value="">All Categories</option>' + categories.map(makeOption).join('');
-            if (itemCategorySelect) itemCategorySelect.innerHTML = categories.map(makeOption).join('');
-            if (currentCategoryFilter && categories.includes(currentCategoryFilter) && categoryFilter) {
-                categoryFilter.value = currentCategoryFilter;
-            }
-        }
-
+        /* DEV NOTE: GLOWING MARKER DETECTION */
         function isGlowing(loc) {
             return loc.addedTime && (Date.now() - loc.addedTime) < 120000;
         }
 
+        /* DEV NOTE: MARKER ICON CREATION */
         function createMarkerIcon(loc) {
             const isTextOnly = ['named locations', 'regions'].includes(loc.category);
             if (isTextOnly) {
@@ -1150,6 +1350,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        /* DEV NOTE: TEMPORARY MESSAGE SYSTEM */
         const messageQueue = [];
         let activeMessageControl = null;
         function showTempMessage(html, ms = 3000) {
@@ -1187,11 +1388,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }, ms);
         }
 
+        /* DEV NOTE: POPUP EDIT FROM MARKER */
         window.editMarkerFromPopup = function(index) {
             map.closePopup();
             openModal('Edit Item', index);
         };
 
+        /* DEV NOTE: MARKER DRAG HANDLER */
         function attachDragHandler(marker, loc) {
             let isDragging = false;
             const onDragging = (e) => {
@@ -1229,641 +1432,510 @@ document.addEventListener('DOMContentLoaded', function() {
                 showTempMessage(`Moved + saved! Lock to protect. ${loc.icon} ${loc.category}`, 4000);
                 safeFlyTo(newLatLng.lat, newLatLng.lng, map.getZoom());
                 forceReload();
-                        };
-            const onDragStart = (e) => {
-                if (loc.locked || isDraggingAny) return;
-                if (e.touches) L.DomEvent.preventDefault(e);
-                isDragging = true;
-                isDraggingAny = true;
-                map.dragging.disable();
-                L.DomUtil.addClass(marker._icon, 'dragging');
-                if (activeMessageControl) {
-                    map.removeControl(activeMessageControl);
-                    activeMessageControl = null;
-                }
-                L.DomEvent.on(document, 'mousemove', onDragging);
-                L.DomEvent.on(document, 'mouseup', onDragEnd);
-                L.DomEvent.on(document, 'touchmove', onDragging);
-                L.DomEvent.on(document, 'touchend', onDragEnd);
-            };
-            marker.on('contextmenu', (e) => {
-                L.DomEvent.stopPropagation(e);
-                const index = locations.findIndex(l => l.id === marker.options.id);
-                if (index !== -1) {
-                    map.closePopup();
-                    openModal('Edit Item', index);
-                    playSound('click');
-                }
-            });
-            if (!loc.locked) {
-                marker.on('dragstart', onDragStart);
-            }
-            marker.bindPopup(`
-                <b>${loc.icon} ${loc.category.toUpperCase()}</b><br>
-                <div style="max-height:80px; overflow-y:auto; margin:4px 0; padding-right:8px;">
-                    ${escapeHtml(loc.desc)}
-                </div>
-                <div style="margin:6px 0; text-align:center;">
-                    <span class="popup-lock-toggle" onclick="toggleLockFromPopup(${locations.indexOf(loc)})">
-                        ${loc.locked ? 'LOCKED' : 'UNLOCKED'}
-                    </span>
-                </div>
-                <button onclick="editMarkerFromPopup(${locations.indexOf(loc)})"
-                        style="margin-top:6px; padding:4px 10px; background:#00ff00; color:#000; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;">
-                    Edit
-                </button>
-            `, { maxWidth: 260, autoPan: true });
-        }
-
-        function addMarkerToMap(loc) {
-            const marker = L.marker([loc.lat, loc.lng], {
-                icon: createMarkerIcon(loc),
-                id: loc.id,
-                draggable: !loc.locked
-            });
-            attachDragHandler(marker, loc);
-            const isTextOnly = ['named locations', 'regions'].includes(loc.category);
-            if (clusteringEnabled && !isTextOnly) {
-                clusteredMarkers.addLayer(marker);
-            } else {
-                nonClusteredMarkers.addLayer(marker);
-            }
-            if (isGlowing(loc)) {
-                setTimeout(() => {
-                    marker.setZIndexOffset(10000);
-                    marker.setIcon(createMarkerIcon(loc));
-                }, 100);
-            }
-        }
-
-        function updateCounterDisplay() {
-            const latestVersion = localStorage.getItem(MAP_VERSION_KEY) || "1.0";
-            const totalFiltered = locations.filter(l => activeCategories.has(l.category)).length;
-            const pageItems = locations.filter(l => activeCategories.has(l.category)).slice((tablePage - 1) * pageSize, tablePage * pageSize).length;
-            if (counter) counter.innerHTML = `<strong>Map Version ${latestVersion}</strong> - <strong>${totalFiltered}</strong> logged locations - <strong>${pageItems}</strong> showing.`;
-        }
-
-        function refreshTable(search = '', catFilter = '') {
-            const tbody = document.querySelector('#locationsTable tbody');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-            const filtered = locations.filter(loc => {
-                if (!activeCategories.has(loc.category)) return false;
-                if (catFilter && loc.category !== catFilter) return false;
-                if (!search) return true;
-                return normalizeString(loc.desc).includes(normalizeString(search)) ||
-                       normalizeString(loc.category).includes(normalizeString(search));
-            });
-            const glowing = filtered.filter(isGlowing).sort((a, b) => b.addedTime - a.addedTime);
-            const normal = filtered.filter(loc => !isGlowing(loc)).sort((a, b) => {
-                const catDiff = a.category.localeCompare(b.category);
-                return catDiff !== 0 ? catDiff : a.desc.localeCompare(b.desc);
-            });
-            const sorted = [...glowing, ...normal];
-            const start = (tablePage - 1) * pageSize;
-            const pageItems = sorted.slice(start, start + pageSize);
-            pageItems.forEach(loc => {
-                const tr = document.createElement('tr');
-                if (isGlowing(loc)) tr.classList.add('glowing');
-                const shortDesc = loc.desc.split('\n')[0].trim();
-                const lockEmoji = loc.locked ? 'LOCKED' : 'UNLOCKED';
-                const lockCell = `<td><span class="lock-toggle" onclick="toggleLockFromTable(${locations.indexOf(loc)})" title="${loc.locked ? 'Locked' : 'Unlocked'}">${lockEmoji}</span></td>`;
-                const iconCell = ['named locations', 'regions'].includes(loc.category)
-                    ? `<td><div class="text-location">${escapeHtml(shortDesc)}</div></td>`
-                    : `<td><div class="icon-circle" style="background-color:${categoryColors[loc.category] || '#808080'};">${loc.icon}</div></td>`;
-                const catCell = `<td>${escapeHtml(loc.category)} ${loc.icon}</td>`;
-                const descCell = `<td>${escapeHtml(shortDesc)}</td>`;
-                tr.innerHTML = lockCell + iconCell + catCell + descCell;
-                tr.onclick = (e) => {
-                    if (e.target.tagName === 'SPAN') return;
-                    e.preventDefault();
-                    const mapEl = document.getElementById('map');
-                    if (mapEl) mapEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    setTimeout(() => {
-                        safeFlyTo(loc.lat, loc.lng, 2);
-                        playSound('click');
-                    }, 300);
-                };
-                tr.oncontextmenu = (e) => {
-                    e.preventDefault();
-                    const mapEl = document.getElementById('map');
-                    if (mapEl) mapEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    setTimeout(() => {
-                        safeFlyTo(loc.lat, loc.lng, 2);
-                        openModal('Edit Item', locations.findIndex(l => l.id === loc.id));
-                    }, 300);
-                };
-                tbody.appendChild(tr);
-            });
-            const totalPages = Math.ceil(sorted.length / pageSize);
-            tablePage = Math.min(tablePage, totalPages || 1);
-            if (pageInfo) pageInfo.textContent = `Page ${tablePage} of ${totalPages || 1}`;
-            if (prevPageBtn) prevPageBtn.disabled = tablePage <= 1;
-            if (nextPageBtn) nextPageBtn.disabled = tablePage >= totalPages;
-            updateCounterDisplay();
-        }
-
-        window.toggleLockFromTable = function(index) {
-            const loc = locations[index];
-            loc.locked = !loc.locked;
-            saveLocations();
-            forceReload();
-            showTempMessage(loc.locked ? 'Marker locked — unlock to edit!' : 'Marker unlocked!', 4000);
-            playSound('click');
-        };
-
-        window.toggleLockFromPopup = function(index) {
-            const loc = locations[index];
-            loc.locked = !loc.locked;
-            saveLocations();
-            forceReload();
-            map.closePopup();
-            showTempMessage(loc.locked ? 'Locked!' : 'Unlocked!', 3000);
-            playSound('click');
-        };
-
-        setInterval(() => {
-            if (document.visibilityState === 'visible') {
-                [clusteredMarkers, nonClusteredMarkers].forEach(group => {
-                    group.eachLayer(marker => {
-                        const loc = locations.find(l => l.id === marker.options.id);
-                        if (loc) {
-                            const shouldGlow = isGlowing(loc);
-                            const currentIcon = marker.getIcon();
-                            if (shouldGlow && !currentIcon.options.className.includes('glowing')) {
-                                marker.setIcon(createMarkerIcon(loc));
-                                marker.setZIndexOffset(10000);
-                            } else if (!shouldGlow && currentIcon.options.className.includes('glowing')) {
-                                marker.setIcon(createMarkerIcon(loc));
-                                marker.setZIndexOffset(0);
-                            }
-                            if (loc.locked) {
-                                marker.dragging?.disable();
-                            } else {
-                                marker.dragging?.enable();
-                            }
-                        }
-                    });
-                });
-                refreshTable(combinedSearch ? combinedSearch.value : '', categoryFilter ? categoryFilter.value : '');
-                updateLockAllBtn();
-            }
-        }, 1000);
-
-        function openModal(title, index = -1, isDupe = false) {
-            if (!modalTitle) return;
-            modalTitle.innerHTML = `${title} <span id="modalLockToggle" style="font-size:22px; cursor:pointer; margin-left:10px;">${index >= 0 ? (locations[index].locked ? 'LOCKED' : 'UNLOCKED') : 'LOCKED'}</span>`;
-            currentIndex = index;
-            document.getElementById('saveItemBtn').style.display = 'inline-block';
-            const lockToggle = document.getElementById('modalLockToggle');
-            if (index >= 0 && !isDupe) {
-                const loc = locations[index];
-                if (itemCategorySelect) itemCategorySelect.value = loc.category || 'misc';
-                if (itemDescInput) itemDescInput.value = loc.desc || '';
-                if (itemCategorySelect) itemCategorySelect.disabled = loc.locked;
-                if (itemDescInput) itemDescInput.disabled = loc.locked;
-                if (deleteBtn) deleteBtn.style.display = loc.locked ? 'none' : 'inline-block';
-                if (duplicateBtn) duplicateBtn.style.display = loc.locked ? 'none' : 'inline-block';
-                if (undoBtn) undoBtn.style.display = lastDeleted ? 'inline-block' : 'none';
-                if (shareItemBtn) shareItemBtn.style.display = 'inline-block';
-                if (lockToggle) {
-                    lockToggle.onclick = () => {
-                        loc.locked = !loc.locked;
-                        lockToggle.textContent = loc.locked ? 'LOCKED' : 'UNLOCKED';
-                        if (itemCategorySelect) itemCategorySelect.disabled = loc.locked;
-                        if (itemDescInput) itemDescInput.disabled = loc.locked;
-                        if (deleteBtn) deleteBtn.style.display = loc.locked ? 'none' : 'inline-block';
-                        if (duplicateBtn) duplicateBtn.style.display = loc.locked ? 'none' : 'inline-block';
-                        saveLocations();
-                        forceReload();
-                        showTempMessage(loc.locked ? 'Marker locked — unlock to edit!' : 'Marker unlocked!', 4000);
-                        playSound('click');
                     };
-                }
-            } else {
-                if (itemCategorySelect) itemCategorySelect.value = 'misc';
-                if (itemDescInput) itemDescInput.value = '';
-                if (itemCategorySelect) itemCategorySelect.disabled = false;
-                if (itemDescInput) itemDescInput.disabled = false;
-                if (deleteBtn) deleteBtn.style.display = 'none';
-                if (duplicateBtn) duplicateBtn.style.display = 'none';
-                if (undoBtn) undoBtn.style.display = 'none';
-                if (shareItemBtn) shareItemBtn.style.display = 'none';
-                if (lockToggle) {
-                    lockToggle.onclick = null;
-                    lockToggle.style.cursor = 'default';
-                }
+        const onDragStart = (e) => {
+            if (loc.locked || isDraggingAny) return;
+            if (e.touches) L.DomEvent.preventDefault(e);
+            isDragging = true;
+            isDraggingAny = true;
+            map.dragging.disable();
+            L.DomUtil.addClass(marker._icon, 'dragging');
+            if (activeMessageControl) {
+                map.removeControl(activeMessageControl);
+                activeMessageControl = null;
             }
-            if (itemModal) itemModal.style.display = 'block';
-            document.body.classList.add('modal-open');
-            playSound('click');
-        }
-
-        function closeModal(modal) {
-            if (modal) modal.style.display = 'none';
-            document.body.classList.remove('modal-open');
-            playSound('modalClose');
-        }
-
-        document.querySelectorAll('.modal .close').forEach(closeBtn => {
-            closeBtn.onclick = () => closeModal(closeBtn.closest('.modal'));
+            L.DomEvent.on(document, 'mousemove', onDragging);
+            L.DomEvent.on(document, 'mouseup', onDragEnd);
+            L.DomEvent.on(document, 'touchmove', onDragging);
+            L.DomEvent.on(document, 'touchend', onDragEnd);
+        };
+        marker.on('contextmenu', (e) => {
+            L.DomEvent.stopPropagation(e);
+            const index = locations.findIndex(l => l.id === marker.options.id);
+            if (index !== -1) {
+                map.closePopup();
+                openModal('Edit Item', index);
+                playSound('click');
+            }
         });
-
-        function recalculateXP() {
-            xp = locations.length * xpPerMarker;
-            level = 1 + Math.floor(xp / xpPerLevel);
-            xp = xp % xpPerLevel;
-            if (xp < 0) xp = 0;
-            localStorage.setItem('fo76_level', level);
-            localStorage.setItem('fo76_xp', xp);
+        if (!loc.locked) {
+            marker.on('dragstart', onDragStart);
         }
-        recalculateXP();
+        marker.bindPopup(`
+            <b>${loc.icon} ${loc.category.toUpperCase()}</b><br>
+            <div style="max-height:80px; overflow-y:auto; margin:4px 0; padding-right:8px;">
+                ${escapeHtml(loc.desc)}
+            </div>
+            <div style="margin:6px 0; text-align:center;">
+                <span class="popup-lock-toggle" onclick="toggleLockFromPopup(${locations.indexOf(loc)})">
+                    ${loc.locked ? 'LOCKED' : 'UNLOCKED'}
+                </span>
+            </div>
+            <button onclick="editMarkerFromPopup(${locations.indexOf(loc)})"
+                    style="margin-top:6px; padding:4px 10px; background:#00ff00; color:#000; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;">
+                Edit
+            </button>
+        `, { maxWidth: 260, autoPan: true });
+    }
 
-        function updateXPBar() {
-            if (levelSpan) levelSpan.textContent = level;
-            if (xpProgress) {
-                xpProgress.value = xp;
-                xpProgress.max = xpPerLevel;
-            }
-            if (xpText) xpText.textContent = `${xp} / ${xpPerLevel}`;
+    /* DEV NOTE: ADD MARKER TO MAP */
+    function addMarkerToMap(loc) {
+        const marker = L.marker([loc.lat, loc.lng], {
+            icon: createMarkerIcon(loc),
+            id: loc.id,
+            draggable: !loc.locked
+        });
+        attachDragHandler(marker, loc);
+        const isTextOnly = ['named locations', 'regions'].includes(loc.category);
+        if (clusteringEnabled && !isTextOnly) {
+            clusteredMarkers.addLayer(marker);
+        } else {
+            nonClusteredMarkers.addLayer(marker);
         }
-
-        function loadData(search = '', catFilter = '') {
-            clusteredMarkers.clearLayers();
-            nonClusteredMarkers.clearLayers();
-            const filtered = locations.filter(loc => activeCategories.has(loc.category) && (!catFilter || loc.category === catFilter) && (!search || normalizeString(loc.desc + loc.category).includes(normalizeString(search))));
-            filtered.forEach(addMarkerToMap);
-            refreshTable(search, catFilter);
-            updateXPBar();
-            drawGrid();
-            saveAppState();
-            updateLockAllBtn();
-        }
-
-        function forceReload() {
-            saveAppState();
-            loadData(combinedSearch ? combinedSearch.value : '', categoryFilter ? categoryFilter.value : '');
-            renderCategoryToggles();
-            updateCategoryDropdowns();
-        }
-
-        function saveAppState() {
-            localStorage.setItem('currentSearch', combinedSearch ? combinedSearch.value : '');
-            localStorage.setItem('currentCategoryFilter', categoryFilter ? categoryFilter.value : '');
-            localStorage.setItem('tablePage', tablePage);
-            localStorage.setItem('clusteringEnabled', clusteringEnabled);
-            localStorage.setItem('gridEnabled', gridEnabled);
-            localStorage.setItem('currentMap', currentMap);
-            localStorage.setItem(MAP_VERSION_KEY, communityVersion);
-            localStorage.setItem('titleVisible', titleVisible);
-            localStorage.setItem('toolsVisible', toolsVisible);
-        }
-
-        function saveLocations() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(locations));
-            saveAppState();
-        }
-
-        function normalizeString(s) { return (s || '').toString().trim().toLowerCase(); }
-        function escapeHtml(unsafe) {
-            if (!unsafe) return '';
-            return unsafe.toString()
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
-
-        let flyTimeout;
-        function safeFlyTo(lat, lng, zoom = 2) {
-            if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) return;
-            if (lat < 0 || lat > 4096 || lng < 0 || lng > 4096) return;
-            clearTimeout(flyTimeout);
-            flyTimeout = setTimeout(() => {
-                map.flyTo([lat, lng], zoom, { duration: 0.8 });
+        if (isGlowing(loc)) {
+            setTimeout(() => {
+                marker.setZIndexOffset(10000);
+                marker.setIcon(createMarkerIcon(loc));
             }, 100);
         }
+    }
 
-        if (exportBtn) {
-            exportBtn.onclick = () => {
-                playSound('saving');
-                const wantsAll = confirm('Click **OK** to export **ALL** locations + custom categories.\n\nClick **Cancel** to export **USER-LOGGED** locations only.');
-                const exportData = {
-                    version: 1.0,
-                    communityVersion: communityVersion,
-                    customCategories: customCategories
-                };
-                let exportedCount = 0;
-                if (wantsAll) {
-                    exportData.locations = locations;
-                    exportData.note = 'ALL logged locations (community + user)';
-                    exportedCount = locations.length;
-                } else {
-                    exportData.locations = locations.filter(loc => loc.userEdited === true);
-                    exportData.note = 'USER-ONLY locations (your edits only)';
-                    exportedCount = exportData.locations.length;
-                }
-                const dataStr = JSON.stringify(exportData, null, 2);
-                const blob = new Blob([dataStr], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                const typeSuffix = wantsAll ? 'all' : 'user';
-                link.download = `fallout76_${typeSuffix}_${exportData.locations.length}_locations_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
-                link.click();
-                URL.revokeObjectURL(url);
-                let report = wantsAll ? 'Exported **ALL** locations!' : 'Exported **USER-ONLY** locations!';
-                report += `\n\n• ${exportedCount} markers\n`;
-                report += `• ${Object.keys(customCategories).length} custom categories\n`;
-                report += `• Community version: ${communityVersion}`;
-                alert(report);
+    /* DEV NOTE: COUNTER DISPLAY */
+    function updateCounterDisplay() {
+        const latestVersion = localStorage.getItem(MAP_VERSION_KEY) || "1.0";
+        const totalFiltered = locations.filter(l => activeCategories.has(l.category)).length;
+        const pageItems = locations.filter(l => activeCategories.has(l.category)).slice((tablePage - 1) * pageSize, tablePage * pageSize).length;
+        if (counter) counter.innerHTML = `<strong>Map Version ${latestVersion}</strong> - <strong>${totalFiltered}</strong> logged locations - <strong>${pageItems}</strong> showing.`;
+    }
+
+    /* DEV NOTE: TABLE REFRESH */
+    function refreshTable(search = '', catFilter = '') {
+        const tbody = document.querySelector('#locationsTable tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        const filtered = locations.filter(loc => {
+            if (!activeCategories.has(loc.category)) return false;
+            if (catFilter && loc.category !== catFilter) return false;
+            if (!search) return true;
+            return normalizeString(loc.desc).includes(normalizeString(search)) ||
+                   normalizeString(loc.category).includes(normalizeString(search));
+        });
+        const glowing = filtered.filter(isGlowing).sort((a, b) => b.addedTime - a.addedTime);
+        const normal = filtered.filter(loc => !isGlowing(loc)).sort((a, b) => {
+            const catDiff = a.category.localeCompare(b.category);
+            return catDiff !== 0 ? catDiff : a.desc.localeCompare(b.desc);
+        });
+        const sorted = [...glowing, ...normal];
+        const start = (tablePage - 1) * pageSize;
+        const pageItems = sorted.slice(start, start + pageSize);
+        pageItems.forEach(loc => {
+            const tr = document.createElement('tr');
+            if (isGlowing(loc)) tr.classList.add('glowing');
+            const shortDesc = loc.desc.split('\n')[0].trim();
+            const lockEmoji = loc.locked ? 'LOCKED' : 'UNLOCKED';
+            const lockCell = `<td><span class="lock-toggle" onclick="toggleLockFromTable(${locations.indexOf(loc)})" title="${loc.locked ? 'Locked' : 'Unlocked'}">${lockEmoji}</span></td>`;
+            const iconCell = ['named locations', 'regions'].includes(loc.category)
+                ? `<td><div class="text-location">${escapeHtml(shortDesc)}</div></td>`
+                : `<td><div class="icon-circle" style="background-color:${categoryColors[loc.category] || '#808080'};">${loc.icon}</div></td>`;
+            const catCell = `<td>${escapeHtml(loc.category)} ${loc.icon}</td>`;
+            const descCell = `<td>${escapeHtml(shortDesc)}</td>`;
+            tr.innerHTML = lockCell + iconCell + catCell + descCell;
+            tr.onclick = (e) => {
+                if (e.target.tagName === 'SPAN') return;
+                e.preventDefault();
+                const mapEl = document.getElementById('map');
+                if (mapEl) mapEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                setTimeout(() => {
+                    safeFlyTo(loc.lat, loc.lng, 2);
+                    playSound('click');
+                }, 300);
             };
-        }
+            tr.oncontextmenu = (e) => {
+                e.preventDefault();
+                const mapEl = document.getElementById('map');
+                if (mapEl) mapEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                setTimeout(() => {
+                    safeFlyTo(loc.lat, loc.lng, 2);
+                    openModal('Edit Item', locations.findIndex(l => l.id === loc.id));
+                }, 300);
+            };
+            tbody.appendChild(tr);
+        });
+        const totalPages = Math.ceil(sorted.length / pageSize);
+        tablePage = Math.min(tablePage, totalPages || 1);
+        if (pageInfo) pageInfo.textContent = `Page ${tablePage} of ${totalPages || 1}`;
+        if (prevPageBtn) prevPageBtn.disabled = tablePage <= 1;
+        if (nextPageBtn) nextPageBtn.disabled = tablePage >= totalPages;
+        updateCounterDisplay();
+    }
 
-        if (importBtn) {
-            importBtn.onclick = () => {
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = '.json';
-                input.onchange = e => {
-                    const file = e.target?.files[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = ev => {
-                        backupBeforeImport();
-                        try {
-                            const data = JSON.parse(ev.target.result);
-                            const incoming = data.locations || [];
-                            const existingByCid = new Map();
-                            const existingByKey = new Map();
-                            const userEditedCids = new Set();
-                            const userEditedKeys = new Set();
-                            locations.forEach(l => {
-                                if (l.cid) {
-                                    existingByCid.set(l.cid, l);
-                                    if (l.userEdited) userEditedCids.add(l.cid);
-                                } else {
-                                    const key = `${l.desc}|${Math.round(l.lat)}|${Math.round(l.lng)}`;
-                                    existingByKey.set(key, l);
-                                    if (l.userEdited) userEditedKeys.add(key);
-                                }
-                            });
-                            const seenCids = new Set();
-                            for (const imp of incoming) {
-                                if (imp.cid && seenCids.has(imp.cid)) {
-                                    console.warn(`Skipping duplicate CID "${imp.cid}" in import file`);
-                                    continue;
-                                }
-                                if (imp.cid) seenCids.add(imp.cid);
+    /* DEV NOTE: LOCK TOGGLE FROM TABLE */
+    window.toggleLockFromTable = function(index) {
+        const loc = locations[index];
+        loc.locked = !loc.locked;
+        saveLocations();
+        forceReload();
+        showTempMessage(loc.locked ? 'Marker locked — unlock to edit!' : 'Marker unlocked!', 4000);
+        playSound('click');
+    };
+
+    /* DEV NOTE: LOCK TOGGLE FROM POPUP */
+    window.toggleLockFromPopup = function(index) {
+        const loc = locations[index];
+        loc.locked = !loc.locked;
+        saveLocations();
+        forceReload();
+        map.closePopup();
+        showTempMessage(loc.locked ? 'Locked!' : 'Unlocked!', 3000);
+        playSound('click');
+    };
+
+    /* DEV NOTE: GLOWING MARKER UPDATE LOOP */
+    setInterval(() => {
+        if (document.visibilityState === 'visible') {
+            [clusteredMarkers, nonClusteredMarkers].forEach(group => {
+                group.eachLayer(marker => {
+                    const loc = locations.find(l => l.id === marker.options.id);
+                    if (loc) {
+                        const shouldGlow = isGlowing(loc);
+                        const currentIcon = marker.getIcon();
+                        if (shouldGlow && !currentIcon.options.className.includes('glowing')) {
+                            marker.setIcon(createMarkerIcon(loc));
+                            marker.setZIndexOffset(10000);
+                        } else if (!shouldGlow && currentIcon.options.className.includes('glowing')) {
+                            marker.setIcon(createMarkerIcon(loc));
+                            marker.setZIndexOffset(0);
+                        }
+                        if (loc.locked) {
+                            marker.dragging?.disable();
+                        } else {
+                            marker.dragging?.enable();
+                        }
+                    }
+                });
+            });
+            refreshTable(combinedSearch ? combinedSearch.value : '', categoryFilter ? categoryFilter.value : '');
+            updateLockAllBtn();
+        }
+    }, 1000);
+
+    /* DEV NOTE: RENDER CATEGORY TOGGLES */
+    function renderCategoryToggles() {
+        const container = document.getElementById('categoryCheckboxes');
+        if (!container) return;
+        container.innerHTML = '';
+        const allCats = [...Object.keys(defaultCategoryIcons), ...Object.keys(customCategories)].sort();
+        allCats.forEach(cat => {
+            const label = document.createElement('label');
+            const checked = activeCategories.has(cat) ? 'checked' : '';
+            label.innerHTML = `<input type="checkbox" value="${cat}" ${checked}><span>${cat} ${categoryIcons[cat] || ''}</span>`;
+            container.appendChild(label);
+        });
+        container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', () => {
+                const val = cb.value;
+                if (cb.checked) activeCategories.add(val);
+                else activeCategories.delete(val);
+                localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
+                loadData(combinedSearch.value, categoryFilter.value);
+                playSound('selectcategory');
+            });
+        });
+    }
+
+    /* DEV NOTE: UPDATE CATEGORY DROPDOWNS */
+    function updateCategoryDropdowns() {
+        const categories = [...Object.keys(defaultCategoryIcons), ...Object.keys(customCategories)].sort();
+        const makeOption = cat => `<option value="${cat}">${cat} ${categoryIcons[cat] || ''}</option>`;
+        if (categoryFilter) categoryFilter.innerHTML = '<option value="">All Categories</option>' + categories.map(makeOption).join('');
+        if (itemCategorySelect) itemCategorySelect.innerHTML = categories.map(makeOption).join('');
+        if (currentCategoryFilter && categories.includes(currentCategoryFilter) && categoryFilter) {
+            categoryFilter.value = currentCategoryFilter;
+        }
+    }
+
+    /* DEV NOTE: MODAL OPEN */
+    function openModal(title, index = -1, isDupe = false) {
+        if (!modalTitle) return;
+        modalTitle.innerHTML = `${title} <span id="modalLockToggle" style="font-size:22px; cursor:pointer; margin-left:10px;">${index >= 0 ? (locations[index].locked ? 'LOCKED' : 'UNLOCKED') : 'LOCKED'}</span>`;
+        currentIndex = index;
+        document.getElementById('saveItemBtn').style.display = 'inline-block';
+        const lockToggle = document.getElementById('modalLockToggle');
+        if (index >= 0 && !isDupe) {
+            const loc = locations[index];
+            if (itemCategorySelect) itemCategorySelect.value = loc.category || 'misc';
+            if (itemDescInput) itemDescInput.value = loc.desc || '';
+            if (itemCategorySelect) itemCategorySelect.disabled = loc.locked;
+            if (itemDescInput) itemDescInput.disabled = loc.locked;
+            if (deleteBtn) deleteBtn.style.display = loc.locked ? 'none' : 'inline-block';
+            if (duplicateBtn) duplicateBtn.style.display = loc.locked ? 'none' : 'inline-block';
+            if (undoBtn) undoBtn.style.display = lastDeleted ? 'inline-block' : 'none';
+            if (shareItemBtn) shareItemBtn.style.display = 'inline-block';
+            if (lockToggle) {
+                lockToggle.onclick = () => {
+                    loc.locked = !loc.locked;
+                    lockToggle.textContent = loc.locked ? 'LOCKED' : 'UNLOCKED';
+                    if (itemCategorySelect) itemCategorySelect.disabled = loc.locked;
+                    if (itemDescInput) itemDescInput.disabled = loc.locked;
+                    if (deleteBtn) deleteBtn.style.display = loc.locked ? 'none' : 'inline-block';
+                    if (duplicateBtn) duplicateBtn.style.display = loc.locked ? 'none' : 'inline-block';
+                    saveLocations();
+                    forceReload();
+                    showTempMessage(loc.locked ? 'Marker locked — unlock to edit!' : 'Marker unlocked!', 4000);
+                    playSound('click');
+                };
+            }
+        } else {
+            if (itemCategorySelect) itemCategorySelect.value = 'misc';
+            if (itemDescInput) itemDescInput.value = '';
+            if (itemCategorySelect) itemCategorySelect.disabled = false;
+            if (itemDescInput) itemDescInput.disabled = false;
+            if (deleteBtn) deleteBtn.style.display = 'none';
+            if (duplicateBtn) duplicateBtn.style.display = 'none';
+            if (undoBtn) undoBtn.style.display = 'none';
+            if (shareItemBtn) shareItemBtn.style.display = 'none';
+            if (lockToggle) {
+                lockToggle.onclick = null;
+                lockToggle.style.cursor = 'default';
+            }
+        }
+        if (itemModal) itemModal.style.display = 'block';
+        document.body.classList.add('modal-open');
+        playSound('click');
+    }
+
+    /* DEV NOTE: MODAL CLOSE */
+    function closeModal(modal) {
+        if (modal) modal.style.display = 'none';
+        document.body.classList.remove('modal-open');
+        playSound('modalClose');
+    }
+
+    /* DEV NOTE: XP SYSTEM */
+    function recalculateXP() {
+        xp = locations.length * xpPerMarker;
+        level = 1 + Math.floor(xp / xpPerLevel);
+        xp = xp % xpPerLevel;
+        if (xp < 0) xp = 0;
+        localStorage.setItem('fo76_level', level);
+        localStorage.setItem('fo76_xp', xp);
+    }
+    recalculateXP();
+
+    function updateXPBar() {
+        if (levelSpan) levelSpan.textContent = level;
+        if (xpProgress) {
+            xpProgress.value = xp;
+            xpProgress.max = xpPerLevel;
+        }
+        if (xpText) xpText.textContent = `${xp} / ${xpPerLevel}`;
+    }
+
+    /* DEV NOTE: MAIN DATA LOADER */
+    function loadData(search = '', catFilter = '') {
+        clusteredMarkers.clearLayers();
+        nonClusteredMarkers.clearLayers();
+        const filtered = locations.filter(loc => activeCategories.has(loc.category) && (!catFilter || loc.category === catFilter) && (!search || normalizeString(loc.desc + loc.category).includes(normalizeString(search))));
+        filtered.forEach(addMarkerToMap);
+        refreshTable(search, catFilter);
+        updateXPBar();
+        drawGrid();
+        saveAppState();
+        updateLockAllBtn();
+    }
+
+    /* DEV NOTE: FORCE RELOAD */
+    function forceReload() {
+        saveAppState();
+        loadData(combinedSearch ? combinedSearch.value : '', categoryFilter ? categoryFilter.value : '');
+        renderCategoryToggles();
+        updateCategoryDropdowns();
+    }
+
+    /* DEV NOTE: SAVE APP STATE */
+    function saveAppState() {
+        localStorage.setItem('currentSearch', combinedSearch ? combinedSearch.value : '');
+        localStorage.setItem('currentCategoryFilter', categoryFilter ? categoryFilter.value : '');
+        localStorage.setItem('tablePage', tablePage);
+        localStorage.setItem('clusteringEnabled', clusteringEnabled);
+        localStorage.setItem('gridEnabled', gridEnabled);
+        localStorage.setItem('currentMap', currentMap);
+        localStorage.setItem(MAP_VERSION_KEY, communityVersion);
+        localStorage.setItem('titleVisible', titleVisible);
+        localStorage.setItem('toolsVisible', toolsVisible);
+    }
+
+    /* DEV NOTE: SAVE LOCATIONS */
+    function saveLocations() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(locations));
+        saveAppState();
+    }
+
+    /* DEV NOTE: STRING UTILITIES */
+    function normalizeString(s) { return (s || '').toString().trim().toLowerCase(); }
+    function escapeHtml(unsafe) {
+        if (!unsafe) return '';
+        return unsafe.toString()
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    /* DEV NOTE: SAFE MAP FLY */
+    let flyTimeout;
+    function safeFlyTo(lat, lng, zoom = 2) {
+        if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) return;
+        if (lat < 0 || lat > 4096 || lng < 0 || lng > 4096) return;
+        clearTimeout(flyTimeout);
+        flyTimeout = setTimeout(() => {
+            map.flyTo([lat, lng], zoom, { duration: 0.8 });
+        }, 100);
+    }
+
+    /* DEV NOTE: EXPORT MARKERS */
+    if (exportBtn) {
+        exportBtn.onclick = () => {
+            playSound('saving');
+            const wantsAll = confirm('Click **OK** to export **ALL** locations + custom categories.\n\nClick **Cancel** to export **USER-LOGGED** locations only.');
+            const exportData = {
+                version: 1.0,
+                communityVersion: communityVersion,
+                customCategories: customCategories
+            };
+            let exportedCount = 0;
+            if (wantsAll) {
+                exportData.locations = locations;
+                exportData.note = 'ALL logged locations (community + user)';
+                exportedCount = locations.length;
+            } else {
+                exportData.locations = locations.filter(loc => loc.userEdited === true);
+                exportData.note = 'USER-ONLY locations (your edits only)';
+                exportedCount = exportData.locations.length;
+            }
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            const typeSuffix = wantsAll ? 'all' : 'user';
+            link.download = `fallout76_${typeSuffix}_${exportData.locations.length}_locations_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+            let report = wantsAll ? 'Exported **ALL** locations!' : 'Exported **USER-ONLY** locations!';
+            report += `\n\n• ${exportedCount} markers\n`;
+            report += `• ${Object.keys(customCategories).length} custom categories\n`;
+            report += `• Community version: ${communityVersion}`;
+            alert(report);
+        };
+    }
+
+    /* DEV NOTE: IMPORT MARKERS */
+    if (importBtn) {
+        importBtn.onclick = () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = e => {
+                const file = e.target?.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    backupBeforeImport();
+                    try {
+                        const data = JSON.parse(ev.target.result);
+                        const incoming = data.locations || [];
+                        const existingByCid = new Map();
+                        const existingByKey = new Map();
+                        const userEditedCids = new Set();
+                        const userEditedKeys = new Set();
+                        locations.forEach(l => {
+                            if (l.cid) {
+                                existingByCid.set(l.cid, l);
+                                if (l.userEdited) userEditedCids.add(l.cid);
+                            } else {
+                                const key = `${l.desc}|${Math.round(l.lat)}|${Math.round(l.lng)}`;
+                                existingByKey.set(key, l);
+                                if (l.userEdited) userEditedKeys.add(key);
                             }
-                            const preserveEdits = confirm(
-                                `IMPORT OPTIONS:\n\n` +
-                                `• OK = PRESERVE your edits/moves\n` +
-                                `• CANCEL = RESET ALL community markers to original\n\n` +
-                                `Choose wisely.`
-                            );
-                            const toAdd = [];
-                            const toReplace = [];
-                            let skippedUserEdited = 0;
-                            let resetCount = 0;
-                            let addedCount = 0;
-                            let updatedCount = 0;
-                            let movedCount = 0;
-                            let descChangedCount = 0;
-                            let catChangedCount = 0;
-                            incoming.forEach(imp => {
-                                if (seenCids.has(imp.cid) && incoming.filter(i => i.cid === imp.cid).length > 1) {
-                                    return;
-                                }
-                                const newId = generateUniqueId();
-                                const candidate = { ...imp, id: newId, addedTime: Date.now(), locked: true }; // AUTO-LOCK
-                                if (imp.cid) {
-                                    const existing = existingByCid.get(imp.cid);
-                                    if (!preserveEdits) {
-                                        if (existing) {
-                                            candidate.id = existing.id;
-                                            toReplace.push(candidate);
-                                            resetCount++;
-                                            updatedCount++;
-                                            if (Math.abs(existing.lat - imp.lat) > 1 || Math.abs(existing.lng - imp.lng) > 1) movedCount++;
-                                            if (existing.desc !== imp.desc) descChangedCount++;
-                                            if (existing.category !== imp.category) catChangedCount++;
-                                        } else {
-                                            candidate.userEdited = false;
-                                            toAdd.push(candidate);
-                                            addedCount++;
-                                        }
-                                        return;
-                                    }
-                                    if (existing && userEditedCids.has(imp.cid)) {
-                                        existing.category = imp.category || existing.category;
-                                        existing.icon = imp.icon || existing.icon;
-                                        existing.addedTime = Date.now();
-                                        existing.locked = true;
-                                        skippedUserEdited++;
-                                        return;
-                                    }
+                        });
+                        const seenCids = new Set();
+                        for (const imp of incoming) {
+                            if (imp.cid && seenCids.has(imp.cid)) {
+                                console.warn(`Skipping duplicate CID "${imp.cid}" in import file`);
+                                continue;
+                            }
+                            if (imp.cid) seenCids.add(imp.cid);
+                        }
+                        const preserveEdits = confirm(
+                            `IMPORT OPTIONS:\n\n` +
+                            `• OK = PRESERVE your edits/moves\n` +
+                            `• CANCEL = RESET ALL community markers to original\n\n` +
+                            `Choose wisely.`
+                        );
+                        const toAdd = [];
+                        const toReplace = [];
+                        let skippedUserEdited = 0;
+                        let resetCount = 0;
+                        let addedCount = 0;
+                        let updatedCount = 0;
+                        let movedCount = 0;
+                        let descChangedCount = 0;
+                        let catChangedCount = 0;
+                        incoming.forEach(imp => {
+                            if (seenCids.has(imp.cid) && incoming.filter(i => i.cid === imp.cid).length > 1) {
+                                return;
+                            }
+                            const newId = generateUniqueId();
+                            const candidate = { ...imp, id: newId, addedTime: Date.now(), locked: true }; // AUTO-LOCK
+                            if (imp.cid) {
+                                const existing = existingByCid.get(imp.cid);
+                                if (!preserveEdits) {
                                     if (existing) {
                                         candidate.id = existing.id;
-                                        toReplace.push(candidate);
-                                        updatedCount++;
-                                        if (Math.abs(existing.lat - imp.lat) > 1 || Math.abs(existing.lng - imp.lng) > 1) movedCount++;
-                                        if (existing.desc !== imp.desc) descChangedCount++;
-                                        if (existing.category !== imp.category) catChangedCount++;
-                                    } else {
-                                        candidate.userEdited = false;
-                                        toAdd.push(candidate);
-                                        addedCount++;
-                                    }
-                                    return;
-                                }
-                                const fallbackKey = `${imp.desc}|${Math.round(imp.lat)}|${Math.round(imp.lng)}`;
-                                const existingFallback = existingByKey.get(fallbackKey);
-                                if (!preserveEdits) {
-                                    if (existingFallback) {
-                                        candidate.id = existingFallback.id;
                                         toReplace.push(candidate);
                                         resetCount++;
                                         updatedCount++;
-                                        if (Math.abs(existingFallback.lat - imp.lat) > 1 || Math.abs(existingFallback.lng - imp.lng) > 1) movedCount++;
-                                        if (existingFallback.desc !== imp.desc) descChangedCount++;
-                                        if (existingFallback.category !== imp.category) catChangedCount++;
-                                    } else {
-                                        candidate.userEdited = true;
-                                        toAdd.push(candidate);
-                                        addedCount++;
-                                    }
-                                    return;
-                                }
-                                if (existingFallback && userEditedKeys.has(fallbackKey)) {
-                                    existingFallback.category = imp.category || existingFallback.category;
-                                    existingFallback.icon = imp.icon || existingFallback.icon;
-                                    existingFallback.addedTime = Date.now();
-                                    existingFallback.locked = true;
-                                    skippedUserEdited++;
-                                    return;
-                                }
-                                if (existingFallback) {
-                                    candidate.id = existingFallback.id;
-                                    toReplace.push(candidate);
-                                    updatedCount++;
-                                    if (Math.abs(existingFallback.lat - imp.lat) > 1 || Math.abs(existingFallback.lng - imp.lng) > 1) movedCount++;
-                                    if (existingFallback.desc !== imp.desc) descChangedCount++;
-                                    if (existingFallback.category !== imp.category) catChangedCount++;
-                                } else {
-                                    candidate.userEdited = true;
-                                    toAdd.push(candidate);
-                                    addedCount++;
-                                }
-                            });
-                            const replaceIds = toReplace.map(r => r.id);
-                            locations = locations.filter(l => !replaceIds.includes(l.id));
-                            locations = [...locations, ...toAdd, ...toReplace];
-                            let newCats = 0;
-                            if (data.customCategories && typeof data.customCategories === 'object') {
-                                Object.entries(data.customCategories).forEach(([name, emoji]) => {
-                                    if (!customCategories[name] && !defaultCategoryIcons[name] && isValidEmoji(emoji)) {
-                                        customCategories[name] = emoji;
-                                        categoryIcons[name] = emoji;
-                                        categoryColors[name] = '#f0e68c';
-                                        activeCategories.add(name);
-                                        newCats++;
-                                    }
-                                });
-                            }
-                            communityVersion = data.communityVersion || communityVersion;
-                            localStorage.setItem(MAP_VERSION_KEY, communityVersion);
-                            localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(customCategories));
-                            localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
-                            recalculateXP();
-                            saveLocations();
-                            setTimeout(() => {
-                                forceReload();
-                                updateCounterDisplay();
-                            }, 100);
-                            let report = `Imported ${incoming.length} markers from file!\n\n`;
-                            if (addedCount) report += `+ ${addedCount} new markers added\n`;
-                            if (updatedCount) report += `Updated ${updatedCount} markers updated\n`;
-                            if (movedCount) report += ` • ${movedCount} moved\n`;
-                            if (descChangedCount) report += ` • ${descChangedCount} description changes\n`;
-                            if (catChangedCount) report += ` • ${catChangedCount} category changes\n`;
-                            if (resetCount) report += `Reset ${resetCount} community markers reset\n`;
-                            if (skippedUserEdited) report += `Preserved ${skippedUserEdited} user edits preserved\n`;
-                            if (newCats) report += `New ${newCats} new custom categories\n`;
-                            report += `\nTotal locations: ${locations.length}\n`;
-                            report += `Community version: ${communityVersion}`;
-                            alert(report);
-                            playSound('saving');
-                        } catch (err) {
-                            console.error('Import error:', err);
-                            alert(`Error: ${err.message || 'Invalid JSON'}`);
-                            playSound('error');
-                        }
-                    };
-                    reader.readAsText(file);
-                };
-                input.click();
-            };
-        }
-
-        if (downloadCommunityBtn) {
-            downloadCommunityBtn.onclick = () => {
-                playSound('click');
-                if (!confirm(
-                    `UPDATE COMMUNITY MAP?\n\n` +
-                    `• Adds new locations\n` +
-                    `• Updates moved/changed community markers\n` +
-                    `• YOUR edits & personal markers are 100% SAFE\n\n` +
-                    `Continue?`
-                )) return;
-                downloadCommunityBtn.disabled = true;
-                downloadCommunityBtn.textContent = 'Updating...';
-                const url = `https://raw.githubusercontent.com/0mrcrazy0/fallout76-itemfindermap-beta/main/communitymap.json`;
-                fetchWithTimeout(url)
-                    .then(r => {
-                        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                        return r.text();
-                    })
-                    .then(text => {
-                        backupBeforeImport();
-                        try {
-                            const data = JSON.parse(text);
-                            const incoming = data.locations || [];
-                            const existingByCid = new Map();
-                            const existingByKey = new Map();
-                            const userEditedCids = new Set();
-                            const userEditedKeys = new Set();
-                            locations.forEach(l => {
-                                if (l.cid) {
-                                    existingByCid.set(l.cid, l);
-                                    if (l.userEdited) userEditedCids.add(l.cid);
-                                } else {
-                                    const key = `${l.desc}|${Math.round(l.lat)}|${Math.round(l.lng)}`;
-                                    existingByKey.set(key, l);
-                                    if (l.userEdited) userEditedKeys.add(key);
-                                }
-                            });
-                            const seenCids = new Set();
-                            for (const imp of incoming) {
-                                if (imp.cid && seenCids.has(imp.cid)) {
-                                    console.warn(`Skipping duplicate CID "${imp.cid}" in community update`);
-                                    continue;
-                                }
-                                if (imp.cid) seenCids.add(imp.cid);
-                            }
-                            const preserveEdits = true;
-                            const toAdd = [];
-                            const toReplace = [];
-                            let skippedUserEdited = 0;
-                            let addedCount = 0;
-                            let updatedCount = 0;
-                            let movedCount = 0;
-                            let descChangedCount = 0;
-                            let catChangedCount = 0;
-                            incoming.forEach(imp => {
-                                if (seenCids.has(imp.cid) && incoming.filter(i => i.cid === imp.cid).length > 1) {
-                                    return;
-                                }
-                                const newId = generateUniqueId();
-                                const candidate = { ...imp, id: newId, addedTime: Date.now(), locked: true }; // AUTO-LOCK
-                                if (imp.cid) {
-                                    const existing = existingByCid.get(imp.cid);
-                                    if (existing && userEditedCids.has(imp.cid)) {
-                                        existing.category = imp.category || existing.category;
-                                        existing.icon = imp.icon || existing.icon;
-                                        existing.addedTime = Date.now();
-                                        existing.locked = true;
-                                        skippedUserEdited++;
-                                        return;
-                                    }
-                                    if (existing) {
-                                        candidate.id = existing.id;
-                                        toReplace.push(candidate);
-                                        updatedCount++;
                                         if (Math.abs(existing.lat - imp.lat) > 1 || Math.abs(existing.lng - imp.lng) > 1) movedCount++;
                                         if (existing.desc !== imp.desc) descChangedCount++;
                                         if (existing.category !== imp.category) catChangedCount++;
                                     } else {
                                         candidate.userEdited = false;
                                         toAdd.push(candidate);
-                                        addedCount++;
+                                                                               addedCount++;
                                     }
                                     return;
                                 }
-                                const fallbackKey = `${imp.desc}|${Math.round(imp.lat)}|${Math.round(imp.lng)}`;
-                                const existingFallback = existingByKey.get(fallbackKey);
-                                if (existingFallback && userEditedKeys.has(fallbackKey)) {
-                                    existingFallback.category = imp.category || existingFallback.category;
-                                    existingFallback.icon = imp.icon || existingFallback.icon;
-                                    existingFallback.addedTime = Date.now();
-                                    existingFallback.locked = true;
+                                if (existing && userEditedCids.has(imp.cid)) {
+                                    existing.category = imp.category || existing.category;
+                                    existing.icon = imp.icon || existing.icon;
+                                    existing.addedTime = Date.now();
+                                    existing.locked = true;
                                     skippedUserEdited++;
                                     return;
                                 }
+                                if (existing) {
+                                    candidate.id = existing.id;
+                                    toReplace.push(candidate);
+                                    updatedCount++;
+                                    if (Math.abs(existing.lat - imp.lat) > 1 || Math.abs(existing.lng - imp.lng) > 1) movedCount++;
+                                    if (existing.desc !== imp.desc) descChangedCount++;
+                                    if (existing.category !== imp.category) catChangedCount++;
+                                } else {
+                                    candidate.userEdited = false;
+                                    toAdd.push(candidate);
+                                    addedCount++;
+                                }
+                                return;
+                            }
+                            const fallbackKey = `${imp.desc}|${Math.round(imp.lat)}|${Math.round(imp.lng)}`;
+                            const existingFallback = existingByKey.get(fallbackKey);
+                            if (!preserveEdits) {
                                 if (existingFallback) {
                                     candidate.id = existingFallback.id;
                                     toReplace.push(candidate);
+                                    resetCount++;
                                     updatedCount++;
                                     if (Math.abs(existingFallback.lat - imp.lat) > 1 || Math.abs(existingFallback.lng - imp.lng) > 1) movedCount++;
                                     if (existingFallback.desc !== imp.desc) descChangedCount++;
@@ -1873,684 +1945,874 @@ document.addEventListener('DOMContentLoaded', function() {
                                     toAdd.push(candidate);
                                     addedCount++;
                                 }
-                            });
-                            const replaceIds = toReplace.map(r => r.id);
-                            locations = locations.filter(l => !replaceIds.includes(l.id));
-                            locations = [...locations, ...toAdd, ...toReplace];
-                            let newCats = 0;
-                            if (data.customCategories && typeof data.customCategories === 'object') {
-                                Object.entries(data.customCategories).forEach(([name, emoji]) => {
-                                    if (!customCategories[name] && !defaultCategoryIcons[name] && isValidEmoji(emoji)) {
-                                        customCategories[name] = emoji;
-                                        categoryIcons[name] = emoji;
-                                        categoryColors[name] = '#f0e68c';
-                                        activeCategories.add(name);
-                                        newCats++;
-                                    }
-                                });
+                                return;
                             }
-                            communityVersion = data.communityVersion || communityVersion;
-                            localStorage.setItem(MAP_VERSION_KEY, communityVersion);
-                            localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(customCategories));
-                            localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
-                            recalculateXP();
-                            saveLocations();
-                            setTimeout(() => {
-                                forceReload();
-                                updateCounterDisplay();
-                            }, 100);
-                            let report = `Community Map Updated!\nVersion: ${communityVersion}\n\n`;
-                            if (addedCount) report += `+ ${addedCount} new markers added\n`;
-                            if (updatedCount) report += `Updated ${updatedCount} markers updated\n`;
-                            if (movedCount) report += ` • ${movedCount} moved\n`;
-                            if (descChangedCount) report += ` • ${descChangedCount} description changes\n`;
-                            if (catChangedCount) report += ` • ${catChangedCount} category changes\n`;
-                            if (skippedUserEdited) report += `Preserved ${skippedUserEdited} user edits preserved\n`;
-                            report += `\nTotal locations: ${locations.length}`;
-                            alert(report);
-                            playSound('saving');
-                        } catch (err) {
-                            console.error('Community update error:', err);
-                            alert(`Update failed: ${err.message}`);
-                            playSound('error');
+                            if (existingFallback && userEditedKeys.has(fallbackKey)) {
+                                existingFallback.category = imp.category || existingFallback.category;
+                                existingFallback.icon = imp.icon || existingFallback.icon;
+                                existingFallback.addedTime = Date.now();
+                                existingFallback.locked = true;
+                                skippedUserEdited++;
+                                return;
+                            }
+                            if (existingFallback) {
+                                candidate.id = existingFallback.id;
+                                toReplace.push(candidate);
+                                updatedCount++;
+                                if (Math.abs(existingFallback.lat - imp.lat) > 1 || Math.abs(existingFallback.lng - imp.lng) > 1) movedCount++;
+                                if (existingFallback.desc !== imp.desc) descChangedCount++;
+                                if (existingFallback.category !== imp.category) catChangedCount++;
+                            } else {
+                                candidate.userEdited = true;
+                                toAdd.push(candidate);
+                                addedCount++;
+                            }
+                        });
+                        const replaceIds = toReplace.map(r => r.id);
+                        locations = locations.filter(l => !replaceIds.includes(l.id));
+                        locations = [...locations, ...toAdd, ...toReplace];
+                        let newCats = 0;
+                        if (data.customCategories && typeof data.customCategories === 'object') {
+                            Object.entries(data.customCategories).forEach(([name, emoji]) => {
+                                if (!customCategories[name] && !defaultCategoryIcons[name] && isValidEmoji(emoji)) {
+                                    customCategories[name] = emoji;
+                                    categoryIcons[name] = emoji;
+                                    categoryColors[name] = '#f0e68c';
+                                    activeCategories.add(name);
+                                    newCats++;
+                                }
+                            });
                         }
-                    })
-                    .catch(err => {
-                        alert(`Update failed: ${err.message}\n\nCheck internet or file.`);
+                        communityVersion = data.communityVersion || communityVersion;
+                        localStorage.setItem(MAP_VERSION_KEY, communityVersion);
+                        localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(customCategories));
+                        localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
+                        recalculateXP();
+                        saveLocations();
+                        setTimeout(() => {
+                            forceReload();
+                            updateCounterDisplay();
+                        }, 100);
+                        let report = `Imported ${incoming.length} markers from file!\n\n`;
+                        if (addedCount) report += `+ ${addedCount} new markers added\n`;
+                        if (updatedCount) report += `Updated ${updatedCount} markers updated\n`;
+                        if (movedCount) report += ` • ${movedCount} moved\n`;
+                        if (descChangedCount) report += ` • ${descChangedCount} description changes\n`;
+                        if (catChangedCount) report += ` • ${catChangedCount} category changes\n`;
+                        if (resetCount) report += `Reset ${resetCount} community markers reset\n`;
+                        if (skippedUserEdited) report += `Preserved ${skippedUserEdited} user edits preserved\n`;
+                        if (newCats) report += `New ${newCats} new custom categories\n`;
+                        report += `\nTotal locations: ${locations.length}\n`;
+                        report += `Community version: ${communityVersion}`;
+                        alert(report);
+                        playSound('saving');
+                    } catch (err) {
+                        console.error('Import error:', err);
+                        alert(`Error: ${err.message || 'Invalid JSON'}`);
                         playSound('error');
-                    })
-                    .finally(() => {
-                        if (downloadCommunityBtn) {
-                            downloadCommunityBtn.disabled = false;
-                            downloadCommunityBtn.textContent = 'Update Community Map';
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        };
+    }
+
+    /* DEV NOTE: COMMUNITY MAP UPDATE */
+    if (downloadCommunityBtn) {
+        downloadCommunityBtn.onclick = () => {
+            playSound('click');
+            if (!confirm(
+                `UPDATE COMMUNITY MAP?\n\n` +
+                `• Adds new locations\n` +
+                `• Updates moved/changed community markers\n` +
+                `• YOUR edits & personal markers are 100% SAFE\n\n` +
+                `Continue?`
+            )) return;
+            downloadCommunityBtn.disabled = true;
+            downloadCommunityBtn.textContent = 'Updating...';
+            const url = `https://raw.githubusercontent.com/0mrcrazy0/fallout76-itemfindermap-beta/main/communitymap.json`;
+            fetchWithTimeout(url)
+                .then(r => {
+                    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                    return r.text();
+                })
+                .then(text => {
+                    backupBeforeImport();
+                    try {
+                        const data = JSON.parse(text);
+                        const incoming = data.locations || [];
+                        const existingByCid = new Map();
+                        const existingByKey = new Map();
+                        const userEditedCids = new Set();
+                        const userEditedKeys = new Set();
+                        locations.forEach(l => {
+                            if (l.cid) {
+                                existingByCid.set(l.cid, l);
+                                if (l.userEdited) userEditedCids.add(l.cid);
+                            } else {
+                                const key = `${l.desc}|${Math.round(l.lat)}|${Math.round(l.lng)}`;
+                                existingByKey.set(key, l);
+                                if (l.userEdited) userEditedKeys.add(key);
+                            }
+                        });
+                        const seenCids = new Set();
+                        for (const imp of incoming) {
+                            if (imp.cid && seenCids.has(imp.cid)) {
+                                console.warn(`Skipping duplicate CID "${imp.cid}" in community update`);
+                                continue;
+                            }
+                            if (imp.cid) seenCids.add(imp.cid);
                         }
-                    });
-            };
-        }
-
-        function backupBeforeImport() {
-            lastImportBackup = {
-                locations: JSON.parse(JSON.stringify(locations)),
-                customCategories: { ...customCategories },
-                communityVersion: communityVersion,
-                activeCategories: new Set(activeCategories)
-            };
-            if (undoImportBtn) undoImportBtn.style.display = 'inline-block';
-            showTempMessage('Import backup saved. Use "Undo Import" if needed.', 4000);
-        }
-
-        function undoLastImport() {
-            if (!lastImportBackup) {
-                alert("No import to undo.");
-                return;
-            }
-            if (!confirm("Undo last import? This will restore your previous state.")) return;
-            locations = lastImportBackup.locations;
-            customCategories = lastImportBackup.customCategories;
-            communityVersion = lastImportBackup.communityVersion;
-            activeCategories = lastImportBackup.activeCategories;
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(locations));
-            localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(customCategories));
-            localStorage.setItem(MAP_VERSION_KEY, communityVersion);
-            localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
-            lastImportBackup = null;
-            if (undoImportBtn) undoImportBtn.style.display = 'none';
-            recalculateXP();
-            forceReload();
-            updateCounterDisplay();
-            showTempMessage('Import undone! Previous state restored.', 4000);
-            playSound('undo');
-        }
-        if (undoImportBtn) undoImportBtn.onclick = undoLastImport;
-
-        if (saveJpegBtn) {
-            saveJpegBtn.onclick = () => {
-                playSound('saving');
-                html2canvas(document.getElementById('map'), { useCORS: true, scale: 2 }).then(canvas => {
-                    const link = document.createElement('a');
-                    link.download = `fallout76_map_${new Date().toISOString().replace(/[:.]/g, '-')}.jpg`;
-                    link.href = canvas.toDataURL('image/jpeg', 0.9);
-                    link.click();
-                    alert('Map saved as JPEG. Check your downloads folder!');
-                }).catch(err => {
-                    console.error(err);
-                    alert('Failed to save map as JPEG.');
+                        const preserveEdits = true;
+                        const toAdd = [];
+                        const toReplace = [];
+                        let skippedUserEdited = 0;
+                        let addedCount = 0;
+                        let updatedCount = 0;
+                        let movedCount = 0;
+                        let descChangedCount = 0;
+                        let catChangedCount = 0;
+                        incoming.forEach(imp => {
+                            if (seenCids.has(imp.cid) && incoming.filter(i => i.cid === imp.cid).length > 1) {
+                                return;
+                            }
+                            const newId = generateUniqueId();
+                            const candidate = { ...imp, id: newId, addedTime: Date.now(), locked: true }; // AUTO-LOCK
+                            if (imp.cid) {
+                                const existing = existingByCid.get(imp.cid);
+                                if (existing && userEditedCids.has(imp.cid)) {
+                                    existing.category = imp.category || existing.category;
+                                    existing.icon = imp.icon || existing.icon;
+                                    existing.addedTime = Date.now();
+                                    existing.locked = true;
+                                    skippedUserEdited++;
+                                    return;
+                                }
+                                if (existing) {
+                                    candidate.id = existing.id;
+                                    toReplace.push(candidate);
+                                    updatedCount++;
+                                    if (Math.abs(existing.lat - imp.lat) > 1 || Math.abs(existing.lng - imp.lng) > 1) movedCount++;
+                                    if (existing.desc !== imp.desc) descChangedCount++;
+                                    if (existing.category !== imp.category) catChangedCount++;
+                                } else {
+                                    candidate.userEdited = false;
+                                    toAdd.push(candidate);
+                                    addedCount++;
+                                }
+                                return;
+                            }
+                            const fallbackKey = `${imp.desc}|${Math.round(imp.lat)}|${Math.round(imp.lng)}`;
+                            const existingFallback = existingByKey.get(fallbackKey);
+                            if (existingFallback && userEditedKeys.has(fallbackKey)) {
+                                existingFallback.category = imp.category || existingFallback.category;
+                                existingFallback.icon = imp.icon || existingFallback.icon;
+                                existingFallback.addedTime = Date.now();
+                                existingFallback.locked = true;
+                                skippedUserEdited++;
+                                return;
+                            }
+                            if (existingFallback) {
+                                candidate.id = existingFallback.id;
+                                toReplace.push(candidate);
+                                updatedCount++;
+                                if (Math.abs(existingFallback.lat - imp.lat) > 1 || Math.abs(existingFallback.lng - imp.lng) > 1) movedCount++;
+                                if (existingFallback.desc !== imp.desc) descChangedCount++;
+                                if (existingFallback.category !== imp.category) catChangedCount++;
+                            } else {
+                                candidate.userEdited = true;
+                                toAdd.push(candidate);
+                                addedCount++;
+                            }
+                        });
+                        const replaceIds = toReplace.map(r => r.id);
+                        locations = locations.filter(l => !replaceIds.includes(l.id));
+                        locations = [...locations, ...toAdd, ...toReplace];
+                        let newCats = 0;
+                        if (data.customCategories && typeof data.customCategories === 'object') {
+                            Object.entries(data.customCategories).forEach(([name, emoji]) => {
+                                if (!customCategories[name] && !defaultCategoryIcons[name] && isValidEmoji(emoji)) {
+                                    customCategories[name] = emoji;
+                                    categoryIcons[name] = emoji;
+                                    categoryColors[name] = '#f0e68c';
+                                    activeCategories.add(name);
+                                    newCats++;
+                                }
+                            });
+                        }
+                        communityVersion = data.communityVersion || communityVersion;
+                        localStorage.setItem(MAP_VERSION_KEY, communityVersion);
+                        localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(customCategories));
+                        localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
+                        recalculateXP();
+                        saveLocations();
+                        setTimeout(() => {
+                            forceReload();
+                            updateCounterDisplay();
+                        }, 100);
+                        let report = `Community Map Updated!\nVersion: ${communityVersion}\n\n`;
+                        if (addedCount) report += `+ ${addedCount} new markers added\n`;
+                        if (updatedCount) report += `Updated ${updatedCount} markers updated\n`;
+                        if (movedCount) report += ` • ${movedCount} moved\n`;
+                        if (descChangedCount) report += ` • ${descChangedCount} description changes\n`;
+                        if (catChangedCount) report += ` • ${catChangedCount} category changes\n`;
+                        if (skippedUserEdited) report += `Preserved ${skippedUserEdited} user edits preserved\n`;
+                        report += `\nTotal locations: ${locations.length}`;
+                        alert(report);
+                        playSound('saving');
+                    } catch (err) {
+                        console.error('Community update error:', err);
+                        alert(`Update failed: ${err.message}`);
+                        playSound('error');
+                    }
+                })
+                .catch(err => {
+                    alert(`Update failed: ${err.message}\n\nCheck internet or file.`);
                     playSound('error');
+                })
+                .finally(() => {
+                    if (downloadCommunityBtn) {
+                        downloadCommunityBtn.disabled = false;
+                        downloadCommunityBtn.textContent = 'Update Community Map';
+                    }
                 });
-            };
-        }
-
-        if (prevPageBtn) {
-            prevPageBtn.onclick = () => {
-                if (tablePage > 1) {
-                    tablePage--;
-                    localStorage.setItem('tablePage', tablePage);
-                    refreshTable(combinedSearch ? combinedSearch.value : '', categoryFilter ? categoryFilter.value : '');
-                    playSound('click');
-                }
-            };
-        }
-        if (nextPageBtn) {
-            nextPageBtn.onclick = () => {
-                const total = Math.ceil(locations.filter(l => activeCategories.has(l.category)).length / pageSize);
-                if (tablePage < total) {
-                    tablePage++;
-                    localStorage.setItem('tablePage', tablePage);
-                    refreshTable(combinedSearch ? combinedSearch.value : '', categoryFilter ? categoryFilter.value : '');
-                    playSound('click');
-                }
-            };
-        }
-
-        toggleSoundsBtn.onclick = () => {
-            soundsEnabled = !soundsEnabled;
-            localStorage.setItem('soundsEnabled', soundsEnabled);
-            toggleSoundsBtn.textContent = soundsEnabled ? 'Sounds: On' : 'Sounds: Off';
-            playSound('click');
         };
+    }
 
-        toggleClusterBtn.onclick = () => {
-            clusteringEnabled = !clusteringEnabled;
-            localStorage.setItem('clusteringEnabled', clusteringEnabled);
-            toggleClusterBtn.textContent = `Clustering: ${clusteringEnabled ? 'On' : 'Off'}`;
-            playSound('click');
-            loadData(combinedSearch ? combinedSearch.value : '', categoryFilter ? categoryFilter.value : '');
+    /* DEV NOTE: IMPORT BACKUP & UNDO */
+    function backupBeforeImport() {
+        lastImportBackup = {
+            locations: JSON.parse(JSON.stringify(locations)),
+            customCategories: { ...customCategories },
+            communityVersion: communityVersion,
+            activeCategories: new Set(activeCategories)
         };
+        if (undoImportBtn) undoImportBtn.style.display = 'inline-block';
+        showTempMessage('Import backup saved. Use "Undo Import" if needed.', 4000);
+    }
 
-        toggleMapBtn.onclick = () => {
-            currentMap = currentMap === 'named' ? 'noName' : 'named';
-            localStorage.setItem('currentMap', currentMap);
-            toggleMapBtn.textContent = currentMap === 'named' ? 'Show No-Name Map' : 'Show Named Map';
-            map.removeLayer(imageOverlay);
-            imageOverlay = L.imageOverlay(mapUrls[currentMap], imageBounds).addTo(map);
+    function undoLastImport() {
+        if (!lastImportBackup) {
+            alert("No import to undo.");
+            return;
+        }
+        if (!confirm("Undo last import? This will restore your previous state.")) return;
+        locations = lastImportBackup.locations;
+        customCategories = lastImportBackup.customCategories;
+        communityVersion = lastImportBackup.communityVersion;
+        activeCategories = lastImportBackup.activeCategories;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(locations));
+        localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(customCategories));
+        localStorage.setItem(MAP_VERSION_KEY, communityVersion);
+        localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
+        lastImportBackup = null;
+        if (undoImportBtn) undoImportBtn.style.display = 'none';
+        recalculateXP();
+        forceReload();
+        updateCounterDisplay();
+        showTempMessage('Import undone! Previous state restored.', 4000);
+        playSound('undo');
+    }
+    if (undoImportBtn) undoImportBtn.onclick = undoLastImport;
+
+    /* DEV NOTE: SAVE MAP AS JPEG */
+    if (saveJpegBtn) {
+        saveJpegBtn.onclick = () => {
             playSound('saving');
+            html2canvas(document.getElementById('map'), { useCORS: true, scale: 2 }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `fallout76_map_${new Date().toISOString().replace(/[:.]/g, '-')}.jpg`;
+                link.href = canvas.toDataURL('image/jpeg', 0.9);
+                link.click();
+                alert('Map saved as JPEG. Check your downloads folder!');
+            }).catch(err => {
+                console.error(err);
+                alert('Failed to save map as JPEG.');
+                playSound('error');
+            });
         };
+    }
 
-        toggleGridBtn.onclick = () => {
-            gridEnabled = !gridEnabled;
-            localStorage.setItem('gridEnabled', gridEnabled);
-            toggleGridBtn.textContent = `Grid: ${gridEnabled ? 'On' : 'Off'}`;
-            drawGrid();
-            if (gridEnabled) {
-                map.getContainer().classList.add('hover-coords');
-            } else {
-                map.getContainer().classList.remove('hover-coords');
-                if (coordHoverControl) coordHoverControl.getContainer().classList.remove('show');
+    /* DEV NOTE: PAGINATION */
+    if (prevPageBtn) {
+        prevPageBtn.onclick = () => {
+            if (tablePage > 1) {
+                tablePage--;
+                localStorage.setItem('tablePage', tablePage);
+                refreshTable(combinedSearch ? combinedSearch.value : '', categoryFilter ? categoryFilter.value : '');
+                playSound('click');
             }
+        };
+    }
+    if (nextPageBtn) {
+        nextPageBtn.onclick = () => {
+            const total = Math.ceil(locations.filter(l => activeCategories.has(l.category)).length / pageSize);
+            if (tablePage < total) {
+                tablePage++;
+                localStorage.setItem('tablePage', tablePage);
+                refreshTable(combinedSearch ? combinedSearch.value : '', categoryFilter ? categoryFilter.value : '');
+                playSound('click');
+            }
+        };
+    }
+
+    /* DEV NOTE: TOOL BUTTONS */
+    toggleSoundsBtn.onclick = () => {
+        soundsEnabled = !soundsEnabled;
+        localStorage.setItem('soundsEnabled', soundsEnabled);
+        toggleSoundsBtn.textContent = soundsEnabled ? 'Sounds: On' : 'Sounds: Off';
+        playSound('click');
+    };
+
+    toggleClusterBtn.onclick = () => {
+        clusteringEnabled = !clusteringEnabled;
+        localStorage.setItem('clusteringEnabled', clusteringEnabled);
+        toggleClusterBtn.textContent = `Clustering: ${clusteringEnabled ? 'On' : 'Off'}`;
+        playSound('click');
+        loadData(combinedSearch ? combinedSearch.value : '', categoryFilter ? categoryFilter.value : '');
+    };
+
+    toggleMapBtn.onclick = () => {
+        currentMap = currentMap === 'named' ? 'noName' : 'named';
+        localStorage.setItem('currentMap', currentMap);
+        toggleMapBtn.textContent = currentMap === 'named' ? 'Show No-Name Map' : 'Show Named Map';
+        map.removeLayer(imageOverlay);
+        imageOverlay = L.imageOverlay(mapUrls[currentMap], imageBounds).addTo(map);
+        playSound('saving');
+    };
+
+    toggleGridBtn.onclick = () => {
+        gridEnabled = !gridEnabled;
+        localStorage.setItem('gridEnabled', gridEnabled);
+        toggleGridBtn.textContent = `Grid: ${gridEnabled ? 'On' : 'Off'}`;
+        drawGrid();
+        if (gridEnabled) {
+            map.getContainer().classList.add('hover-coords');
+        } else {
+            map.getContainer().classList.remove('hover-coords');
+            if (coordHoverControl) coordHoverControl.getContainer().classList.remove('show');
+        }
+        playSound('click');
+    };
+
+    toggleCategoryModalBtn.onclick = () => {
+        if (categoryToggleModal) categoryToggleModal.style.display = 'block';
+        document.body.classList.add('modal-open');
+        renderCategoryToggles();
+        playSound('selectcategory');
+    };
+
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    if (selectAllBtn) {
+        selectAllBtn.onclick = () => {
+            activeCategories = new Set(Object.keys(categoryIcons));
+            localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
+            renderCategoryToggles();
+            loadData(combinedSearch ? combinedSearch.value : '', categoryFilter ? categoryFilter.value : '');
             playSound('click');
         };
-
-        toggleCategoryModalBtn.onclick = () => {
-            if (categoryToggleModal) categoryToggleModal.style.display = 'block';
-            document.body.classList.add('modal-open');
+    }
+    const deselectAllBtn = document.getElementById('deselectAllBtn');
+    if (deselectAllBtn) {
+        deselectAllBtn.onclick = () => {
+            activeCategories = new Set();
+            localStorage.setItem('activeCategories', JSON.stringify([]));
             renderCategoryToggles();
-            playSound('selectcategory');
+            loadData(combinedSearch ? combinedSearch.value : '', categoryFilter ? categoryFilter.value : '');
+            playSound('click');
         };
-
-        const selectAllBtn = document.getElementById('selectAllBtn');
-        if (selectAllBtn) {
-            selectAllBtn.onclick = () => {
-                activeCategories = new Set(Object.keys(categoryIcons));
-                localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
-                renderCategoryToggles();
-                loadData(combinedSearch ? combinedSearch.value : '', categoryFilter ? categoryFilter.value : '');
-                playSound('click');
-            };
-        }
-        const deselectAllBtn = document.getElementById('deselectAllBtn');
-        if (deselectAllBtn) {
-            deselectAllBtn.onclick = () => {
-                activeCategories = new Set();
-                localStorage.setItem('activeCategories', JSON.stringify([]));
-                renderCategoryToggles();
-                loadData(combinedSearch ? combinedSearch.value : '', categoryFilter ? categoryFilter.value : '');
-                playSound('click');
-            };
-        }
-        const createCategoryBtn = document.getElementById('createCategoryBtn');
-        if (createCategoryBtn) {
-            createCategoryBtn.onclick = () => {
-                const newName = document.getElementById('newCategoryName');
-                const newEmoji = document.getElementById('newCategoryEmoji');
-                if (newName) newName.value = '';
-                if (newEmoji) newEmoji.value = '';
-                const createModal = document.getElementById('createCategoryModal');
-                if (createModal) createModal.style.display = 'block';
-                playSound('click');
-            };
-        }
-        const deleteCategoryBtn = document.getElementById('deleteCategoryBtn');
-        if (deleteCategoryBtn) {
-            deleteCategoryBtn.onclick = () => {
-                const select = document.getElementById('deleteCategorySelect');
-                if (select) {
-                    select.innerHTML = '<option value="">Select a custom category</option>';
-                    Object.keys(customCategories).sort().forEach(name => {
-                        const opt = document.createElement('option');
-                        opt.value = name;
-                        opt.textContent = `${name} ${customCategories[name]}`;
-                        select.appendChild(opt);
-                    });
-                }
-                const deleteModal = document.getElementById('deleteCategoryModal');
-                if (deleteModal) deleteModal.style.display = 'block';
-                playSound('click');
-            };
-        }
-        const confirmDeleteCategoryBtn = document.getElementById('confirmDeleteCategoryBtn');
-        if (confirmDeleteCategoryBtn) {
-            confirmDeleteCategoryBtn.onclick = () => {
-                const select = document.getElementById('deleteCategorySelect');
-                const name = select ? select.value : '';
-                if (!name || !customCategories[name]) return;
-                if (confirm(`Delete category "${name}"? All markers will be reassigned to "misc".`)) {
-                    locations.forEach(loc => {
-                        if (loc.category === name) loc.category = 'misc';
-                    });
-                    delete customCategories[name];
-                    delete categoryIcons[name];
-                    delete categoryColors[name];
-                    activeCategories.delete(name);
-                    localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(customCategories));
-                    localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
-                    saveLocations();
-                    forceReload();
-                    const deleteModal = document.getElementById('deleteCategoryModal');
-                    if (deleteModal) deleteModal.style.display = 'none';
-                    playSound('delete');
-                }
-            };
-        }
-        const closeCategoryToggleBtn = document.getElementById('closeCategoryToggleBtn');
-        if (closeCategoryToggleBtn) {
-            closeCategoryToggleBtn.onclick = () => {
-                closeModal(categoryToggleModal);
-            };
-        }
-        document.querySelectorAll('#createCategoryModal .close, #deleteCategoryModal .close').forEach(closeBtn => {
-            closeBtn.onclick = () => closeModal(closeBtn.closest('.modal'));
-        });
-
-        const saveItemBtn = document.getElementById('saveItemBtn');
-        if (saveItemBtn) {
-            saveItemBtn.onclick = () => {
-                const category = itemCategorySelect ? itemCategorySelect.value : 'misc';
-                let desc = itemDescInput ? itemDescInput.value.trim() : '';
-                if (!desc) {
-                    const lat = currentIndex >= 0 ? locations[currentIndex].lat : tempLatLng.lat;
-                    const lng = currentIndex >= 0 ? locations[currentIndex].lng : tempLatLng.lng;
-                    const grid = getGridFromLatLng(lat, lng);
-                    const x = Math.round(lng);
-                    const y = Math.round(lat);
-                    desc = grid ? `Grid ${grid} (X: ${x}, Y: ${y})` : `X: ${x}, Y: ${y}`;
-                    if (itemDescInput) itemDescInput.value = desc;
-                }
-                if (!desc) return;
-                const wasNewLog = currentIndex < 0;
-                if (currentIndex >= 0) {
-                    const loc = locations[currentIndex];
-                    if (loc.locked) {
-                        showTempMessage('Marker locked — unlock to edit!', 4000);
-                        playSound('error');
-                        return;
-                    }
-                    loc.category = category;
-                    loc.desc = desc;
-                    loc.icon = "categoryIcons"[category] || 'UNKNOWN';
-                    loc.addedTime = Date.now();
-                    loc.userEdited = true;
-                } else {
-                    const newLoc = createNewLocation(tempLatLng.lat, tempLatLng.lng, category, desc);
-                    locations.push(newLoc);
-                    recalculateXP();
-                }
-                closeModal(itemModal);
-                saveLocations();
-                playSound('saving');
-                showTempMessage('Saved! New marker is LOCKED by default.', 4000);
-                const finalLoc = currentIndex >= 0 ? locations[currentIndex] : locations[locations.length - 1];
-                safeFlyTo(finalLoc.lat, finalLoc.lng, map.getZoom());
-                forceReload();
-                if (wasNewLog && categoryFilter) categoryFilter.value = '';
-                setTimeout(() => { isDraggingAny = false; }, 600);
-            };
-        }
-
-        if (deleteBtn) {
-            deleteBtn.onclick = () => {
-                if (currentIndex >= 0) {
-                    const loc = locations[currentIndex];
-                    if (loc.locked) {
-                        showTempMessage('Marker locked — unlock to delete!', 4000);
-                        playSound('error');
-                        return;
-                    }
-                    lastDeleted = { ...loc };
-                    locations.splice(currentIndex, 1);
-                    recalculateXP();
-                    closeModal(itemModal);
-                    saveLocations();
-                    forceReload();
-                    if (undoBtn) undoBtn.style.display = 'inline-block';
-                    showTempMessage('Deleted! Use Undo to restore.', 4000);
-                    playSound('delete');
-                }
-            };
-        }
-        if (undoBtn) {
-            undoBtn.onclick = () => {
-                if (lastDeleted) {
-                    locations.push(lastDeleted);
-                    lastDeleted = null;
-                    recalculateXP();
-                    saveLocations();
-                    forceReload();
-                    undoBtn.style.display = 'none';
-                    closeModal(itemModal);
-                    showTempMessage('Undo successful!', 3000);
-                    playSound('undo');
-                }
-            };
-        }
-        if (duplicateBtn) {
-            duplicateBtn.onclick = () => {
-                if (currentIndex >= 0) {
-                    const loc = locations[currentIndex];
-                    if (loc.locked) {
-                        showTempMessage('Marker locked — unlock to duplicate!', 4000);
-                        playSound('error');
-                        return;
-                    }
-                    const baseOffset = 40 / Math.pow(2, map.getZoom());
-                    const angleStep = 60;
-                    const dupCount = locations.filter(l => l.cid === loc.cid && l.id !== loc.id).length;
-                    const angle = dupCount * angleStep * Math.PI / 180;
-                    const offsetX = baseOffset * Math.cos(angle);
-                    const offsetY = baseOffset * Math.sin(angle);
-                    const newLat = loc.lat + offsetY;
-                    const newLng = loc.lng + offsetX;
-                    const newDesc = updateDescWithGrid(loc.desc, newLat, newLng);
-                    const newLoc = createNewLocation(newLat, newLng, loc.category, newDesc);
-                    newLoc.userCid = loc.cid;
-                    locations.push(newLoc);
-                    recalculateXP();
-                    saveLocations();
-                    forceReload();
-                    closeModal(itemModal);
-                    safeFlyTo(newLoc.lat, newLoc.lng, map.getZoom());
-                    showTempMessage('Duplicated — new copy is LOCKED!', 3000);
-                    playSound('duplicate');
-                }
-            };
-        }
-        if (shareItemBtn) {
-            shareItemBtn.onclick = () => {
-                const loc = locations[currentIndex];
-                const lat = loc.lat.toFixed(0);
-                const lng = loc.lng.toFixed(0);
-                const grid = getGridFromLatLng(loc.lat, loc.lng);
-                const desc = loc.desc.split('\n')[0].trim();
-                const url = `${window.location.origin}${window.location.pathname}?lat=${lat}&lng=${lng}&grid=${grid}&desc=${encodeURIComponent(desc)}`;
-                navigator.clipboard.writeText(url).then(() => {
-                    showTempMessage('Share link copied!', 3000);
-                    playSound('click');
-                }).catch(() => {
-                    prompt('Copy this link:', url);
+    }
+    const createCategoryBtn = document.getElementById('createCategoryBtn');
+    if (createCategoryBtn) {
+        createCategoryBtn.onclick = () => {
+            const newName = document.getElementById('newCategoryName');
+            const newEmoji = document.getElementById('newCategoryEmoji');
+            if (newName) newName.value = '';
+            if (newEmoji) newEmoji.value = '';
+            const createModal = document.getElementById('createCategoryModal');
+            if (createModal) createModal.style.display = 'block';
+            playSound('click');
+        };
+    }
+    const deleteCategoryBtn = document.getElementById('deleteCategoryBtn');
+    if (deleteCategoryBtn) {
+        deleteCategoryBtn.onclick = () => {
+            const select = document.getElementById('deleteCategorySelect');
+            if (select) {
+                select.innerHTML = '<option value="">Select a custom category</option>';
+                Object.keys(customCategories).sort().forEach(name => {
+                    const opt = document.createElement('option');
+                    opt.value = name;
+                    opt.textContent = `${name} ${customCategories[name]}`;
+                    select.appendChild(opt);
                 });
-            };
-        }
-        if (categoryFilter) {
-            categoryFilter.addEventListener('change', () => {
-                const val = categoryFilter.value;
-                localStorage.setItem('currentCategoryFilter', val);
-                loadData(combinedSearch ? combinedSearch.value : '', val);
-                playSound('selectcategory');
-            });
-        }
-
-        map.on('dragstart', () => { isDraggingAny = true; });
-        map.on('dragend', () => { setTimeout(() => { isDraggingAny = false; }, 400); });
-        map.on('movestart', () => { isDraggingAny = true; });
-        map.on('moveend', () => { setTimeout(() => { isDraggingAny = false; }, 400); });
-
-        const coordHoverControl = L.control({ position: 'bottomleft' });
-        coordHoverControl.onAdd = function() {
-            const div = L.DomUtil.create('div', 'coord-hover');
-            div.innerHTML = '';
-            return div;
-        };
-        coordHoverControl.addTo(map);
-        const hoverCoordsHandler = (e) => {
-            if (isDraggingAny) return;
-            let lat, lng;
-            if (e.touches) {
-                const touch = e.touches[0];
-                lat = map.mouseEventToLatLng({ clientX: touch.clientX, clientY: touch.clientY }).lat;
-                lng = map.mouseEventToLatLng({ clientX: touch.clientX, clientY: touch.clientY }).lng;
-            } else {
-                lat = e.latlng.lat;
-                lng = e.latlng.lng;
             }
-            const grid = getGridFromLatLng(lat, lng);
-            const x = Math.round(lng);
-            const y = Math.round(lat);
-            coordHoverControl.getContainer().innerHTML = `Grid: ${grid || 'N/A'} (X: ${x}, Y: ${y})`;
-            coordHoverControl.getContainer().classList.add('show');
+            const deleteModal = document.getElementById('deleteCategoryModal');
+            if (deleteModal) deleteModal.style.display = 'block';
+            playSound('click');
         };
-        map.on('mousemove', hoverCoordsHandler);
-        map.on('touchmove', hoverCoordsHandler);
-        map.getContainer().addEventListener('mouseleave', () => {
-            coordHoverControl.getContainer().classList.remove('show');
-        });
-
-        map.on('click', e => {
-            if (isDraggingAny) {
-                isDraggingAny = false;
-                return;
+    }
+    const confirmDeleteCategoryBtn = document.getElementById('confirmDeleteCategoryBtn');
+    if (confirmDeleteCategoryBtn) {
+        confirmDeleteCategoryBtn.onclick = () => {
+            const select = document.getElementById('deleteCategorySelect');
+            const name = select ? select.value : '';
+            if (!name || !customCategories[name]) return;
+            if (confirm(`Delete category "${name}"? All markers will be reassigned to "misc".`)) {
+                locations.forEach(loc => {
+                    if (loc.category === name) loc.category = 'misc';
+                });
+                delete customCategories[name];
+                delete categoryIcons[name];
+                delete categoryColors[name];
+                activeCategories.delete(name);
+                localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(customCategories));
+                localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
+                saveLocations();
+                forceReload();
+                const deleteModal = document.getElementById('deleteCategoryModal');
+                if (deleteModal) deleteModal.style.display = 'none';
+                playSound('delete');
             }
-            if (!gridEnabled) {
-                const lat = e.latlng.lat;
-                const lng = e.latlng.lng;
+        };
+    }
+    const closeCategoryToggleBtn = document.getElementById('closeCategoryToggleBtn');
+    if (closeCategoryToggleBtn) {
+        closeCategoryToggleBtn.onclick = () => {
+            closeModal(categoryToggleModal);
+        };
+    }
+    document.querySelectorAll('#createCategoryModal .close, #deleteCategoryModal .close').forEach(closeBtn => {
+        closeBtn.onclick = () => closeModal(closeBtn.closest('.modal'));
+    });
+
+    /* DEV NOTE: SAVE ITEM */
+    const saveItemBtn = document.getElementById('saveItemBtn');
+    if (saveItemBtn) {
+        saveItemBtn.onclick = () => {
+            const category = itemCategorySelect ? itemCategorySelect.value : 'misc';
+            let desc = itemDescInput ? itemDescInput.value.trim() : '';
+            if (!desc) {
+                const lat = currentIndex >= 0 ? locations[currentIndex].lat : tempLatLng.lat;
+                const lng = currentIndex >= 0 ? locations[currentIndex].lng : tempLatLng.lng;
                 const grid = getGridFromLatLng(lat, lng);
                 const x = Math.round(lng);
                 const y = Math.round(lat);
-                coordHoverControl.getContainer().innerHTML = `Grid: ${grid || 'N/A'} (X: ${x}, Y: ${y})`;
-                coordHoverControl.getContainer().classList.add('show');
-                setTimeout(() => coordHoverControl.getContainer().classList.remove('show'), 3000);
+                desc = grid ? `Grid ${grid} (X: ${x}, Y: ${y})` : `X: ${x}, Y: ${y}`;
+                if (itemDescInput) itemDescInput.value = desc;
             }
-            if (gridEnabled) {
-                const grid = getGridFromLatLng(e.latlng.lat, e.latlng.lng);
-                if (grid) showGridNotification(grid);
+            if (!desc) return;
+            const wasNewLog = currentIndex < 0;
+            if (currentIndex >= 0) {
+                const loc = locations[currentIndex];
+                if (loc.locked) {
+                    showTempMessage('Marker locked — unlock to edit!', 4000);
+                    playSound('error');
+                    return;
+                }
+                loc.category = category;
+                loc.desc = desc;
+                loc.icon = categoryIcons[category] || 'UNKNOWN';
+                loc.addedTime = Date.now();
+                loc.userEdited = true;
+            } else {
+                const newLoc = createNewLocation(tempLatLng.lat, tempLatLng.lng, category, desc);
+                locations.push(newLoc);
+                recalculateXP();
             }
-            playSound('click');
-        });
+            closeModal(itemModal);
+            saveLocations();
+            playSound('saving');
+            showTempMessage('Saved! New marker is LOCKED by default.', 4000);
+            const finalLoc = currentIndex >= 0 ? locations[currentIndex] : locations[locations.length - 1];
+            safeFlyTo(finalLoc.lat, finalLoc.lng, map.getZoom());
+            forceReload();
+            if (wasNewLog && categoryFilter) categoryFilter.value = '';
+            setTimeout(() => { isDraggingAny = false; }, 600);
+        };
+    }
 
-        map.on('contextmenu', e => {
-            L.DomEvent.preventDefault(e);
+    /* DEV NOTE: DELETE & UNDO */
+    if (deleteBtn) {
+        deleteBtn.onclick = () => {
+            if (currentIndex >= 0) {
+                const loc = locations[currentIndex];
+                if (loc.locked) {
+                    showTempMessage('Marker locked — unlock to delete!', 4000);
+                    playSound('error');
+                    return;
+                }
+                lastDeleted = { ...loc };
+                locations.splice(currentIndex, 1);
+                recalculateXP();
+                closeModal(itemModal);
+                saveLocations();
+                forceReload();
+                if (undoBtn) undoBtn.style.display = 'inline-block';
+                showTempMessage('Deleted! Use Undo to restore.', 4000);
+                playSound('delete');
+            }
+        };
+    }
+    if (undoBtn) {
+        undoBtn.onclick = () => {
+            if (lastDeleted) {
+                locations.push(lastDeleted);
+                lastDeleted = null;
+                recalculateXP();
+                saveLocations();
+                forceReload();
+                undoBtn.style.display = 'none';
+                closeModal(itemModal);
+                showTempMessage('Undo successful!', 3000);
+                playSound('undo');
+            }
+        };
+    }
+    if (duplicateBtn) {
+        duplicateBtn.onclick = () => {
+            if (currentIndex >= 0) {
+                const loc = locations[currentIndex];
+                if (loc.locked) {
+                    showTempMessage('Marker locked — unlock to duplicate!', 4000);
+                    playSound('error');
+                    return;
+                }
+                const baseOffset = 40 / Math.pow(2, map.getZoom());
+                const angleStep = 60;
+                const dupCount = locations.filter(l => l.cid === loc.cid && l.id !== loc.id).length;
+                const angle = dupCount * angleStep * Math.PI / 180;
+                const offsetX = baseOffset * Math.cos(angle);
+                const offsetY = baseOffset * Math.sin(angle);
+                const newLat = loc.lat + offsetY;
+                const newLng = loc.lng + offsetX;
+                const newDesc = updateDescWithGrid(loc.desc, newLat, newLng);
+                const newLoc = createNewLocation(newLat, newLng, loc.category, newDesc);
+                newLoc.userCid = loc.cid;
+                locations.push(newLoc);
+                recalculateXP();
+                saveLocations();
+                forceReload();
+                closeModal(itemModal);
+                safeFlyTo(newLoc.lat, newLng, map.getZoom());
+                showTempMessage('Duplicated — new copy is LOCKED!', 3000);
+                playSound('duplicate');
+            }
+        };
+    }
+    if (shareItemBtn) {
+        shareItemBtn.onclick = () => {
+            const loc = locations[currentIndex];
+            const lat = loc.lat.toFixed(0);
+            const lng = loc.lng.toFixed(0);
+            const grid = getGridFromLatLng(loc.lat, loc.lng);
+            const desc = loc.desc.split('\n')[0].trim();
+            const url = `${window.location.origin}${window.location.pathname}?lat=${lat}&lng=${lng}&grid=${grid}&desc=${encodeURIComponent(desc)}`;
+            navigator.clipboard.writeText(url).then(() => {
+                showTempMessage('Share link copied!', 3000);
+                playSound('click');
+            }).catch(() => {
+                prompt('Copy this link:', url);
+            });
+        };
+    }
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', () => {
+            const val = categoryFilter.value;
+            localStorage.setItem('currentCategoryFilter', val);
+            loadData(combinedSearch ? combinedSearch.value : '', val);
+            playSound('selectcategory');
+        });
+    }
+
+    /* DEV NOTE: MAP INTERACTIONS */
+    map.on('dragstart', () => { isDraggingAny = true; });
+    map.on('dragend', () => { setTimeout(() => { isDraggingAny = false; }, 400); });
+    map.on('movestart', () => { isDraggingAny = true; });
+    map.on('moveend', () => { setTimeout(() => { isDraggingAny = false; }, 400); });
+
+    const coordHoverControl = L.control({ position: 'bottomleft' });
+    coordHoverControl.onAdd = function() {
+        const div = L.DomUtil.create('div', 'coord-hover');
+        div.innerHTML = '';
+        return div;
+    };
+    coordHoverControl.addTo(map);
+    const hoverCoordsHandler = (e) => {
+        if (isDraggingAny) return;
+        let lat, lng;
+        if (e.touches) {
+            const touch = e.touches[0];
+            lat = map.mouseEventToLatLng({ clientX: touch.clientX, clientY: touch.clientY }).lat;
+            lng = map.mouseEventToLatLng({ clientX: touch.clientX, clientY: touch.clientY }).lng;
+        } else {
+            lat = e.latlng.lat;
+            lng = e.latlng.lng;
+        }
+        const grid = getGridFromLatLng(lat, lng);
+        const x = Math.round(lng);
+        const y = Math.round(lat);
+        coordHoverControl.getContainer().innerHTML = `Grid: ${grid || 'N/A'} (X: ${x}, Y: ${y})`;
+        coordHoverControl.getContainer().classList.add('show');
+    };
+    map.on('mousemove', hoverCoordsHandler);
+    map.on('touchmove', hoverCoordsHandler);
+    map.getContainer().addEventListener('mouseleave', () => {
+        coordHoverControl.getContainer().classList.remove('show');
+    });
+
+    map.on('click', e => {
+        if (isDraggingAny) {
+            isDraggingAny = false;
+            return;
+        }
+        if (!gridEnabled) {
             const lat = e.latlng.lat;
             const lng = e.latlng.lng;
             const grid = getGridFromLatLng(lat, lng);
             const x = Math.round(lng);
             const y = Math.round(lat);
-            const desc = grid ? `Grid ${grid} (X: ${x}, Y: ${y})` : `X: ${x}, Y: ${y}`;
-            const url = `${window.location.origin}${window.location.pathname}?lat=${y}&lng=${x}&grid=${grid}&desc=${encodeURIComponent(desc)}`;
-            navigator.clipboard.writeText(url).then(() => {
-                showTempMessage('Right-click location copied!', 3000);
-                playSound('click');
-            }).catch(() => {
-                prompt('Copy this link:', url);
-            });
-            if (grid) showGridNotification(grid);
-        });
-
-        map.on('dblclick', e => {
-            L.DomEvent.stopPropagation(e);
-            tempLatLng = { lat: e.latlng.lat, lng: e.latlng.lng };
-            openModal('Log Item');
-            playSound('click');
-        });
-
-        const edgePanBuffer = 50;
-        let edgePanInterval = null;
-        map.getContainer().addEventListener('mousemove', e => {
-            if (isDraggingAny) return;
-            const rect = map.getContainer().getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const w = rect.width;
-            const h = rect.height;
-            let dx = 0, dy = 0;
-            if (x < edgePanBuffer) dx = -10;
-            if (x > w - edgePanBuffer) dx = 10;
-            if (y < edgePanBuffer) dy = -10;
-            if (y > h - edgePanBuffer) dy = 10;
-            if (dx || dy) {
-                if (!edgePanInterval) {
-                    edgePanInterval = setInterval(() => {
-                        map.panBy([dx, dy]);
-                    }, 50);
-                }
-            } else if (edgePanInterval) {
-                clearInterval(edgePanInterval);
-                edgePanInterval = null;
-            }
-        });
-        map.getContainer().addEventListener('mouseleave', () => {
-            if (edgePanInterval) {
-                clearInterval(edgePanInterval);
-                edgePanInterval = null;
-            }
-        });
-        map.getContainer().addEventListener('touchmove', e => {
-            if (isDraggingAny) return;
-            const touch = e.touches[0];
-            const rect = map.getContainer().getBoundingClientRect();
-            const x = touch.clientX - rect.left;
-            const y = touch.clientY - rect.top;
-            const w = rect.width;
-            const h = rect.height;
-            let dx = 0, dy = 0;
-            if (x < edgePanBuffer) dx = -15;
-            if (x > w - edgePanBuffer) dx = 15;
-            if (y < edgePanBuffer) dy = -15;
-            if (y > h - edgePanBuffer) dy = 15;
-            if (dx || dy) {
-                map.panBy([dx, dy]);
-            }
-        });
-
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('lat') && urlParams.has('lng')) {
-            const lat = parseFloat(urlParams.get('lat'));
-            const lng = parseFloat(urlParams.get('lng'));
-            const grid = urlParams.get('grid') || getGridFromLatLng(lat, lng);
-            const desc = urlParams.get('desc') ? decodeURIComponent(urlParams.get('desc')) : '';
-            setTimeout(() => {
-                safeFlyTo(lat, lng, 3);
-                showTempMessage(`Shared: ${desc || grid}`, 5000);
-                playSound('click');
-            }, 1000);
+            coordHoverControl.getContainer().innerHTML = `Grid: ${grid || 'N/A'} (X: ${x}, Y: ${y})`;
+            coordHoverControl.getContainer().classList.add('show');
+            setTimeout(() => coordHoverControl.getContainer().classList.remove('show'), 3000);
         }
+        if (gridEnabled) {
+            const grid = getGridFromLatLng(e.latlng.lat, e.latlng.lng);
+            if (grid) showGridNotification(grid);
+        }
+        playSound('click');
+    });
 
-        updateCategoryDropdowns();
-        renderCategoryToggles();
-        loadData(currentSearch, currentCategoryFilter);
-        drawGrid();
-        updateXPBar();
+    map.on('contextmenu', e => {
+        L.DomEvent.preventDefault(e);
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+        const grid = getGridFromLatLng(lat, lng);
+        const x = Math.round(lng);
+        const y = Math.round(lat);
+        const desc = grid ? `Grid ${grid} (X: ${x}, Y: ${y})` : `X: ${x}, Y: ${y}`;
+        const url = `${window.location.origin}${window.location.pathname}?lat=${y}&lng=${x}&grid=${grid}&desc=${encodeURIComponent(desc)}`;
+        navigator.clipboard.writeText(url).then(() => {
+            showTempMessage('Right-click location copied!', 3000);
+            playSound('click');
+        }).catch(() => {
+            prompt('Copy this link:', url);
+        });
+        if (grid) showGridNotification(grid);
+    });
 
-        // DARK MODE TOGGLE
-        if (toggleDarkModeBtn) {
-            toggleDarkModeBtn.onclick = () => {
-                darkMode = !darkMode;
-                document.body.classList.toggle('dark-mode', darkMode);
-                localStorage.setItem('darkMode', darkMode);
-                toggleDarkModeBtn.textContent = darkMode ? 'Dark Mode: On' : 'Dark Mode: Off';
+    map.on('dblclick', e => {
+        L.DomEvent.stopPropagation(e);
+        tempLatLng = { lat: e.latlng.lat, lng: e.latlng.lng };
+        openModal('Log Item');
+        playSound('click');
+    });
+
+    const edgePanBuffer = 50;
+    let edgePanInterval = null;
+    map.getContainer().addEventListener('mousemove', e => {
+        if (isDraggingAny) return;
+        const rect = map.getContainer().getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const w = rect.width;
+        const h = rect.height;
+        let dx = 0, dy = 0;
+        if (x < edgePanBuffer) dx = -10;
+        if (x > w - edgePanBuffer) dx = 10;
+        if (y < edgePanBuffer) dy = -10;
+        if (y > h - edgePanBuffer) dy = 10;
+        if (dx || dy) {
+            if (!edgePanInterval) {
+                edgePanInterval = setInterval(() => {
+                    map.panBy([dx, dy]);
+                }, 50);
+            }
+        } else if (edgePanInterval) {
+            clearInterval(edgePanInterval);
+            edgePanInterval = null;
+        }
+    });
+    map.getContainer().addEventListener('mouseleave', () => {
+        if (edgePanInterval) {
+            clearInterval(edgePanInterval);
+            edgePanInterval = null;
+        }
+    });
+    map.getContainer().addEventListener('touchmove', e => {
+        if (isDraggingAny) return;
+        const touch = e.touches[0];
+        const rect = map.getContainer().getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        const w = rect.width;
+        const h = rect.height;
+        let dx = 0, dy = 0;
+        if (x < edgePanBuffer) dx = -15;
+        if (x > w - edgePanBuffer) dx = 15;
+        if (y < edgePanBuffer) dy = -15;
+        if (y > h - edgePanBuffer) dy = 15;
+        if (dx || dy) {
+            map.panBy([dx, dy]);
+        }
+    });
+
+    /* DEV NOTE: URL PARAMETER HANDLING */
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('lat') && urlParams.has('lng')) {
+        const lat = parseFloat(urlParams.get('lat'));
+        const lng = parseFloat(urlParams.get('lng'));
+        const grid = urlParams.get('grid') || getGridFromLatLng(lat, lng);
+        const desc = urlParams.get('desc') ? decodeURIComponent(urlParams.get('desc')) : '';
+        setTimeout(() => {
+            safeFlyTo(lat, lng, 3);
+            showTempMessage(`Shared: ${desc || grid}`, 5000);
+            playSound('click');
+        }, 1000);
+    }
+
+    /* DEV NOTE: INITIALIZE APP */
+    updateCategoryDropdowns();
+    renderCategoryToggles();
+    loadData(currentSearch, currentCategoryFilter);
+    drawGrid();
+    updateXPBar();
+
+    /* DEV NOTE: DARK MODE TOGGLE */
+    if (toggleDarkModeBtn) {
+        toggleDarkModeBtn.onclick = () => {
+            darkMode = !darkMode;
+            document.body.classList.toggle('dark-mode', darkMode);
+            localStorage.setItem('darkMode', darkMode);
+            toggleDarkModeBtn.textContent = darkMode ? 'Dark Mode: On' : 'Dark Mode: Off';
+            playSound('click');
+        };
+    }
+
+    /* DEV NOTE: UI LAYOUT INITIALIZATION */
+    setTimeout(() => {
+        const mapContainer = document.getElementById('map');
+        const tableContainer = document.getElementById('tableContainer');
+        if (!mapContainer || !tableContainer) return;
+        let topBar = document.getElementById('topBar');
+        if (!topBar) {
+            topBar = document.createElement('div');
+            topBar.id = 'topBar';
+            topBar.className = 'top-bar';
+            mapContainer.parentNode.insertBefore(topBar, mapContainer);
+        }
+        const originalTitle = document.getElementById('mainTitle');
+        if (originalTitle && originalTitle.parentNode !== topBar) {
+            topBar.appendChild(originalTitle);
+        }
+        const titleToggleBtn = document.getElementById('toggleTitleBtn');
+        if (titleToggleBtn) {
+            titleToggleBtn.onclick = () => {
+                titleVisible = !titleVisible;
+                topBar.classList.toggle('hidden', !titleVisible);
+                titleToggleBtn.textContent = titleVisible ? '-' : '+';
+                localStorage.setItem('titleVisible', titleVisible);
+                playSound('click');
+            };
+            topBar.classList.toggle('hidden', !titleVisible);
+        }
+        mapContainer.classList.add('has-top-bar');
+        let belowMapControls = document.getElementById('belowMapControls');
+        if (!belowMapControls) {
+            belowMapControls = document.createElement('div');
+            belowMapControls.id = 'belowMapControls';
+            mapContainer.parentNode.insertBefore(belowMapControls, tableContainer);
+        }
+        const searchBarEl = document.getElementById('searchBar');
+        if (searchBarEl && searchBarEl.parentNode !== belowMapControls) {
+            belowMapControls.appendChild(searchBarEl);
+            searchBarEl.className = 'search-bar';
+        }
+        const buttonGroup = document.getElementById('buttonGroup');
+        if (buttonGroup && buttonGroup.parentNode !== belowMapControls) {
+            belowMapControls.appendChild(buttonGroup);
+            buttonGroup.className = 'button-group';
+        }
+        let toolsToggleRow = document.getElementById('toolsToggleRow');
+        if (!toolsToggleRow) {
+            toolsToggleRow = document.createElement('div');
+            toolsToggleRow.id = 'toolsToggleRow';
+            toolsToggleRow.className = 'tools-toggle-row';
+            mapContainer.parentNode.insertBefore(toolsToggleRow, belowMapControls.nextSibling);
+        }
+        const toggleButtonGroup = document.getElementById('toggleButtonGroup');
+        if (toggleButtonGroup && toggleButtonGroup.parentNode !== toolsToggleRow) {
+            toolsToggleRow.appendChild(toggleButtonGroup);
+        }
+        if (toggleButtonGroup && buttonGroup) {
+            toggleButtonGroup.className = 'toggle-tools-btn';
+            const toolsVisible = localStorage.getItem('toolsVisible') !== 'false';
+            buttonGroup.classList.toggle('hidden', !toolsVisible);
+            toggleButtonGroup.textContent = toolsVisible ? 'Hide Tools' : 'Show Tools';
+            toggleButtonGroup.onclick = () => {
+                const willShow = buttonGroup.classList.contains('hidden');
+                buttonGroup.classList.toggle('hidden', !willShow);
+                toggleButtonGroup.textContent = willShow ? 'Hide Tools' : 'Show Tools';
+                localStorage.setItem('toolsVisible', willShow);
                 playSound('click');
             };
         }
+        const voiceSearchBtn = document.getElementById('voiceSearchBtn');
+        if (voiceSearchBtn && buttonGroup) {
+            if (voiceSearchBtn.parentNode !== buttonGroup) {
+                buttonGroup.prepend(voiceSearchBtn);
+            }
+            voiceSearchBtn.className = 'voice-btn';
+        }
+        const counter = document.getElementById('counter');
+        if (counter) counter.className = 'counter';
+        let pagination = document.getElementById('tablePagination');
+        if (!pagination) {
+            pagination = document.createElement('div');
+            pagination.id = 'tablePagination';
+            pagination.className = 'pagination';
+            const prev = document.getElementById('prevPageBtn');
+            const info = document.getElementById('pageInfo');
+            const next = document.getElementById('nextPageBtn');
+            if (prev) pagination.appendChild(prev);
+            if (info) pagination.appendChild(info);
+            if (next) pagination.appendChild(next);
+        }
+        if (tableContainer && pagination && counter) {
+            tableContainer.insertBefore(pagination, tableContainer.firstChild);
+            tableContainer.insertBefore(counter, pagination.nextSibling);
+        }
+        let customHeader = document.getElementById('customTableHeader');
+        if (!customHeader) {
+            customHeader = document.createElement('div');
+            customHeader.id = 'customTableHeader';
+            customHeader.innerHTML = `
+                <div style="display: table-row; background: rgba(0, 255, 0, 0.2); border: 1px solid #0f0; border-radius: 8px; width: 100% !important;">
+                    <div style="display: table-cell; width: 10%; padding: 10px; text-align: center; color: #0f0; font-weight: bold;">Lock</div>
+                    <div style="display: table-cell; width: 15%; padding: 10px; text-align: center; color: #0f0; font-weight: bold;">Icon</div>
+                    <div style="display: table-cell; width: 25%; padding: 10px; text-align: center; color: #0f0; font-weight: bold;">Category</div>
+                    <div style="display: table-cell; width: 50%; padding: 10px; text-align: center; color: #0f0; font-weight: bold; padding-left: 15px;">Description</div>
+                </div>
+            `;
+            const table = tableContainer.querySelector('#locationsTable');
+            if (table) tableContainer.insertBefore(customHeader, table);
+        }
+        document.body.classList.add('map-ready');
+    }, 1000);
 
-        setTimeout(() => {
-            const mapContainer = document.getElementById('map');
-            const tableContainer = document.getElementById('tableContainer');
-            if (!mapContainer || !tableContainer) return;
-            let topBar = document.getElementById('topBar');
-            if (!topBar) {
-                topBar = document.createElement('div');
-                topBar.id = 'topBar';
-                topBar.className = 'top-bar';
-                mapContainer.parentNode.insertBefore(topBar, mapContainer);
-            }
-            const originalTitle = document.getElementById('mainTitle');
-            if (originalTitle && originalTitle.parentNode !== topBar) {
-                topBar.appendChild(originalTitle);
-            }
-            const titleToggleBtn = document.getElementById('toggleTitleBtn');
-            if (titleToggleBtn) {
-                titleToggleBtn.onclick = () => {
-                    titleVisible = !titleVisible;
-                    topBar.classList.toggle('hidden', !titleVisible);
-                    titleToggleBtn.textContent = titleVisible ? '-' : '+';
-                    localStorage.setItem('titleVisible', titleVisible);
-                    playSound('click');
-                };
-                topBar.classList.toggle('hidden', !titleVisible);
-            }
-            mapContainer.classList.add('has-top-bar');
-            let belowMapControls = document.getElementById('belowMapControls');
-            if (!belowMapControls) {
-                belowMapControls = document.createElement('div');
-                belowMapControls.id = 'belowMapControls';
-                mapContainer.parentNode.insertBefore(belowMapControls, tableContainer);
-            }
-            const searchBarEl = document.getElementById('searchBar');
-            if (searchBarEl && searchBarEl.parentNode !== belowMapControls) {
-                belowMapControls.appendChild(searchBarEl);
-                searchBarEl.className = 'search-bar';
-            }
-            const buttonGroup = document.getElementById('buttonGroup');
-            if (buttonGroup && buttonGroup.parentNode !== belowMapControls) {
-                belowMapControls.appendChild(buttonGroup);
-                buttonGroup.className = 'button-group';
-            }
-            let toolsToggleRow = document.getElementById('toolsToggleRow');
-            if (!toolsToggleRow) {
-                toolsToggleRow = document.createElement('div');
-                toolsToggleRow.id = 'toolsToggleRow';
-                toolsToggleRow.className = 'tools-toggle-row';
-                mapContainer.parentNode.insertBefore(toolsToggleRow, belowMapControls.nextSibling);
-            }
-            const toggleButtonGroup = document.getElementById('toggleButtonGroup');
-            if (toggleButtonGroup && toggleButtonGroup.parentNode !== toolsToggleRow) {
-                toolsToggleRow.appendChild(toggleButtonGroup);
-            }
-            if (toggleButtonGroup && buttonGroup) {
-                toggleButtonGroup.className = 'toggle-tools-btn';
-                const toolsVisible = localStorage.getItem('toolsVisible') !== 'false';
-                buttonGroup.classList.toggle('hidden', !toolsVisible);
-                toggleButtonGroup.textContent = toolsVisible ? 'Hide Tools' : 'Show Tools';
-                toggleButtonGroup.onclick = () => {
-                    const willShow = buttonGroup.classList.contains('hidden');
-                    buttonGroup.classList.toggle('hidden', !willShow);
-                    toggleButtonGroup.textContent = willShow ? 'Hide Tools' : 'Show Tools';
-                    localStorage.setItem('toolsVisible', willShow);
-                    playSound('click');
-                };
-            }
-            const voiceSearchBtn = document.getElementById('voiceSearchBtn');
-            if (voiceSearchBtn && buttonGroup) {
-                if (voiceSearchBtn.parentNode !== buttonGroup) {
-                    buttonGroup.prepend(voiceSearchBtn);
-                }
-                voiceSearchBtn.className = 'voice-btn';
-            }
-            const counter = document.getElementById('counter');
-            if (counter) counter.className = 'counter';
-            let pagination = document.getElementById('tablePagination');
-            if (!pagination) {
-                pagination = document.createElement('div');
-                pagination.id = 'tablePagination';
-                pagination.className = 'pagination';
-                const prev = document.getElementById('prevPageBtn');
-                const info = document.getElementById('pageInfo');
-                const next = document.getElementById('nextPageBtn');
-                if (prev) pagination.appendChild(prev);
-                if (info) pagination.appendChild(info);
-                if (next) pagination.appendChild(next);
-            }
-            if (tableContainer && pagination && counter) {
-                tableContainer.insertBefore(pagination, tableContainer.firstChild);
-                tableContainer.insertBefore(counter, pagination.nextSibling);
-            }
-            let customHeader = document.getElementById('customTableHeader');
-            if (!customHeader) {
-                customHeader = document.createElement('div');
-                customHeader.id = 'customTableHeader';
-                customHeader.innerHTML = `
-                    <div style="display: table-row; background: rgba(0, 255, 0, 0.2); border: 1px solid #0f0; border-radius: 8px; width: 100% !important;">
-                        <div style="display: table-cell; width: 10%; padding: 10px; text-align: center; color: #0f0; font-weight: bold;">Lock</div>
-                        <div style="display: table-cell; width: 15%; padding: 10px; text-align: center; color: #0f0; font-weight: bold;">Icon</div>
-                        <div style="display: table-cell; width: 25%; padding: 10px; text-align: center; color: #0f0; font-weight: bold;">Category</div>
-                        <div style="display: table-cell; width: 50%; padding: 10px; text-align: center; color: #0f0; font-weight: bold; padding-left: 15px;">Description</div>
-                    </div>
-                `;
-                const table = tableContainer.querySelector('#locationsTable');
-                if (table) tableContainer.insertBefore(customHeader, table);
-            }
-            document.body.classList.add('map-ready');
-        }, 1000);
-
-        /* --------------------------------------------------------------------------
-           Fallout 76 Item Finder Map Version 37 - Disclaimer and Terms of Use
-           --------------------------------------------------------------------------
-           Copyright (c) 2025 MrCrazy. All rights reserved.
-           This application, including all code, design, content, and the map images is the intellectual property of MrCrazy.
-           Unauthorized use, copying, modification, distribution, or monetization of this application or any part thereof is strictly prohibited without explicit written permission from the author.
-           This app is provided "as is" for personal, non-commercial use by Fallout 76 players to track in-game items.
-           The author is not responsible for any damages or losses resulting from the use of this application. Use at your own risk.
-           For inquiries or permission requests, call someone who cares.
-           Last updated: November 04, 2025
-           -------------------------------------------------------------------------- */
-    })();
+    /* --------------------------------------------------------------------------
+       Fallout 76 Item Finder Map Version 37 - Disclaimer and Terms of Use
+       --------------------------------------------------------------------------
+       Copyright (c) 2025 MrCrazy. All rights reserved.
+       This application, including all code, design, content, and the map images is the intellectual property of MrCrazy.
+       Unauthorized use, copying, modification, distribution, or monetization of this application or any part thereof is strictly prohibited without explicit written permission from the author.
+       This app is provided "as is" for personal, non-commercial use by Fallout 76 players to track in-game items.
+       The author is not responsible for any damages or losses resulting from the use of this application. Use at your own risk.
+       For inquiries or permission requests, call someone who cares.
+       Last updated: November 04, 2025
+       -------------------------------------------------------------------------- */
+})();
 });
 </script>
 </body>
