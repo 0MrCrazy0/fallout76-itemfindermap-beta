@@ -32,14 +32,29 @@
         button { padding: 8px 16px; width: 100%; max-width: 200px; box-sizing: border-box; background-color: #1a3c34; color: #00ff00; border: 2px solid #00ff00; border-radius: 0; cursor: pointer; font-family: 'Courier New', monospace; transition: background-color 0.3s; margin: 5px; }
         button:hover { background-color: #00ff00; color: #0a2a2a; }
         button.reset-btn { background-color: #F7615E !important; color: #000 !important; font-weight: 700; }
-        /* BUTTON COLORS */
+        /* BUTTON COLORS — UNIQUE & LIGHT */
+        #voiceSearchBtn { background: #66ccff !important; color: #000 !important; }
+        #toggleClusterBtn { background: #ffcc66 !important; color: #000 !important; }
+        #toggleMapBtn { background: #99ff99 !important; color: #000 !important; }
+        #toggleGridBtn { background: #ff99cc !important; color: #000 !important; }
+        #toggleButtonGroup { background: #cc99ff !important; color: #000 !important; }
+        #howToUseBtn { background: #ffff99 !important; color: #000 !important; }
+        #nukeCodesBtn { background: #ff6666 !important; color: #000 !important; }
+        #toggleSoundsBtn { background: #66ff99 !important; color: #000 !important; }
+        #exportJsonBtn { background: #99ccff !important; color: #000 !important; }
+        #importBtn { background: #ccff99 !important; color: #000 !important; }
+        #downloadCommunityBtn { background: #ffcc00 !important; color: #000 !important; font-weight:700; }
+        #saveMapJpegBtn { background: #ff9966 !important; color: #000 !important; }
+        #toggleDarkModeBtn { background: #cccccc !important; color: #000 !important; }
+        #lockAllBtn { background: #ffaa00 !important; color: #000 !important; }
+        /* MODAL BUTTONS */
         #saveItemBtn { background: #00ff00 !important; color: #000 !important; }
         #shareItemBtn { background: #00b7eb !important; color: #000 !important; }
         #deleteItemBtn { background: #F7615E !important; color: #000 !important; }
-        #undoItemBtn { background: #cc8400 !important; color: #000 !important; }
+        #undoItemBtn { background: #cc8400 !important; color: #000 !important; margin: 8px 8px !important; }
         #duplicateItemBtn { background: #5E99F7 !important; color: #000 !important; }
-        #modalLockToggle { color: #ffa500; cursor: pointer; }
-        #modalLockToggle:hover { color: #00ff00; }
+        #modalLockToggle, .popup-lock-toggle { color: #ffa500; cursor: pointer; }
+        #modalLockToggle:hover, .popup-lock-toggle:hover { color: #00ff00; }
         p { max-width: 800px; margin: 0 auto 20px; text-align: center; text-shadow: 0 0 5px #00ff00; }
         /* TABLE CONTAINER */
         #tableContainer {
@@ -54,15 +69,18 @@
             background: rgba(0,0,0,0.7);
             border: 1px solid #0f0;
             border-radius: 8px;
+            display: block !important;
         }
-		.container {
-    display: flex;
-    justify-content: center; /* Centers horizontally */
-    align-items: center;     /* Centers vertically */
-    height: 100vh;           /* Sets the container height to the full viewport height */
-}
-        .pagination { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 10px 0; }
-        .counter { text-align: center; margin: 10px 0; font-weight: bold; width: 100%; margin-left: 0; margin-right: 0; margin: 10px auto; width: 200px; }
+        .pagination { 
+            display: flex; 
+            flex-wrap: wrap;
+            justify-content: center; 
+            align-items: center; 
+            gap: 15px; 
+            margin: 15px 0; 
+            width: 100%;
+        }
+        .counter { text-align: center; margin: 10px 0; font-weight: bold; width: 100%; margin-left: 0; margin-right: 0; }
         /* FAKE HEADER */
         #customTableHeader {
             display: table !important;
@@ -155,6 +173,14 @@
         textarea, input[type="text"] { width: 100%; padding: 8px; border: 2px solid #00ff00; border-radius: 0; background-color: #0a2a2a; color: #00ff00; font-family: 'Courier New', monospace; box-sizing: border-box; }
         textarea { height: 120px; }
         body.modal-open { overflow: hidden; position: fixed; width: 100%; height: 100%; }
+        /* MODAL BUTTONS — CENTERED & WRAPPED */
+        #itemModal .modal-content > div:last-child {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 12px;
+        }
         /* MARKERS */
         .custom-icon { display: flex; align-items: center; justify-content: center; }
         .marker-background { width: 30px; height: 30px; border-radius: 50%; opacity: 0.9; display: flex; align-items: center; justify-content: center; background-color: #808080; }
@@ -182,23 +208,46 @@
         #gridNotification.show { opacity: 1; transform: translateY(0); }
         .flash-green { animation: flashGreen 0.6s ease-out; }
         @keyframes flashGreen { 0% { border-color: #00ff00; } 50% { border-color: #00ff88; box-shadow: 0 0 15px #00ff88; } 100% { border-color: #00ff00; } }
-        /* DARK MODE — FINAL */
-        body.dark-mode { background-color: #000 !important; }
+        /* DARK MODE — MAP BRIGHT, UI DARK */
+        body.dark-mode {
+            background-color: #000 !important;
+        }
+        body.dark-mode #searchBar,
+        body.dark-mode #buttonGroup,
+        body.dark-mode #tableContainer,
         body.dark-mode .modal-content,
-        body.dark-mode #map,
-        body.dark-mode input, body.dark-mode select, body.dark-mode button,
+        body.dark-mode .leaflet-popup-content-wrapper,
+        body.dark-mode #xpStatus,
+        body.dark-mode h1, body.dark-mode h2,
+        body.dark-mode .counter {
+            background-color: #0a0a0a !important;
+            border-color: #00ff00 !important;
+        }
+        body.dark-mode input,
+        body.dark-mode select,
+        body.dark-mode button,
+        body.dark-mode .leaflet-popup-content-wrapper,
         body.dark-mode #locationsTable td,
         body.dark-mode #customTableHeader > div,
-        body.dark-mode #searchBar, body.dark-mode #buttonGroup,
-        body.dark-mode .leaflet-container,
-        body.dark-mode .leaflet-pane,
-        body.dark-mode .leaflet-tile-pane img {
-            background-color: #0a0a0a !important; 
-            color: #00ff00 !important; 
-            border-color: #00ff00 !important;
-            filter: brightness(0.3) contrast(1.2) !important;
+        body.dark-mode .counter,
+        body.dark-mode h1, body.dark-mode h2,
+        body.dark-mode .grid-label {
+            color: #00ff00 !important;
         }
-        body.dark-mode button:hover { background-color: #00ff00 !important; color: #000 !important; }
+        body.dark-mode button:hover {
+            background-color: #00ff00 !important;
+            color: #000 !important;
+            box-shadow: 0 0 10px #00ff00 !important;
+        }
+        body.dark-mode .grid-line {
+            stroke: rgba(0, 255, 0, 0.4) !important;
+        }
+        /* MAP STAYS BRIGHT */
+        body.dark-mode .leaflet-container,
+        body.dark-mode .leaflet-tile-pane img {
+            filter: none !important;
+            background: #fff !important;
+        }
         /* MOBILE */
         @media (max-width: 768px) {
             #map { height: 600px; max-width: 100%; }
@@ -244,7 +293,8 @@
         .top-bar.hidden { display: none; }
         .tools-toggle-row { display: flex; justify-content: center; margin: 10px 0; }
         .button-group.hidden { display: none !important; }
-        #lockAllBtn { display: none; margin: 5px; background: #ffa500; color: #000; }
+        #lockAllBtn { display: none; margin: 5px; }
+        #toggleTableBtn { display: none !important; }
     </style>
 </head>
 <body>
@@ -277,8 +327,8 @@
         <button id="toggleSoundsBtn">Sounds: On</button>
         <button id="exportJsonBtn">Export Markers</button>
         <button id="importBtn">Import Markers</button>
-        <button id="downloadCommunityBtn" style="background:#00ff88; color:#000; font-weight:700;">Update Community Map</button>
-        <button id="undoImportBtn" style="display:none; background:#cc8400; color:#000; font-weight:700;">UNDO IMPORT</button>
+        <button id="downloadCommunityBtn">Update Community Map</button>
+        <button id="undoImportBtn" style="display:none;">UNDO IMPORT</button>
         <button id="saveMapJpegBtn">Save Map as JPEG</button>
         <button id="toggleDarkModeBtn">Dark Mode: Off</button>
         <button id="lockAllBtn">Lock All</button>
@@ -290,7 +340,6 @@
     <!-- CONTENT INVENTORY -->
     <h2 style="text-align:center; margin:15px 0 5px;">Content Inventory</h2>
     <p id="counter" class="counter"></p>
-    <button id="toggleTableBtn" style="display:none; margin:0 auto 10px; padding:8px 16px; background:#1a3c34; color:#0f0; border:1px solid #0f0; border-radius:4px;">Show Content Table</button>
   
     <div id="tableContainer" style="margin:0 auto 20px; max-width:90%; background:rgba(0,0,0,0.7); border:1px solid #0f0; border-radius:8px; padding:10px;">
         <div class="pagination">
@@ -316,9 +365,9 @@
             <textarea id="itemDesc" placeholder="Enter item and location details or leave blank auto puts gid location"></textarea>
             <div style="margin-top:12px; text-align:center;">
                 <button id="saveItemBtn">Save</button>
-                <button id="shareItemBtn" style="margin:0 8px;">Share Link</button>
+                <button id="shareItemBtn">Share Link</button>
                 <button id="deleteItemBtn" style="display:none;">Delete</button>
-                <button id="undoItemBtn" style="display:none; margin:0 8px;">Undo Delete</button>
+                <button id="undoItemBtn" style="display:none;">Undo Delete</button>
                 <button id="duplicateItemBtn" style="display:none;">Duplicate</button>
             </div>
         </div>
@@ -416,7 +465,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const MAP_VERSION_KEY = 'fallout76_map_version';
         const TERMS_ACCEPTED_KEY = 'fallout76_terms_accepted';
         const UPDATE_VERSION_KEY = 'fallout76_last_update_seen';
-        const CURRENT_UPDATE_VERSION = 'v37-auto-lock';
+        const CURRENT_UPDATE_VERSION = 'v37-final';
         const APP_VERSION = "37";
         let soundsEnabled = localStorage.getItem('soundsEnabled') !== 'false';
         const baseSounds = {
@@ -459,14 +508,14 @@ document.addEventListener('DOMContentLoaded', function() {
         let termsAccepted = localStorage.getItem(TERMS_ACCEPTED_KEY) === 'true';
         let lastImportBackup = null;
         const defaultCategoryIcons = {
-        'weapons': '🔫', 'armor': '🛡️', 'aid': '💉', 'food/drink': '🍽️', 'ammunition': '💥',
-        'apparel': '👕', 'plans': '📜', 'junk': '🗑️', 'holotapes': '📀', 'misc': '📝',
-        'plants': '🌿', 'eggs': '🥚', 'creatures': '🐺', 'vendors': '💰', 'exchanges': '⚖️',
-        'vaults': '⚙️', 'power armor': '👨‍🚀', 'fusion core': '🔋', 'nuke drop zones': '☢️',
-        'nuke silos': '🚀', 'magazines': '📚', 'bobbleheads': '🎎', 'safe locations': '🗄️',
-        'terminal locations': '🖥️', 'treasure maps': '🗺️', 'resource deposits': '⛏️',
-        'fishing locations': '🎣', 'workshops': '🔧', 'train stations': '🚂', 'town locations': '🏫',
-        'event locations': '🎉', 'named locations': '🚩', 'regions': '📍'
+            'weapons': 'GUN', 'armor': 'SHIELD', 'aid': 'SYRINGE', 'food/drink': 'FORK', 'ammunition': 'EXPLOSION',
+            'apparel': 'SHIRT', 'plans': 'SCROLL', 'junk': 'TRASH', 'holotapes': 'DISC', 'misc': 'NOTE',
+            'plants': 'LEAF', 'eggs': 'EGG', 'creatures': 'WOLF', 'vendors': 'MONEY', 'exchanges': 'SCALES',
+            'vaults': 'GEAR', 'power armor': 'ROBOT', 'fusion core': 'BATTERY', 'nuke drop zones': 'RADIOACTIVE',
+            'nuke silos': 'ROCKET', 'magazines': 'BOOK', 'bobbleheads': 'DOLL', 'safe locations': 'SAFE',
+            'terminal locations': 'COMPUTER', 'treasure maps': 'MAP', 'resource deposits': 'PICKAXE',
+            'fishing locations': 'FISH', 'workshops': 'WRENCH', 'train stations': 'TRAIN', 'town locations': 'SCHOOL',
+            'event locations': 'PARTY', 'named locations': 'FLAG', 'regions': 'PIN'
         };
         let categoryIcons = { ...defaultCategoryIcons, ...customCategories };
         const defaultCategoryColors = {
@@ -510,7 +559,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const xpPerMarker = 100;
         const pageSize = 100;
         let tablePage = parseInt(localStorage.getItem('tablePage')) || 1;
-        let tableVisible = localStorage.getItem('tableVisible') !== 'false';
         let currentSearch = localStorage.getItem('currentSearch') || '';
         let currentCategoryFilter = localStorage.getItem('currentCategoryFilter') || '';
         let darkMode = localStorage.getItem('darkMode') === 'true';
@@ -641,7 +689,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const nextPageBtn = document.getElementById('nextPageBtn');
         const pageInfo = document.getElementById('pageInfo');
         const tableContainer = document.getElementById('tableContainer');
-        const toggleTableBtn = document.getElementById('toggleTableBtn');
         const counter = document.getElementById('counter');
         const categoryToggleModal = document.getElementById('categoryToggleModal');
         const toggleCategoryModalBtn = document.getElementById('toggleCategoryModalBtn');
@@ -801,7 +848,7 @@ document.addEventListener('DOMContentLoaded', function() {
                    rel="noopener noreferrer"
                    class="nuke-emoji-btn"
                    title="Launch codes – click the rocket">
-                   🚀
+                   ROCKET
                 </a>
             </div>
         `;
@@ -1039,15 +1086,6 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
 
-        function refreshTableVisibility() {
-            const isMobile = window.innerWidth <= 768;
-            if (toggleTableBtn) toggleTableBtn.style.display = isMobile ? 'block' : 'none';
-            if (isMobile) {
-                tableContainer.style.display = tableVisible ? 'block' : 'none';
-                toggleTableBtn.textContent = tableVisible ? 'Hide Content Table' : 'Show Content Table';
-            }
-        }
-
         function renderCategoryToggles() {
             const container = document.getElementById('categoryCheckboxes');
             if (!container) return;
@@ -1191,7 +1229,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 showTempMessage(`Moved + saved! Lock to protect. ${loc.icon} ${loc.category}`, 4000);
                 safeFlyTo(newLatLng.lat, newLatLng.lng, map.getZoom());
                 forceReload();
-            };
+                        };
             const onDragStart = (e) => {
                 if (loc.locked || isDraggingAny) return;
                 if (e.touches) L.DomEvent.preventDefault(e);
@@ -1225,6 +1263,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div style="max-height:80px; overflow-y:auto; margin:4px 0; padding-right:8px;">
                     ${escapeHtml(loc.desc)}
                 </div>
+                <div style="margin:6px 0; text-align:center;">
+                    <span class="popup-lock-toggle" onclick="toggleLockFromPopup(${locations.indexOf(loc)})">
+                        ${loc.locked ? 'LOCKED' : 'UNLOCKED'}
+                    </span>
+                </div>
                 <button onclick="editMarkerFromPopup(${locations.indexOf(loc)})"
                         style="margin-top:6px; padding:4px 10px; background:#00ff00; color:#000; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;">
                     Edit
@@ -1257,7 +1300,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const latestVersion = localStorage.getItem(MAP_VERSION_KEY) || "1.0";
             const totalFiltered = locations.filter(l => activeCategories.has(l.category)).length;
             const pageItems = locations.filter(l => activeCategories.has(l.category)).slice((tablePage - 1) * pageSize, tablePage * pageSize).length;
-            if (counter) counter.innerHTML = `<strong>Map Version ${latestVersion}</strong> - <strong>${totalFiltered}</strong> logged locations Keep Exploring! - <strong>${pageItems}</strong> showing.`;
+            if (counter) counter.innerHTML = `<strong>Map Version ${latestVersion}</strong> - <strong>${totalFiltered}</strong> logged locations - <strong>${pageItems}</strong> showing.`;
         }
 
         function refreshTable(search = '', catFilter = '') {
@@ -1283,7 +1326,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const tr = document.createElement('tr');
                 if (isGlowing(loc)) tr.classList.add('glowing');
                 const shortDesc = loc.desc.split('\n')[0].trim();
-                const lockEmoji = loc.locked ? '🔐' : '🔓';
+                const lockEmoji = loc.locked ? 'LOCKED' : 'UNLOCKED';
                 const lockCell = `<td><span class="lock-toggle" onclick="toggleLockFromTable(${locations.indexOf(loc)})" title="${loc.locked ? 'Locked' : 'Unlocked'}">${lockEmoji}</span></td>`;
                 const iconCell = ['named locations', 'regions'].includes(loc.category)
                     ? `<td><div class="text-location">${escapeHtml(shortDesc)}</div></td>`
@@ -1326,6 +1369,16 @@ document.addEventListener('DOMContentLoaded', function() {
             saveLocations();
             forceReload();
             showTempMessage(loc.locked ? 'Marker locked — unlock to edit!' : 'Marker unlocked!', 4000);
+            playSound('click');
+        };
+
+        window.toggleLockFromPopup = function(index) {
+            const loc = locations[index];
+            loc.locked = !loc.locked;
+            saveLocations();
+            forceReload();
+            map.closePopup();
+            showTempMessage(loc.locked ? 'Locked!' : 'Unlocked!', 3000);
             playSound('click');
         };
 
@@ -1374,13 +1427,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (undoBtn) undoBtn.style.display = lastDeleted ? 'inline-block' : 'none';
                 if (shareItemBtn) shareItemBtn.style.display = 'inline-block';
                 if (lockToggle) {
-                    lockToggle.textContent = loc.locked ? '🔐' : '🔓';
-                    lockToggle.title = loc.locked ? 'Locked — click to unlock' : 'Unlocked — click to lock';
-                    lockToggle.onclick = (e) => {
-                        e.stopPropagation();
+                    lockToggle.onclick = () => {
                         loc.locked = !loc.locked;
-                        lockToggle.textContent = loc.locked ? '🔐' : '🔓';
-                        lockToggle.title = loc.locked ? 'Locked — click to unlock' : 'Unlocked — click to lock';
+                        lockToggle.textContent = loc.locked ? 'LOCKED' : 'UNLOCKED';
                         if (itemCategorySelect) itemCategorySelect.disabled = loc.locked;
                         if (itemDescInput) itemDescInput.disabled = loc.locked;
                         if (deleteBtn) deleteBtn.style.display = loc.locked ? 'none' : 'inline-block';
@@ -1390,7 +1439,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         showTempMessage(loc.locked ? 'Marker locked — unlock to edit!' : 'Marker unlocked!', 4000);
                         playSound('click');
                     };
-                    lockToggle.style.display = 'inline';
                 }
             } else {
                 if (itemCategorySelect) itemCategorySelect.value = 'misc';
@@ -1457,14 +1505,12 @@ document.addEventListener('DOMContentLoaded', function() {
             loadData(combinedSearch ? combinedSearch.value : '', categoryFilter ? categoryFilter.value : '');
             renderCategoryToggles();
             updateCategoryDropdowns();
-            refreshTableVisibility();
         }
 
         function saveAppState() {
             localStorage.setItem('currentSearch', combinedSearch ? combinedSearch.value : '');
             localStorage.setItem('currentCategoryFilter', categoryFilter ? categoryFilter.value : '');
             localStorage.setItem('tablePage', tablePage);
-            localStorage.setItem('tableVisible', tableVisible);
             localStorage.setItem('clusteringEnabled', clusteringEnabled);
             localStorage.setItem('gridEnabled', gridEnabled);
             localStorage.setItem('currentMap', currentMap);
@@ -1652,7 +1698,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 }
                                 if (existingFallback && userEditedKeys.has(fallbackKey)) {
                                     existingFallback.category = imp.category || existingFallback.category;
-                                    existingFallback.icon = imp.icon || existing.icon;
+                                    existingFallback.icon = imp.icon || existingFallback.icon;
                                     existingFallback.addedTime = Date.now();
                                     existingFallback.locked = true;
                                     skippedUserEdited++;
@@ -1698,13 +1744,13 @@ document.addEventListener('DOMContentLoaded', function() {
                             }, 100);
                             let report = `Imported ${incoming.length} markers from file!\n\n`;
                             if (addedCount) report += `+ ${addedCount} new markers added\n`;
-                            if (updatedCount) report += `↻ ${updatedCount} markers updated\n`;
+                            if (updatedCount) report += `Updated ${updatedCount} markers updated\n`;
                             if (movedCount) report += ` • ${movedCount} moved\n`;
                             if (descChangedCount) report += ` • ${descChangedCount} description changes\n`;
                             if (catChangedCount) report += ` • ${catChangedCount} category changes\n`;
-                            if (resetCount) report += `↺ ${resetCount} community markers reset\n`;
-                            if (skippedUserEdited) report += `✓ ${skippedUserEdited} user edits preserved\n`;
-                            if (newCats) report += `★ ${newCats} new custom categories\n`;
+                            if (resetCount) report += `Reset ${resetCount} community markers reset\n`;
+                            if (skippedUserEdited) report += `Preserved ${skippedUserEdited} user edits preserved\n`;
+                            if (newCats) report += `New ${newCats} new custom categories\n`;
                             report += `\nTotal locations: ${locations.length}\n`;
                             report += `Community version: ${communityVersion}`;
                             alert(report);
@@ -1809,7 +1855,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 const existingFallback = existingByKey.get(fallbackKey);
                                 if (existingFallback && userEditedKeys.has(fallbackKey)) {
                                     existingFallback.category = imp.category || existingFallback.category;
-                                    existingFallback.icon = imp.icon || existing.icon;
+                                    existingFallback.icon = imp.icon || existingFallback.icon;
                                     existingFallback.addedTime = Date.now();
                                     existingFallback.locked = true;
                                     skippedUserEdited++;
@@ -1855,11 +1901,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             }, 100);
                             let report = `Community Map Updated!\nVersion: ${communityVersion}\n\n`;
                             if (addedCount) report += `+ ${addedCount} new markers added\n`;
-                            if (updatedCount) report += `↻ ${updatedCount} markers updated\n`;
+                            if (updatedCount) report += `Updated ${updatedCount} markers updated\n`;
                             if (movedCount) report += ` • ${movedCount} moved\n`;
                             if (descChangedCount) report += ` • ${descChangedCount} description changes\n`;
                             if (catChangedCount) report += ` • ${catChangedCount} category changes\n`;
-                            if (skippedUserEdited) report += `✓ ${skippedUserEdited} user edits preserved\n`;
+                            if (skippedUserEdited) report += `Preserved ${skippedUserEdited} user edits preserved\n`;
                             report += `\nTotal locations: ${locations.length}`;
                             alert(report);
                             playSound('saving');
@@ -1953,14 +1999,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     refreshTable(combinedSearch ? combinedSearch.value : '', categoryFilter ? categoryFilter.value : '');
                     playSound('click');
                 }
-            };
-        }
-        if (toggleTableBtn) {
-            toggleTableBtn.onclick = () => {
-                tableVisible = !tableVisible;
-                localStorage.setItem('tableVisible', tableVisible);
-                refreshTableVisibility();
-                playSound('click');
             };
         }
 
@@ -2118,7 +2156,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     loc.category = category;
                     loc.desc = desc;
-                    loc.icon = categoryIcons[category] || 'UNKNOWN';
+                    loc.icon = "categoryIcons"[category] || 'UNKNOWN';
                     loc.addedTime = Date.now();
                     loc.userEdited = true;
                 } else {
@@ -2377,13 +2415,18 @@ document.addEventListener('DOMContentLoaded', function() {
         updateCategoryDropdowns();
         renderCategoryToggles();
         loadData(currentSearch, currentCategoryFilter);
-        refreshTableVisibility();
         drawGrid();
         updateXPBar();
-        window.addEventListener('resize', refreshTableVisibility);
-        refreshTableVisibility();
-        if (gridEnabled) {
-            map.getContainer().classList.add('hover-coords');
+
+        // DARK MODE TOGGLE
+        if (toggleDarkModeBtn) {
+            toggleDarkModeBtn.onclick = () => {
+                darkMode = !darkMode;
+                document.body.classList.toggle('dark-mode', darkMode);
+                localStorage.setItem('darkMode', darkMode);
+                toggleDarkModeBtn.textContent = darkMode ? 'Dark Mode: On' : 'Dark Mode: Off';
+                playSound('click');
+            };
         }
 
         setTimeout(() => {
