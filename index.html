@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Fallout 76 Item Finder V36</title>
+    <title>Fallout 76 Item Finder V37</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
@@ -15,7 +15,15 @@
     <style>
         body { font-family: 'Courier New', monospace; margin: 20px; background-color: #0a2a2a; color: #00ff00; overflow-x: hidden; }
         h1 { color: #00ff00; text-align: center; text-shadow: 0 0 10px #00ff00; font-size: 2.2em; margin-bottom: 12px; }
-        #map { height: 750px; border: 2px solid #00ff00; margin-bottom: 20px; box-shadow: 0 0 15px #00ff00; background-color: #000000; position: relative; }
+        #map { 
+            height: 750px; 
+            max-width: 95%; 
+            margin: 0 auto 20px; 
+            border: 2px solid #00ff00; 
+            box-shadow: 0 0 15px #00ff00; 
+            background-color: #000000; 
+            position: relative; 
+        }
         .controls { margin-bottom: 20px; text-align: center; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
         input[type="text"], select { padding: 8px; width: 100%; max-width: 200px; box-sizing: border-box; border: 2px solid #00ff00; border-radius: 0; background-color: #1a3c34; color: #00ff00; font-family: 'Courier New', monospace; }
         #combinedSearch { max-width: 250px; transition: background-color 0.3s, box-shadow 0.3s; }
@@ -24,6 +32,14 @@
         button { padding: 8px 16px; width: 100%; max-width: 200px; box-sizing: border-box; background-color: #1a3c34; color: #00ff00; border: 2px solid #00ff00; border-radius: 0; cursor: pointer; font-family: 'Courier New', monospace; transition: background-color 0.3s; margin: 5px; }
         button:hover { background-color: #00ff00; color: #0a2a2a; }
         button.reset-btn { background-color: #F7615E !important; color: #000 !important; font-weight: 700; }
+        /* BUTTON COLORS */
+        #saveItemBtn { background: #00ff00 !important; color: #000 !important; }
+        #shareItemBtn { background: #00b7eb !important; color: #000 !important; }
+        #deleteItemBtn { background: #F7615E !important; color: #000 !important; }
+        #undoItemBtn { background: #cc8400 !important; color: #000 !important; }
+        #duplicateItemBtn { background: #5E99F7 !important; color: #000 !important; }
+        #modalLockToggle { color: #ffa500; cursor: pointer; }
+        #modalLockToggle:hover { color: #00ff00; }
         p { max-width: 800px; margin: 0 auto 20px; text-align: center; text-shadow: 0 0 5px #00ff00; }
         /* TABLE CONTAINER */
         #tableContainer {
@@ -39,7 +55,15 @@
             border: 1px solid #0f0;
             border-radius: 8px;
         }
-        /* FAKE HEADER + CARD ROWS */
+		.container {
+    display: flex;
+    justify-content: center; /* Centers horizontally */
+    align-items: center;     /* Centers vertically */
+    height: 100vh;           /* Sets the container height to the full viewport height */
+}
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 10px 0; }
+        .counter { text-align: center; margin: 10px 0; font-weight: bold; width: 100%; margin-left: 0; margin-right: 0; margin: 10px auto; width: 200px; }
+        /* FAKE HEADER */
         #customTableHeader {
             display: table !important;
             width: 100% !important;
@@ -60,7 +84,7 @@
             color: #0f0 !important;
             font-weight: bold !important;
         }
-        /* REAL TABLE - CARD ROWS ONLY */
+        /* REAL TABLE - FLEX LAYOUT */
         #locationsTable {
             width: 100% !important;
             border-collapse: separate !important;
@@ -71,7 +95,7 @@
         #locationsTable thead { display: none !important; }
         #locationsTable tbody { display: block !important; width: 100% !important; }
         #locationsTable tbody tr {
-            display: table-row !important;
+            display: flex !important;
             background: rgba(0, 0, 0, 0.4) !important;
             border: 1px solid #0f0 !important;
             border-radius: 8px !important;
@@ -94,27 +118,25 @@
             50% { box-shadow: 0 0 18px #0f0, 0 0 30px #0f0; }
         }
         #locationsTable tbody td {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             padding: 10px !important;
-            vertical-align: middle !important;
-            text-align: center !important;
             word-wrap: break-word !important;
             overflow: hidden;
             text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        /* COLUMN WIDTHS */
-        #customTableHeader > div > div:nth-child(1),
-        #locationsTable tbody td:nth-child(1) { width: 10% !important; }
-        #customTableHeader > div > div:nth-child(2),
-        #locationsTable tbody td:nth-child(2) { width: 15% !important; }
-        #customTableHeader > div > div:nth-child(3),
-        #locationsTable tbody td:nth-child(3) { width: 25% !important; }
-        #customTableHeader > div > div:nth-child(4),
-        #locationsTable tbody td:nth-child(4) {
-            width: 50% !important;
-            text-align: left !important;
-            padding-left: 15px !important;
             white-space: normal !important;
+            word-break: break-word !important;
+            overflow-wrap: break-word !important;
+        }
+        #locationsTable tbody td:nth-child(1) { flex: 0.6; }   /* Lock */
+        #locationsTable tbody td:nth-child(2) { flex: 0.9; }   /* Icon */
+        #locationsTable tbody td:nth-child(3) { flex: 1.5; }   /* Category */
+        #locationsTable tbody td:nth-child(4) { 
+            flex: 3; 
+            justify-content: flex-start !important;
+            padding-left: 15px !important;
         }
         /* ICON / TEXT CELLS */
         .icon-circle { 
@@ -160,25 +182,31 @@
         #gridNotification.show { opacity: 1; transform: translateY(0); }
         .flash-green { animation: flashGreen 0.6s ease-out; }
         @keyframes flashGreen { 0% { border-color: #00ff00; } 50% { border-color: #00ff88; box-shadow: 0 0 15px #00ff88; } 100% { border-color: #00ff00; } }
-        /* DARK MODE */
-        body.dark-mode { background-color: #000; }
+        /* DARK MODE — FINAL */
+        body.dark-mode { background-color: #000 !important; }
         body.dark-mode .modal-content,
         body.dark-mode #map,
         body.dark-mode input, body.dark-mode select, body.dark-mode button,
-        body.dark-mode #locationsTable th, body.dark-mode #locationsTable td,
-        body.dark-mode #customTableHeader > div {
-            background-color: #0a0a0a !important; color: #00ff00 !important; border-color: #00ff00 !important;
+        body.dark-mode #locationsTable td,
+        body.dark-mode #customTableHeader > div,
+        body.dark-mode #searchBar, body.dark-mode #buttonGroup,
+        body.dark-mode .leaflet-container,
+        body.dark-mode .leaflet-pane,
+        body.dark-mode .leaflet-tile-pane img {
+            background-color: #0a0a0a !important; 
+            color: #00ff00 !important; 
+            border-color: #00ff00 !important;
+            filter: brightness(0.3) contrast(1.2) !important;
         }
         body.dark-mode button:hover { background-color: #00ff00 !important; color: #000 !important; }
-        /* MOBILE PORTRAIT FIX */
+        /* MOBILE */
         @media (max-width: 768px) {
-            #map { height: 600px; }
+            #map { height: 600px; max-width: 100%; }
             .controls { flex-direction: column; align-items: center; }
             input[type="text"], select, button { width: 100%; max-width: 100%; margin: 5px 0; font-size: clamp(14px, 4vw, 16px); padding: clamp(10px, 2vw, 12px); }
             #combinedSearch { max-width: 100%; }
             .modal-content { max-width: 90%; padding: 12px; font-size: clamp(14px, 3.5vw, 16px); max-height: 80vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
             .close { font-size: clamp(20px, 5vw, 22px); }
-            .grid-label { font-size: 12px; }
             #gridNotification { bottom: 10px; right: 10px; font-size: 13px; padding: 10px 16px; box-shadow: 0 0 15px #00ff00; }
             /* TABLE MOBILE */
             #tableContainer { padding: 8px; }
@@ -191,6 +219,7 @@
                 font-size: 10px !important;
                 white-space: normal !important;
                 line-height: 1.3 !important;
+                word-break: break-word !important;
             }
             .icon-circle { width: 24px !important; height: 24px !important; font-size: 13px !important; }
             .text-location { font-size: 9px !important; max-width: 80px !important; }
@@ -200,7 +229,7 @@
         .nuke-emoji-btn:hover { background: #002200; transform: scale(1.12) rotate(8deg); box-shadow: 0 0 22px #00ff00, 0 0 34px #00ff00; }
         .nuke-emoji-btn:active { transform: scale(0.96); }
         #voiceSearchBtn[disabled], #voiceSearchBtn[style*="opacity: 0.6"] { pointer-events: auto !important; }
-        /* NO FLASH: Hide controls until ready */
+        /* NO FLASH */
         #searchBar, #buttonGroup, #belowMapControls, #toolsToggleRow, #topBar {
             visibility: hidden;
             opacity: 0;
@@ -209,9 +238,13 @@
         .map-ready #searchBar, .map-ready #buttonGroup,
         .map-ready #belowMapControls, .map-ready #toolsToggleRow,
         .map-ready #topBar {
-            visibility: visible;
-            opacity: 1;
+            visibility: visible; opacity: 1;
         }
+        /* CUSTOM UI FIXES */
+        .top-bar.hidden { display: none; }
+        .tools-toggle-row { display: flex; justify-content: center; margin: 10px 0; }
+        .button-group.hidden { display: none !important; }
+        #lockAllBtn { display: none; margin: 5px; background: #ffa500; color: #000; }
     </style>
 </head>
 <body>
@@ -224,7 +257,7 @@
     <!-- SEARCH BAR + VOICE -->
     <div id="searchBar" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:center; margin:10px auto; padding:10px; background:rgba(0,0,0,0.5); border:1px solid #0f0; border-radius:8px; max-width:90%;">
         <input type="text" id="combinedSearch" placeholder="desc/cate/grid.." style="flex:1; min-width:200px; padding:8px; background:#000; color:#0f0; border:1px solid #0f0; border-radius:4px;">
-        <button id="clearSearchBtn" style="background:none; border:none; color:#00ff00; font-size:18px; cursor:pointer; display:none; padding:0 8px;">×</button>
+        <button id="clearSearchBtn" style="background:none; border:none; color:#00ff00; font-size:18px; cursor:pointer; display:none; padding:0 8px;">X</button>
         <select id="categoryFilter" style="padding:8px; background:#000; color:#0f0; border:1px solid #0f0; border-radius:4px;"><option value="">All Categories</option></select>
         <button id="toggleCategoryModalBtn" style="padding:8px 12px; background:#1a3c34; color:#0f0; border:1px solid #0f0; border-radius:4px;">Toggle Categories</button>
     </div>
@@ -248,6 +281,7 @@
         <button id="undoImportBtn" style="display:none; background:#cc8400; color:#000; font-weight:700;">UNDO IMPORT</button>
         <button id="saveMapJpegBtn">Save Map as JPEG</button>
         <button id="toggleDarkModeBtn">Dark Mode: Off</button>
+        <button id="lockAllBtn">Lock All</button>
     </div>
   
     <!-- XP STATUS -->
@@ -255,45 +289,41 @@
   
     <!-- CONTENT INVENTORY -->
     <h2 style="text-align:center; margin:15px 0 5px;">Content Inventory</h2>
-    <p id="counter" style="text-align:center; margin:0 0 10px; color:#0f0;"></p>
+    <p id="counter" class="counter"></p>
     <button id="toggleTableBtn" style="display:none; margin:0 auto 10px; padding:8px 16px; background:#1a3c34; color:#0f0; border:1px solid #0f0; border-radius:4px;">Show Content Table</button>
   
-    <div id="tableContainer">
-        <div id="tablePagination" style="text-align:center; margin-bottom:10px;">
-            <button id="prevPageBtn" disabled style="padding:6px 12px; background:#1a3c34; color:#0f0; border:1px solid #0f0; border-radius:4px;">Prev</button>
-            <span id="pageInfo" style="margin:0 15px; color:#0f0; font-weight:bold;">Page 1 of 1</span>
-            <button id="nextPageBtn" disabled style="padding:6px 12px; background:#1a3c34; color:#0f0; border:1px solid #0f0; border-radius:4px;">Next</button>
+    <div id="tableContainer" style="margin:0 auto 20px; max-width:90%; background:rgba(0,0,0,0.7); border:1px solid #0f0; border-radius:8px; padding:10px;">
+        <div class="pagination">
+            <button id="prevPageBtn" disabled>Prev</button>
+            <span id="pageInfo">Page 1 of 1</span>
+            <button id="nextPageBtn" disabled>Next</button>
         </div>
-        <div id="customTableHeader"></div>
-        <table id="locationsTable">
-            <thead>
-                <tr><th>Lock</th><th>Icon</th><th>Category</th><th>Description</th></tr>
-            </thead>
+        <table id="locationsTable" style="width:100%; border-collapse:collapse; color:#0f0;">
             <tbody></tbody>
         </table>
     </div>
   
     <div id="gridNotification"></div>
-   
+  
     <!-- ITEM MODAL -->
     <div id="itemModal" class="modal">
         <div class="modal-content">
             <span class="close">X</span>
-            <h2 id="modalTitle">Log Item</h2>
+            <h2 id="modalTitle">Log Item <span id="modalLockToggle" style="font-size:22px; cursor:pointer; margin-left:10px;">LOCKED</span></h2>
             <label>Category:</label>
             <select id="itemCategory"></select>
             <label>Description:</label>
             <textarea id="itemDesc" placeholder="Enter item and location details or leave blank auto puts gid location"></textarea>
             <div style="margin-top:12px; text-align:center;">
-                <button id="saveItemBtn" style="padding:8px 16px; background:#00ff00; color:#000; font-weight:700; border-radius:4px;">Save</button>
-                <button id="shareItemBtn" style="padding:8px 16px; background:#ff0; color:#000; font-weight:700; border-radius:4px; margin:0 8px;">Share Link</button>
-                <button id="deleteItemBtn" style="padding:8px 16px; background:#F7615E; color:#000; font-weight:700; border-radius:4px; display:none;">Delete</button>
-                <button id="undoItemBtn" style="padding:8px 16px; background:#cc8400; color:#000; font-weight:700; border-radius:4px; display:none; margin:0 8px;">Undo Delete</button>
-                <button id="duplicateItemBtn" style="padding:8px 16px; background:#5E99F7; color:#000; font-weight:700; border-radius:4px; display:none;">Duplicate</button>
+                <button id="saveItemBtn">Save</button>
+                <button id="shareItemBtn" style="margin:0 8px;">Share Link</button>
+                <button id="deleteItemBtn" style="display:none;">Delete</button>
+                <button id="undoItemBtn" style="display:none; margin:0 8px;">Undo Delete</button>
+                <button id="duplicateItemBtn" style="display:none;">Duplicate</button>
             </div>
         </div>
     </div>
-   
+  
     <!-- INSTRUCTIONS + NUKE CODES MODAL -->
     <div id="instructionsModal" class="modal">
         <div class="modal-content">
@@ -304,8 +334,8 @@
                 <button id="showNukeCodesTab" class="tab-button">Nuke Codes</button>
             </div>
             <div id="instructionsContent" class="tab-content active">
-                <p><br>Double left-click (or double tap on mobile) the map to log an item. Newly logged/duplicated/edited locations will highlight for 2 minutes.</p>
-                <p>Unlock markers to drag them—drop auto-saves new position + glows! Lock to protect from accidental moves.</p>
+                <p><br>Double left-click (or double tap on mobile) the map to log an item. <strong>New markers are LOCKED by default</strong> and glow for 2 minutes.</p>
+                <p><strong>Unlock markers</strong> to drag them—drop auto-saves new position + glows! Lock to protect from accidental moves.</p>
                 <p>Right-click or long-press (on mobile) on markers to edit, delete, or duplicate them (undo available after delete). Edit or delete from the Content Inventory.</p>
                 <p>Left-click any row in the Content Table to page scrolls to map + zooms to marker!</p>
                 <p>Right-click row opens Edit menu + zooms.</p>
@@ -319,17 +349,17 @@
                 <p>Gain XP for logging new items and level up like in Fallout 76! Lose XP for deleting items.</p>
                 <p>For offline use on Android or iOS, save this locally and open in Chrome, Firefox, or Safari. An internet connection is needed for the map and libraries on first load.</p>
                 <p>Check the "Update Community Map" button periodically for the latest map version or to reset the app if you encounter issues. Find this tip in the "How to Use" section.</p>
-                <button id="resetAppBtn" class="reset-btn" style="display:block; margin:20px auto; padding:10px 20px; background:#ff4444; color:#000; font-weight:700; border-radius:6px;">Reset App (for debugging only)</button>
-                <p style="text-align:center;" class="small"><br>Love the Item Finder? Support MrCrazy with a <a href="https://buymeacoffee.com/mrcrazy" target="_blank" style="color:#00ff00;">Nuka-Cola</a>!</p>
-                <p style="text-align:center;" class="small" id="appVersionText">The Fallout 76 Item Finder Map Version 36 Made By MrCrazy</p>
+                <button id="resetAppBtn" class="reset-btn">Reset App (for debugging only)</button>
+                <p class="small"><br>Love the Item Finder? Support MrCrazy with a <a href="https://buymeacoffee.com/mrcrazy" target="_blank">Nuka-Cola</a>!</p>
+                <p class="small" id="appVersionText">The Fallout 76 Item Finder Map Version 37 Made By MrCrazy</p>
             </div>
             <div id="nukeCodesContent" class="tab-content">
                 <p><strong><br>Nuke Codes</strong></p>
-                <div id="nuke-codes" style="color:#00ff00;font-size:14px;">Loading codes…</div>
+                <div id="nuke-codes">Loading codes…</div>
             </div>
         </div>
     </div>
-   
+  
     <!-- CATEGORY TOGGLE MODAL -->
     <div id="categoryToggleModal" class="modal">
         <div class="modal-content">
@@ -341,42 +371,43 @@
                 <button id="createCategoryBtn">Create Category</button>
                 <button id="deleteCategoryBtn">Delete Category</button>
             </div>
-            <div id="categoryCheckboxes" style="max-height:300px; overflow-y:auto; padding:10px; background:rgba(0,0,0,0.5); border:1px solid #0f0; border-radius:4px;"></div>
-            <button id="closeCategoryToggleBtn" style="display:block; margin:15px auto 0; padding:8px 16px; background:#00ff00; color:#000; font-weight:700; border-radius:4px;">Close</button>
+            <div id="categoryCheckboxes"></div>
+            <button id="closeCategoryToggleBtn">Close</button>
         </div>
     </div>
-   
+  
     <!-- CREATE CATEGORY MODAL -->
     <div id="createCategoryModal" class="modal">
         <div class="modal-content">
             <span class="close">X</span>
             <h2>Create New Category</h2>
             <label>Category Name:</label>
-            <input type="text" id="newCategoryName" placeholder="Enter category name" style="width:100%; padding:8px; margin:5px 0; background:#000; color:#0f0; border:1px solid #0f0; border-radius:4px;">
+            <input type="text" id="newCategoryName" placeholder="Enter category name">
             <label>Emoji (only one):</label>
-            <input type="text" id="newCategoryEmoji" placeholder="Paste emoji" maxlength="2" inputmode="text" style="width:100%; padding:8px; margin:5px 0; background:#000; color:#0f0; border:1px solid #0f0; border-radius:4px;">
+            <input type="text" id="newCategoryEmoji" placeholder="Paste emoji" maxlength="2" inputmode="text">
             <p class="small">Paste one emoji. Only emojis allowed.</p>
             <div style="margin-top:12px; text-align:center;">
-                <button id="saveCategoryBtn" style="padding:8px 16px; background:#00ff00; color:#000; font-weight:700; border-radius:4px;">Save Category</button>
+                <button id="saveCategoryBtn">Save Category</button>
             </div>
         </div>
     </div>
-   
+  
     <!-- DELETE CATEGORY MODAL -->
     <div id="deleteCategoryModal" class="modal">
         <div class="modal-content">
             <span class="close">X</span>
             <h2>Delete Category</h2>
             <label>Select Category to Delete:</label>
-            <select id="deleteCategorySelect" style="width:100%; padding:8px; margin:5px 0; background:#000; color:#0f0; border:1px solid #0f0; border-radius:4px;">
+            <select id="deleteCategorySelect">
                 <option value="">Select a custom category</option>
             </select>
             <p class="small">Deleting a category will reassign all its markers to "misc".</p>
             <div style="margin-top:12px; text-align:center;">
-                <button id="confirmDeleteCategoryBtn" style="padding:8px 16px; background:#ff4444; color:#000; font-weight:700; border-radius:4px;">Delete Category</button>
+                <button id="confirmDeleteCategoryBtn">Delete Category</button>
             </div>
         </div>
     </div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     (function() {
@@ -385,8 +416,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const MAP_VERSION_KEY = 'fallout76_map_version';
         const TERMS_ACCEPTED_KEY = 'fallout76_terms_accepted';
         const UPDATE_VERSION_KEY = 'fallout76_last_update_seen';
-        const CURRENT_UPDATE_VERSION = 'v36-drag-commit';
-        const APP_VERSION = "36";
+        const CURRENT_UPDATE_VERSION = 'v37-auto-lock';
+        const APP_VERSION = "37";
         let soundsEnabled = localStorage.getItem('soundsEnabled') !== 'false';
         const baseSounds = {
             click: new Audio("https://rpg.hamsterrepublic.com/wiki-images/8/84/Select8-Bit.ogg"),
@@ -485,6 +516,23 @@ document.addEventListener('DOMContentLoaded', function() {
         let darkMode = localStorage.getItem('darkMode') === 'true';
         let gridLayer = L.layerGroup().addTo(map);
         let isDraggingAny = false;
+        let titleVisible = localStorage.getItem('titleVisible') !== 'false';
+        let toolsVisible = localStorage.getItem('toolsVisible') !== 'false';
+
+        // AUTO-LOCK: NEW MARKERS DEFAULT TO LOCKED
+        function createNewLocation(lat, lng, category, desc) {
+            return {
+                id: generateUniqueId(),
+                lat, lng,
+                category, desc,
+                icon: categoryIcons[category] || 'UNKNOWN',
+                addedTime: Date.now(),
+                userEdited: true,
+                locked: true,
+                cid: generateCid({ category, desc, lat, lng })
+            };
+        }
+
         function drawGrid() {
             gridLayer.clearLayers();
             if (!gridEnabled) return;
@@ -508,6 +556,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         }
+
         function getGridFromLatLng(lat, lng) {
             const gridSize = 10;
             const cellSize = 4096 / gridSize;
@@ -519,6 +568,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             return null;
         }
+
         function getLatLngFromGrid(grid) {
             const match = grid.toUpperCase().match(/^([A-J])(\d+)$/);
             if (!match) return null;
@@ -532,6 +582,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const centerY = row * cellSize + cellSize / 2;
             return { lat: centerY, lng: centerX };
         }
+
         function showGridNotification(grid) {
             const notif = document.getElementById('gridNotification');
             if (!notif) return;
@@ -539,6 +590,7 @@ document.addEventListener('DOMContentLoaded', function() {
             notif.classList.add('show');
             setTimeout(() => notif.classList.remove('show'), 3000);
         }
+
         function highlightSearchBar(type = 'grid') {
             const search = document.getElementById('combinedSearch');
             if (!search) return;
@@ -546,11 +598,13 @@ document.addEventListener('DOMContentLoaded', function() {
             search.classList.add(type === 'grid' ? 'grid-highlight' : 'item-highlight');
             setTimeout(() => search.classList.remove(type === 'grid' ? 'grid-highlight' : 'item-highlight'), 1500);
         }
+
         function isValidEmoji(str) {
             if (!str || str.length === 0) return false;
-            const emojiRegex = /^\p{Emoji}$/u;
+            const emojiRegex = /^[\p{Emoji}]+$/u;
             return emojiRegex.test(str.trim());
         }
+
         function updateDescWithGrid(desc, lat, lng) {
             const grid = getGridFromLatLng(lat, lng);
             const x = Math.round(lng);
@@ -562,6 +616,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             return desc + '\n' + newCoords;
         }
+
         const itemModal = document.getElementById('itemModal');
         const deleteBtn = document.getElementById('deleteItemBtn');
         const undoBtn = document.getElementById('undoItemBtn');
@@ -601,39 +656,39 @@ document.addEventListener('DOMContentLoaded', function() {
         const toggleDarkModeBtn = document.getElementById('toggleDarkModeBtn');
         const voiceSearchBtn = document.getElementById('voiceSearchBtn');
         const undoImportBtn = document.getElementById('undoImportBtn');
+        const lockAllBtn = document.getElementById('lockAllBtn');
+
         if (toggleSoundsBtn) toggleSoundsBtn.textContent = soundsEnabled ? 'Sounds: On' : 'Sounds: Off';
         if (toggleClusterBtn) toggleClusterBtn.textContent = `Clustering: ${clusteringEnabled ? 'On' : 'Off'}`;
         if (toggleMapBtn) toggleMapBtn.textContent = currentMap === 'named' ? 'Show No-Name Map' : 'Show Named Map';
         if (toggleGridBtn) toggleGridBtn.textContent = `Grid: ${gridEnabled ? 'On' : 'Off'}`;
-        if (buttonGroup) buttonGroup.style.display = 'flex';
-        if (toggleButtonGroup) toggleButtonGroup.textContent = 'Hide Tools';
+        if (toggleButtonGroup) toggleButtonGroup.textContent = toolsVisible ? 'Hide Tools' : 'Show Tools';
         if (combinedSearch) combinedSearch.value = currentSearch;
         if (categoryFilter) categoryFilter.value = currentCategoryFilter;
-        const toggleTitleBtn = document.getElementById('toggleTitleBtn');
-        let titleVisible = localStorage.getItem('titleVisible') !== 'false';
-        const topBar = document.getElementById('topBar');
-        if (topBar) topBar.style.display = titleVisible ? 'flex' : 'none';
-        if (toggleTitleBtn) toggleTitleBtn.textContent = titleVisible ? '-' : '+';
-        if (toggleTitleBtn) {
-            toggleTitleBtn.onclick = () => {
-                titleVisible = !titleVisible;
-                if (topBar) topBar.style.display = titleVisible ? 'flex' : 'none';
-                toggleTitleBtn.textContent = titleVisible ? '-' : '+';
-                localStorage.setItem('titleVisible', titleVisible);
-                playSound('click');
-            };
-        }
         document.body.classList.toggle('dark-mode', darkMode);
         if (toggleDarkModeBtn) {
             toggleDarkModeBtn.textContent = darkMode ? 'Dark Mode: On' : 'Dark Mode: Off';
-            toggleDarkModeBtn.onclick = () => {
-                darkMode = !darkMode;
-                document.body.classList.toggle('dark-mode', darkMode);
-                localStorage.setItem('darkMode', darkMode);
-                toggleDarkModeBtn.textContent = darkMode ? 'Dark Mode: On' : 'Dark Mode: Off';
+        }
+
+        // Lock All Button Visibility
+        function updateLockAllBtn() {
+            const hasUnlocked = locations.some(l => !l.locked);
+            if (lockAllBtn) {
+                lockAllBtn.style.display = hasUnlocked ? 'inline-block' : 'none';
+                lockAllBtn.textContent = hasUnlocked ? 'Lock All' : 'Unlock All';
+            }
+        }
+        if (lockAllBtn) {
+            lockAllBtn.onclick = () => {
+                const hasUnlocked = locations.some(l => !l.locked);
+                locations.forEach(l => l.locked = hasUnlocked);
+                saveLocations();
+                forceReload();
+                showTempMessage(hasUnlocked ? 'All markers LOCKED!' : 'All markers UNLOCKED!', 4000);
                 playSound('click');
             };
         }
+
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognition && voiceSearchBtn) {
             const recognition = new SpeechRecognition();
@@ -669,16 +724,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 voiceSearchBtn.textContent = 'Voice Search';
             };
         } else if (voiceSearchBtn) {
-            voiceSearchBtn.style.display = 'inline-block';
             voiceSearchBtn.textContent = 'Voice Search (Chrome/Edge only)';
             voiceSearchBtn.title = 'Voice Search requires Chrome or Edge';
-            voiceSearchBtn.style.opacity = '0.6';
-            voiceSearchBtn.style.cursor = 'help';
+            voiceSearchBtn.disabled = true;
             voiceSearchBtn.onclick = () => {
                 showTempMessage('Voice Search only works in Chrome or Edge', 4000);
                 playSound('error');
             };
         }
+
         let typingTimeout;
         let lastFilteredCount = -1;
         if (combinedSearch) {
@@ -726,19 +780,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 playSound('modalClose');
             };
         }
+
         function fetchWithTimeout(url, ms = 10000) {
             return Promise.race([
                 fetch(url),
                 new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), ms))
             ]);
         }
+
         function fetchNukeCodes() {
             const codesDiv = document.getElementById('nuke-codes');
             if (!codesDiv) return;
             codesDiv.innerHTML = `
             <em>Visit the site to view Alpha, Bravo, and Charlie codes for this week.
             Weekly launch codes are always up to date!</em><br>
-        
+       
             <div class="nuke-emoji-wrapper">
                 <a href="https://www.falloutbuilds.com/fo76/nuke-codes/"
                    target="_blank"
@@ -750,6 +806,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
         }
+
         const termsModal = document.createElement('div');
         termsModal.className = 'modal';
         termsModal.style.display = 'block';
@@ -763,7 +820,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <li>Check the "Update Community Map" button periodically for the latest map version or to reset the app if you encounter issues. Find this tip in the "How to Use" section.</li>
                 </ul>
                 <p>Log and Track items in Appalachia with ease. Created by MrCrazy. Enjoy, and consider supporting with a <a href="https://buymeacoffee.com/mrcrazy" target="_blank" style="color:#00ff00;">Nuka-Cola</a>!</p>
-                <button id="acceptTermsBtn" style="background:#00ff00;color:#000;font-weight:700;">I Accept Terms</button>
+                <button id="acceptTermsBtn">I Accept Terms</button>
             </div>
         `;
         const allButtons = document.querySelectorAll('button, input, select');
@@ -771,8 +828,6 @@ document.addEventListener('DOMContentLoaded', function() {
             allButtons.forEach(btn => {
                 if (btn.id !== 'acceptTermsBtn') {
                     btn.disabled = !enabled;
-                    btn.style.opacity = enabled ? '1' : '0.5';
-                    btn.style.pointerEvents = enabled ? 'auto' : 'none';
                 }
             });
         }
@@ -793,19 +848,20 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             setButtonsEnabled(true);
         }
+
         if (localStorage.getItem(UPDATE_VERSION_KEY) !== CURRENT_UPDATE_VERSION) {
             const updateModal = document.createElement('div');
             updateModal.className = 'modal';
             updateModal.style.display = 'block';
             updateModal.innerHTML = `
-                <div class="modal-content" style="background:#0a3a0a; border:2px solid #00ff00; box-shadow:0 0 20px #00ff00;">
+                <div class="modal-content">
                     <span class="close">X</span>
-                    <h2 style="color:#00ff00; text-shadow:0 0 10px #00ff00;">App Updated!</h2>
+                    <h2>App Updated!</h2>
                     <p><strong>Action recommended:</strong><br>
                     Export your <strong>user-created markers</strong> to keep them safe!</p>
                     <div style="margin-top:12px; text-align:center;">
-                        <button id="exportUserNowBtn" style="background:#00ff00; color:#000; font-weight:700; padding:8px 16px;">Export User Markers</button>
-                        <button id="gotItUpdateBtn" style="margin-left:10px; background:#1a3c34; color:#00ff00;">Got it!</button>
+                        <button id="exportUserNowBtn">Export User Markers</button>
+                        <button id="gotItUpdateBtn">Got it!</button>
                     </div>
                 </div>
             `;
@@ -858,48 +914,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
             }
         }
+
         const showInstructionsTab = document.getElementById('showInstructionsTab');
         if (showInstructionsTab) {
             showInstructionsTab.onclick = () => {
-                const instructionsContent = document.getElementById('instructionsContent');
-                const nukeCodesContent = document.getElementById('nukeCodesContent');
-                if (instructionsContent) instructionsContent.classList.add('active');
-                if (nukeCodesContent) nukeCodesContent.classList.remove('active');
+                document.getElementById('instructionsContent').classList.add('active');
+                document.getElementById('nukeCodesContent').classList.remove('active');
                 showInstructionsTab.classList.add('active');
-                const showNukeTab = document.getElementById('showNukeCodesTab');
-                if (showNukeTab) showNukeTab.classList.remove('active');
+                document.getElementById('showNukeCodesTab').classList.remove('active');
                 playSound('click');
             };
         }
         const showNukeCodesTab = document.getElementById('showNukeCodesTab');
         if (showNukeCodesTab) {
             showNukeCodesTab.onclick = () => {
-                const nukeCodesContent = document.getElementById('nukeCodesContent');
-                const instructionsContent = document.getElementById('instructionsContent');
-                if (nukeCodesContent) nukeCodesContent.classList.add('active');
-                if (instructionsContent) instructionsContent.classList.remove('active');
+                document.getElementById('nukeCodesContent').classList.add('active');
+                document.getElementById('instructionsContent').classList.remove('active');
                 showNukeCodesTab.classList.add('active');
-                const showInstTab = document.getElementById('showInstructionsTab');
-                if (showInstTab) showInstTab.classList.remove('active');
+                document.getElementById('showInstructionsTab').classList.remove('active');
                 fetchNukeCodes();
                 playSound('click');
             };
         }
         if (howToUseBtn) {
             howToUseBtn.onclick = () => {
-                const instructionsModal = document.getElementById('instructionsModal');
-                if (instructionsModal) instructionsModal.style.display = 'block';
+                document.getElementById('instructionsModal').style.display = 'block';
                 document.body.classList.add('modal-open');
-                if (showInstructionsTab) showInstructionsTab.click();
+                showInstructionsTab.click();
                 playSound('click');
             };
         }
         if (nukeCodesBtn) {
             nukeCodesBtn.onclick = () => {
-                const instructionsModal = document.getElementById('instructionsModal');
-                if (instructionsModal) instructionsModal.style.display = 'block';
+                document.getElementById('instructionsModal').style.display = 'block';
                 document.body.classList.add('modal-open');
-                if (showNukeCodesTab) showNukeCodesTab.click();
+                showNukeCodesTab.click();
                 playSound('click');
             };
         }
@@ -982,22 +1031,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 activeCategories.add(name);
                 localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(customCategories));
                 localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
-                const createModal = document.getElementById('createCategoryModal');
-                if (createModal) createModal.style.display = 'none';
+                document.getElementById('createCategoryModal').style.display = 'none';
                 renderCategoryToggles();
                 updateCategoryDropdowns();
                 loadData();
                 playSound('saving');
             };
         }
+
         function refreshTableVisibility() {
             const isMobile = window.innerWidth <= 768;
             if (toggleTableBtn) toggleTableBtn.style.display = isMobile ? 'block' : 'none';
             if (isMobile) {
-                if (tableContainer) tableContainer.style.display = tableVisible ? 'block' : 'none';
-                if (toggleTableBtn) toggleTableBtn.textContent = tableVisible ? 'Hide Content Table' : 'Show Content Table';
+                tableContainer.style.display = tableVisible ? 'block' : 'none';
+                toggleTableBtn.textContent = tableVisible ? 'Hide Content Table' : 'Show Content Table';
             }
         }
+
         function renderCategoryToggles() {
             const container = document.getElementById('categoryCheckboxes');
             if (!container) return;
@@ -1020,6 +1070,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
         }
+
         function updateCategoryDropdowns() {
             const categories = [...Object.keys(defaultCategoryIcons), ...Object.keys(customCategories)].sort();
             const makeOption = cat => `<option value="${cat}">${cat} ${categoryIcons[cat] || ''}</option>`;
@@ -1029,17 +1080,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 categoryFilter.value = currentCategoryFilter;
             }
         }
+
         function isGlowing(loc) {
             return loc.addedTime && (Date.now() - loc.addedTime) < 120000;
         }
+
         function createMarkerIcon(loc) {
             const isTextOnly = ['named locations', 'regions'].includes(loc.category);
             if (isTextOnly) {
                 const words = loc.desc.split('\n')[0].trim().split(' ');
                 const shortText = words.slice(0, 3).join(' ') + (words.length > 3 ? '...' : '');
                 const width = Math.min(120, Math.max(60, shortText.length * 9));
-                const glowStyle = isGlowing(loc) ? 'box-shadow: 0 0 8px #0f0, 0 0 16px #0f0, 0 0 24px #0f0; animation: pulse 1.5s infinite;' : '';
-                const html = `<div style="background:#000; color:#fff; padding:3px 6px; border:2px solid #0f0; border-radius:4px; font-weight:bold; font-size:11px; white-space:nowrap; width:${width}px; text-align:center; overflow:hidden; text-overflow:ellipsis; ${glowStyle}">${escapeHtml(shortText)}</div>`;
+                const glowClass = isGlowing(loc) ? 'glowing' : '';
+                const html = `<div class="${glowClass}" style="background:#000; color:#fff; padding:3px 6px; border:2px solid #0f0; border-radius:4px; font-weight:bold; font-size:11px; white-space:nowrap; width:${width}px; text-align:center; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(shortText)}</div>`;
                 return L.divIcon({
                     className: 'text-marker',
                     html: html,
@@ -1058,6 +1111,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
         }
+
         const messageQueue = [];
         let activeMessageControl = null;
         function showTempMessage(html, ms = 3000) {
@@ -1071,7 +1125,17 @@ document.addEventListener('DOMContentLoaded', function() {
             activeMessageControl.onAdd = function() {
                 const div = L.DomUtil.create('div', 'temp-message');
                 div.innerHTML = html;
-                div.style.cssText = 'background:rgba(0,0,0,0.85); color:#0f0; padding:8px 12px; border:1px solid #0f0; border-radius:6px; max-width:300px; font:bold 13px/1.4 monospace; box-shadow:0 0 10px #0f0; margin:10px; pointer-events:none; z-index:10000;';
+                div.style.background = 'rgba(0,0,0,0.85)';
+                div.style.color = '#0f0';
+                div.style.padding = '8px 12px';
+                div.style.border = '1px solid #0f0';
+                div.style.borderRadius = '6px';
+                div.style.maxWidth = '300px';
+                div.style.font = 'bold 13px/1.4 monospace';
+                div.style.boxShadow = '0 0 10px #0f0';
+                div.style.margin = '10px';
+                div.style.pointerEvents = 'none';
+                div.style.zIndex = '10000';
                 L.DomEvent.disableClickPropagation(div);
                 return div;
             };
@@ -1084,10 +1148,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }, ms);
         }
+
         window.editMarkerFromPopup = function(index) {
             map.closePopup();
             openModal('Edit Item', index);
         };
+
         function attachDragHandler(marker, loc) {
             let isDragging = false;
             const onDragging = (e) => {
@@ -1165,6 +1231,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </button>
             `, { maxWidth: 260, autoPan: true });
         }
+
         function addMarkerToMap(loc) {
             const marker = L.marker([loc.lat, loc.lng], {
                 icon: createMarkerIcon(loc),
@@ -1185,15 +1252,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 100);
             }
         }
+
         function updateCounterDisplay() {
             const latestVersion = localStorage.getItem(MAP_VERSION_KEY) || "1.0";
             const totalFiltered = locations.filter(l => activeCategories.has(l.category)).length;
             const pageItems = locations.filter(l => activeCategories.has(l.category)).slice((tablePage - 1) * pageSize, tablePage * pageSize).length;
-            if (counter) counter.innerHTML = `<strong>Map Version ${latestVersion}</strong> - <strong>${totalFiltered}</strong> logged locations - <strong>${pageItems}</strong> showing.`;
+            if (counter) counter.innerHTML = `<strong>Map Version ${latestVersion}</strong> - <strong>${totalFiltered}</strong> logged locations Keep Exploring! - <strong>${pageItems}</strong> showing.`;
         }
+
         function refreshTable(search = '', catFilter = '') {
-            const thead = document.querySelector('#locationsTable thead tr');
-            if (thead) thead.innerHTML = '<th>Lock</th><th>Icon</th><th>Category</th><th>Description</th>';
             const tbody = document.querySelector('#locationsTable tbody');
             if (!tbody) return;
             tbody.innerHTML = '';
@@ -1216,13 +1283,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const tr = document.createElement('tr');
                 if (isGlowing(loc)) tr.classList.add('glowing');
                 const shortDesc = loc.desc.split('\n')[0].trim();
-                const lockEmoji = loc.locked ? '🔐' : '🔓';
-                const lockCell = `<td><span style="font-size:18px; cursor:pointer;" onclick="toggleLockFromTable(${locations.indexOf(loc)})" title="${loc.locked ? 'Locked' : 'Unlocked'}">${lockEmoji}</span></td>`;
+                const lockEmoji = loc.locked ? 'LOCKED' : 'UNLOCKED';
+                const lockCell = `<td><span class="lock-toggle" onclick="toggleLockFromTable(${locations.indexOf(loc)})" title="${loc.locked ? 'Locked' : 'Unlocked'}">${lockEmoji}</span></td>`;
                 const iconCell = ['named locations', 'regions'].includes(loc.category)
-                    ? `<td><div style="background:#000; color:#fff; padding:2px 6px; border:1px solid #0f0; border-radius:3px; font-weight:bold; font-size:11px; display:inline-block; max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(shortDesc)}</div></td>`
-                    : `<td><div style="background-color:${categoryColors[loc.category] || '#808080'}; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:#000; font-weight:bold; font-size:16px;">${loc.icon}</div></td>`;
+                    ? `<td><div class="text-location">${escapeHtml(shortDesc)}</div></td>`
+                    : `<td><div class="icon-circle" style="background-color:${categoryColors[loc.category] || '#808080'};">${loc.icon}</div></td>`;
                 const catCell = `<td>${escapeHtml(loc.category)} ${loc.icon}</td>`;
-                const descCell = `<td style="text-align:left; padding-left:15px;">${escapeHtml(shortDesc)}</td>`;
+                const descCell = `<td>${escapeHtml(shortDesc)}</td>`;
                 tr.innerHTML = lockCell + iconCell + catCell + descCell;
                 tr.onclick = (e) => {
                     if (e.target.tagName === 'SPAN') return;
@@ -1252,6 +1319,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (nextPageBtn) nextPageBtn.disabled = tablePage >= totalPages;
             updateCounterDisplay();
         }
+
         window.toggleLockFromTable = function(index) {
             const loc = locations[index];
             loc.locked = !loc.locked;
@@ -1260,6 +1328,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showTempMessage(loc.locked ? 'Marker locked — unlock to edit!' : 'Marker unlocked!', 4000);
             playSound('click');
         };
+
         setInterval(() => {
             if (document.visibilityState === 'visible') {
                 [clusteredMarkers, nonClusteredMarkers].forEach(group => {
@@ -1284,11 +1353,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 });
                 refreshTable(combinedSearch ? combinedSearch.value : '', categoryFilter ? categoryFilter.value : '');
+                updateLockAllBtn();
             }
         }, 1000);
+
         function openModal(title, index = -1, isDupe = false) {
             if (!modalTitle) return;
-            modalTitle.innerHTML = `${title} <span id="modalLockToggle" style="font-size:22px; cursor:pointer; margin-left:10px;"></span>`;
+            modalTitle.innerHTML = `${title} <span id="modalLockToggle" style="font-size:22px; cursor:pointer; margin-left:10px;">${index >= 0 ? (locations[index].locked ? 'LOCKED' : 'UNLOCKED') : 'LOCKED'}</span>`;
             currentIndex = index;
             document.getElementById('saveItemBtn').style.display = 'inline-block';
             const lockToggle = document.getElementById('modalLockToggle');
@@ -1330,20 +1401,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (duplicateBtn) duplicateBtn.style.display = 'none';
                 if (undoBtn) undoBtn.style.display = 'none';
                 if (shareItemBtn) shareItemBtn.style.display = 'none';
-                if (lockToggle) lockToggle.style.display = 'none';
+                if (lockToggle) {
+                    lockToggle.onclick = null;
+                    lockToggle.style.cursor = 'default';
+                }
             }
             if (itemModal) itemModal.style.display = 'block';
             document.body.classList.add('modal-open');
             playSound('click');
         }
+
         function closeModal(modal) {
             if (modal) modal.style.display = 'none';
             document.body.classList.remove('modal-open');
             playSound('modalClose');
         }
+
         document.querySelectorAll('.modal .close').forEach(closeBtn => {
             closeBtn.onclick = () => closeModal(closeBtn.closest('.modal'));
         });
+
         function recalculateXP() {
             xp = locations.length * xpPerMarker;
             level = 1 + Math.floor(xp / xpPerLevel);
@@ -1353,6 +1430,7 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.setItem('fo76_xp', xp);
         }
         recalculateXP();
+
         function updateXPBar() {
             if (levelSpan) levelSpan.textContent = level;
             if (xpProgress) {
@@ -1361,6 +1439,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if (xpText) xpText.textContent = `${xp} / ${xpPerLevel}`;
         }
+
         function loadData(search = '', catFilter = '') {
             clusteredMarkers.clearLayers();
             nonClusteredMarkers.clearLayers();
@@ -1370,7 +1449,9 @@ document.addEventListener('DOMContentLoaded', function() {
             updateXPBar();
             drawGrid();
             saveAppState();
+            updateLockAllBtn();
         }
+
         function forceReload() {
             saveAppState();
             loadData(combinedSearch ? combinedSearch.value : '', categoryFilter ? categoryFilter.value : '');
@@ -1378,6 +1459,7 @@ document.addEventListener('DOMContentLoaded', function() {
             updateCategoryDropdowns();
             refreshTableVisibility();
         }
+
         function saveAppState() {
             localStorage.setItem('currentSearch', combinedSearch ? combinedSearch.value : '');
             localStorage.setItem('currentCategoryFilter', categoryFilter ? categoryFilter.value : '');
@@ -1387,11 +1469,15 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.setItem('gridEnabled', gridEnabled);
             localStorage.setItem('currentMap', currentMap);
             localStorage.setItem(MAP_VERSION_KEY, communityVersion);
+            localStorage.setItem('titleVisible', titleVisible);
+            localStorage.setItem('toolsVisible', toolsVisible);
         }
+
         function saveLocations() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(locations));
             saveAppState();
         }
+
         function normalizeString(s) { return (s || '').toString().trim().toLowerCase(); }
         function escapeHtml(unsafe) {
             if (!unsafe) return '';
@@ -1402,6 +1488,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
         }
+
         let flyTimeout;
         function safeFlyTo(lat, lng, zoom = 2) {
             if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) return;
@@ -1411,6 +1498,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 map.flyTo([lat, lng], zoom, { duration: 0.8 });
             }, 100);
         }
+
         if (exportBtn) {
             exportBtn.onclick = () => {
                 playSound('saving');
@@ -1446,6 +1534,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert(report);
             };
         }
+
         if (importBtn) {
             importBtn.onclick = () => {
                 const input = document.createElement('input');
@@ -1502,7 +1591,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     return;
                                 }
                                 const newId = generateUniqueId();
-                                const candidate = { ...imp, id: newId, addedTime: Date.now(), locked: imp.locked || false };
+                                const candidate = { ...imp, id: newId, addedTime: Date.now(), locked: true }; // AUTO-LOCK
                                 if (imp.cid) {
                                     const existing = existingByCid.get(imp.cid);
                                     if (!preserveEdits) {
@@ -1525,7 +1614,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                         existing.category = imp.category || existing.category;
                                         existing.icon = imp.icon || existing.icon;
                                         existing.addedTime = Date.now();
-                                        existing.locked = imp.locked || false;
+                                        existing.locked = true;
                                         skippedUserEdited++;
                                         return;
                                     }
@@ -1565,7 +1654,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     existingFallback.category = imp.category || existingFallback.category;
                                     existingFallback.icon = imp.icon || existing.icon;
                                     existingFallback.addedTime = Date.now();
-                                    existingFallback.locked = imp.locked || false;
+                                    existingFallback.locked = true;
                                     skippedUserEdited++;
                                     return;
                                 }
@@ -1631,6 +1720,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 input.click();
             };
         }
+
         if (downloadCommunityBtn) {
             downloadCommunityBtn.onclick = () => {
                 playSound('click');
@@ -1690,14 +1780,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                     return;
                                 }
                                 const newId = generateUniqueId();
-                                const candidate = { ...imp, id: newId, addedTime: Date.now(), locked: imp.locked || false };
+                                const candidate = { ...imp, id: newId, addedTime: Date.now(), locked: true }; // AUTO-LOCK
                                 if (imp.cid) {
                                     const existing = existingByCid.get(imp.cid);
                                     if (existing && userEditedCids.has(imp.cid)) {
                                         existing.category = imp.category || existing.category;
                                         existing.icon = imp.icon || existing.icon;
                                         existing.addedTime = Date.now();
-                                        existing.locked = imp.locked || false;
+                                        existing.locked = true;
                                         skippedUserEdited++;
                                         return;
                                     }
@@ -1721,7 +1811,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     existingFallback.category = imp.category || existingFallback.category;
                                     existingFallback.icon = imp.icon || existing.icon;
                                     existingFallback.addedTime = Date.now();
-                                    existingFallback.locked = imp.locked || false;
+                                    existingFallback.locked = true;
                                     skippedUserEdited++;
                                     return;
                                 }
@@ -1791,6 +1881,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
             };
         }
+
         function backupBeforeImport() {
             lastImportBackup = {
                 locations: JSON.parse(JSON.stringify(locations)),
@@ -1801,6 +1892,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (undoImportBtn) undoImportBtn.style.display = 'inline-block';
             showTempMessage('Import backup saved. Use "Undo Import" if needed.', 4000);
         }
+
         function undoLastImport() {
             if (!lastImportBackup) {
                 alert("No import to undo.");
@@ -1824,6 +1916,7 @@ document.addEventListener('DOMContentLoaded', function() {
             playSound('undo');
         }
         if (undoImportBtn) undoImportBtn.onclick = undoLastImport;
+
         if (saveJpegBtn) {
             saveJpegBtn.onclick = () => {
                 playSound('saving');
@@ -1840,6 +1933,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             };
         }
+
         if (prevPageBtn) {
             prevPageBtn.onclick = () => {
                 if (tablePage > 1) {
@@ -1869,20 +1963,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 playSound('click');
             };
         }
-        if (toggleButtonGroup) {
-            toggleButtonGroup.onclick = () => {
-                const isHidden = buttonGroup.style.display === 'none';
-                buttonGroup.style.display = isHidden ? 'flex' : 'none';
-                toggleButtonGroup.textContent = isHidden ? 'Hide Tools' : 'Show Tools';
-                playSound('click');
-            };
-        }
+
         toggleSoundsBtn.onclick = () => {
             soundsEnabled = !soundsEnabled;
             localStorage.setItem('soundsEnabled', soundsEnabled);
             toggleSoundsBtn.textContent = soundsEnabled ? 'Sounds: On' : 'Sounds: Off';
             playSound('click');
         };
+
         toggleClusterBtn.onclick = () => {
             clusteringEnabled = !clusteringEnabled;
             localStorage.setItem('clusteringEnabled', clusteringEnabled);
@@ -1890,6 +1978,7 @@ document.addEventListener('DOMContentLoaded', function() {
             playSound('click');
             loadData(combinedSearch ? combinedSearch.value : '', categoryFilter ? categoryFilter.value : '');
         };
+
         toggleMapBtn.onclick = () => {
             currentMap = currentMap === 'named' ? 'noName' : 'named';
             localStorage.setItem('currentMap', currentMap);
@@ -1898,6 +1987,7 @@ document.addEventListener('DOMContentLoaded', function() {
             imageOverlay = L.imageOverlay(mapUrls[currentMap], imageBounds).addTo(map);
             playSound('saving');
         };
+
         toggleGridBtn.onclick = () => {
             gridEnabled = !gridEnabled;
             localStorage.setItem('gridEnabled', gridEnabled);
@@ -1911,12 +2001,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             playSound('click');
         };
+
         toggleCategoryModalBtn.onclick = () => {
             if (categoryToggleModal) categoryToggleModal.style.display = 'block';
             document.body.classList.add('modal-open');
             renderCategoryToggles();
             playSound('selectcategory');
         };
+
         const selectAllBtn = document.getElementById('selectAllBtn');
         if (selectAllBtn) {
             selectAllBtn.onclick = () => {
@@ -2000,6 +2092,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('#createCategoryModal .close, #deleteCategoryModal .close').forEach(closeBtn => {
             closeBtn.onclick = () => closeModal(closeBtn.closest('.modal'));
         });
+
         const saveItemBtn = document.getElementById('saveItemBtn');
         if (saveItemBtn) {
             saveItemBtn.onclick = () => {
@@ -2023,42 +2116,28 @@ document.addEventListener('DOMContentLoaded', function() {
                         playSound('error');
                         return;
                     }
-                    const wasCommunity = !!loc.cid;
                     loc.category = category;
                     loc.desc = desc;
                     loc.icon = categoryIcons[category] || 'UNKNOWN';
                     loc.addedTime = Date.now();
                     loc.userEdited = true;
-                    if (wasCommunity && !loc.userCid) loc.userCid = loc.cid;
                 } else {
-                    const newLoc = {
-                        id: generateUniqueId(),
-                        lat: tempLatLng.lat,
-                        lng: tempLatLng.lng,
-                        category,
-                        desc,
-                        icon: categoryIcons[category] || 'UNKNOWN',
-                        addedTime: Date.now(),
-                        userEdited: true,
-                        locked: false,
-                        cid: generateCid({ category, desc, lat: tempLatLng.lat, lng: tempLatLng.lng })
-                    };
+                    const newLoc = createNewLocation(tempLatLng.lat, tempLatLng.lng, category, desc);
                     locations.push(newLoc);
                     recalculateXP();
                 }
                 closeModal(itemModal);
                 saveLocations();
                 playSound('saving');
-                showTempMessage('Saved!', 2000);
+                showTempMessage('Saved! New marker is LOCKED by default.', 4000);
                 const finalLoc = currentIndex >= 0 ? locations[currentIndex] : locations[locations.length - 1];
                 safeFlyTo(finalLoc.lat, finalLoc.lng, map.getZoom());
                 forceReload();
-                if (wasNewLog && categoryFilter) {
-                    categoryFilter.value = '';
-                }
+                if (wasNewLog && categoryFilter) categoryFilter.value = '';
                 setTimeout(() => { isDraggingAny = false; }, 600);
             };
         }
+
         if (deleteBtn) {
             deleteBtn.onclick = () => {
                 if (currentIndex >= 0) {
@@ -2113,30 +2192,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     const newLat = loc.lat + offsetY;
                     const newLng = loc.lng + offsetX;
                     const newDesc = updateDescWithGrid(loc.desc, newLat, newLng);
-                    const newCid = generateCid({
-                        category: loc.category,
-                        desc: newDesc,
-                        lat: newLat,
-                        lng: newLng
-                    });
-                    const newLoc = {
-                        ...loc,
-                        id: generateUniqueId(),
-                        lat: newLat,
-                        lng: newLng,
-                        desc: newDesc,
-                        addedTime: Date.now(),
-                        userEdited: true,
-                        locked: false,
-                        cid: newCid
-                    };
+                    const newLoc = createNewLocation(newLat, newLng, loc.category, newDesc);
+                    newLoc.userCid = loc.cid;
                     locations.push(newLoc);
                     recalculateXP();
                     saveLocations();
                     forceReload();
                     closeModal(itemModal);
                     safeFlyTo(newLoc.lat, newLoc.lng, map.getZoom());
-                    showTempMessage('Duplicated — Grid updated!', 3000);
+                    showTempMessage('Duplicated — new copy is LOCKED!', 3000);
                     playSound('duplicate');
                 }
             };
@@ -2146,7 +2210,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const loc = locations[currentIndex];
                 const lat = loc.lat.toFixed(0);
                 const lng = loc.lng.toFixed(0);
-                const grid = getGridFromLatLng(lat, lng);
+                const grid = getGridFromLatLng(loc.lat, loc.lng);
                 const desc = loc.desc.split('\n')[0].trim();
                 const url = `${window.location.origin}${window.location.pathname}?lat=${lat}&lng=${lng}&grid=${grid}&desc=${encodeURIComponent(desc)}`;
                 navigator.clipboard.writeText(url).then(() => {
@@ -2165,15 +2229,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 playSound('selectcategory');
             });
         }
+
         map.on('dragstart', () => { isDraggingAny = true; });
         map.on('dragend', () => { setTimeout(() => { isDraggingAny = false; }, 400); });
         map.on('movestart', () => { isDraggingAny = true; });
         map.on('moveend', () => { setTimeout(() => { isDraggingAny = false; }, 400); });
+
         const coordHoverControl = L.control({ position: 'bottomleft' });
         coordHoverControl.onAdd = function() {
             const div = L.DomUtil.create('div', 'coord-hover');
             div.innerHTML = '';
-            div.style.cssText = 'background:rgba(0,0,0,0.7); color:#0f0; padding:6px 10px; border:1px solid #0f0; border-radius:4px; font:bold 12px monospace; pointer-events:none; opacity:0; transition:opacity 0.3s; margin:10px;';
             return div;
         };
         coordHoverControl.addTo(map);
@@ -2199,6 +2264,7 @@ document.addEventListener('DOMContentLoaded', function() {
         map.getContainer().addEventListener('mouseleave', () => {
             coordHoverControl.getContainer().classList.remove('show');
         });
+
         map.on('click', e => {
             if (isDraggingAny) {
                 isDraggingAny = false;
@@ -2220,6 +2286,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             playSound('click');
         });
+
         map.on('contextmenu', e => {
             L.DomEvent.preventDefault(e);
             const lat = e.latlng.lat;
@@ -2237,12 +2304,14 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             if (grid) showGridNotification(grid);
         });
+
         map.on('dblclick', e => {
             L.DomEvent.stopPropagation(e);
             tempLatLng = { lat: e.latlng.lat, lng: e.latlng.lng };
             openModal('Log Item');
             playSound('click');
         });
+
         const edgePanBuffer = 50;
         let edgePanInterval = null;
         map.getContainer().addEventListener('mousemove', e => {
@@ -2291,6 +2360,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 map.panBy([dx, dy]);
             }
         });
+
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('lat') && urlParams.has('lng')) {
             const lat = parseFloat(urlParams.get('lat'));
@@ -2303,6 +2373,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 playSound('click');
             }, 1000);
         }
+
         updateCategoryDropdowns();
         renderCategoryToggles();
         loadData(currentSearch, currentCategoryFilter);
@@ -2314,178 +2385,119 @@ document.addEventListener('DOMContentLoaded', function() {
         if (gridEnabled) {
             map.getContainer().classList.add('hover-coords');
         }
+
         setTimeout(() => {
             const mapContainer = document.getElementById('map');
             const tableContainer = document.getElementById('tableContainer');
             if (!mapContainer || !tableContainer) return;
-
-            // CREATE TOP BAR FOR TITLE + TOGGLE (STATIC ABOVE MAP)
-            const topBar = document.createElement('div');
-            topBar.id = 'topBar';
-            topBar.style.cssText = 'width:100%; max-width:90%; margin:20px auto 10px; text-align:center; display:flex; align-items:center; justify-content:center; gap:10px; background:rgba(0,0,0,0.6); border:2px solid #0f0; border-radius:10px; padding:10px; box-shadow:0 0 15px #0f0;';
-            mapContainer.parentNode.insertBefore(topBar, mapContainer);
-
-            // MOVE TITLE INTO TOP BAR
+            let topBar = document.getElementById('topBar');
+            if (!topBar) {
+                topBar = document.createElement('div');
+                topBar.id = 'topBar';
+                topBar.className = 'top-bar';
+                mapContainer.parentNode.insertBefore(topBar, mapContainer);
+            }
             const originalTitle = document.getElementById('mainTitle');
-            if (originalTitle) {
-                originalTitle.style.cssText = 'margin:0; font-size:20px; font-weight:bold; color:#0f0; text-shadow:0 0 8px #0f0; flex:1;';
+            if (originalTitle && originalTitle.parentNode !== topBar) {
                 topBar.appendChild(originalTitle);
             }
-
-            // USE YOUR EXISTING TOGGLE BUTTON (outside topBar)
             const titleToggleBtn = document.getElementById('toggleTitleBtn');
             if (titleToggleBtn) {
                 titleToggleBtn.onclick = () => {
                     titleVisible = !titleVisible;
-                    topBar.style.display = titleVisible ? 'flex' : 'none';
+                    topBar.classList.toggle('hidden', !titleVisible);
                     titleToggleBtn.textContent = titleVisible ? '-' : '+';
                     localStorage.setItem('titleVisible', titleVisible);
                     playSound('click');
                 };
-                // Apply initial
-                topBar.style.display = titleVisible ? 'flex' : 'none';
+                topBar.classList.toggle('hidden', !titleVisible);
             }
-
-            // PUSH MAP DOWN
-            mapContainer.style.marginTop = '80px'; // space for top bar
-
-            // MOVE CONTROLS BELOW MAP
-            const controlsWrapper = document.createElement('div');
-            controlsWrapper.id = 'belowMapControls';
-            controlsWrapper.style.cssText = 'width:100%; max-width:90%; margin:20px auto; display:flex; flex-direction:column; align-items:center; gap:15px;';
-
+            mapContainer.classList.add('has-top-bar');
+            let belowMapControls = document.getElementById('belowMapControls');
+            if (!belowMapControls) {
+                belowMapControls = document.createElement('div');
+                belowMapControls.id = 'belowMapControls';
+                mapContainer.parentNode.insertBefore(belowMapControls, tableContainer);
+            }
             const searchBarEl = document.getElementById('searchBar');
-            if (searchBarEl) {
-                controlsWrapper.appendChild(searchBarEl);
+            if (searchBarEl && searchBarEl.parentNode !== belowMapControls) {
+                belowMapControls.appendChild(searchBarEl);
+                searchBarEl.className = 'search-bar';
             }
-
-            mapContainer.parentNode.insertBefore(controlsWrapper, tableContainer);
-
-            // TOOLS TOGGLE ROW
-            const toolsToggleRow = document.createElement('div');
-            toolsToggleRow.id = 'toolsToggleRow';
-            toolsToggleRow.style.cssText = 'width:100%; max-width:90%; margin:15px auto 0; display:flex; justify-content:center;';
-            if (toggleButtonGroup && buttonGroup) {
+            const buttonGroup = document.getElementById('buttonGroup');
+            if (buttonGroup && buttonGroup.parentNode !== belowMapControls) {
+                belowMapControls.appendChild(buttonGroup);
+                buttonGroup.className = 'button-group';
+            }
+            let toolsToggleRow = document.getElementById('toolsToggleRow');
+            if (!toolsToggleRow) {
+                toolsToggleRow = document.createElement('div');
+                toolsToggleRow.id = 'toolsToggleRow';
+                toolsToggleRow.className = 'tools-toggle-row';
+                mapContainer.parentNode.insertBefore(toolsToggleRow, belowMapControls.nextSibling);
+            }
+            const toggleButtonGroup = document.getElementById('toggleButtonGroup');
+            if (toggleButtonGroup && toggleButtonGroup.parentNode !== toolsToggleRow) {
                 toolsToggleRow.appendChild(toggleButtonGroup);
             }
-            mapContainer.parentNode.insertBefore(toolsToggleRow, controlsWrapper);
-
-            // TOOL BUTTONS INTO CONTROLS
-            if (buttonGroup) {
-                buttonGroup.style.cssText = 'display:flex !important; flex-wrap:wrap !important; gap:8px !important; justify-content:center !important; margin:15px auto !important; padding:15px !important; background:rgba(0,0,0,0.5) !important; border:1px solid #0f0 !important; border-radius:8px !important; max-width:90% !important;';
-                controlsWrapper.appendChild(buttonGroup);
-            }
-
-            // TOOLS TOGGLE LOGIC
             if (toggleButtonGroup && buttonGroup) {
-                toggleButtonGroup.style.cssText = 'display:inline-block !important; background:#00ff00 !important; color:#000 !important; padding:8px 14px !important; border-radius:6px !important; font-weight:bold !important; cursor:pointer !important; font-size:14px !important; width:200px !important; text-align:center !important;';
+                toggleButtonGroup.className = 'toggle-tools-btn';
                 const toolsVisible = localStorage.getItem('toolsVisible') !== 'false';
-                buttonGroup.style.display = toolsVisible ? 'flex' : 'none';
+                buttonGroup.classList.toggle('hidden', !toolsVisible);
                 toggleButtonGroup.textContent = toolsVisible ? 'Hide Tools' : 'Show Tools';
                 toggleButtonGroup.onclick = () => {
-                    const willShow = buttonGroup.style.display === 'none';
-                    buttonGroup.style.display = willShow ? 'flex' : 'none';
+                    const willShow = buttonGroup.classList.contains('hidden');
+                    buttonGroup.classList.toggle('hidden', !willShow);
                     toggleButtonGroup.textContent = willShow ? 'Hide Tools' : 'Show Tools';
                     localStorage.setItem('toolsVisible', willShow);
                     playSound('click');
                 };
             }
-
-            // VOICE SEARCH STYLE
+            const voiceSearchBtn = document.getElementById('voiceSearchBtn');
             if (voiceSearchBtn && buttonGroup) {
                 if (voiceSearchBtn.parentNode !== buttonGroup) {
-                    buttonGroup.insertBefore(voiceSearchBtn, toggleClusterBtn);
+                    buttonGroup.prepend(voiceSearchBtn);
                 }
-                voiceSearchBtn.style.cssText = 'display:inline-block !important; background:#00ff00 !important; color:#000 !important; padding:8px 14px !important; border-radius:6px !important; font-weight:bold !important; cursor:pointer !important; font-size:14px !important; min-width:120px !important; text-align:center !important;';
-                voiceSearchBtn.textContent = 'Voice Search';
-                voiceSearchBtn.title = 'Voice Search';
+                voiceSearchBtn.className = 'voice-btn';
             }
-
-            // COUNTER & PAGINATION
-            if (counter && tableContainer) {
-                let pagination = document.getElementById('tablePagination');
-                if (!pagination) {
-                    pagination = document.createElement('div');
-                    pagination.id = 'tablePagination';
-                    pagination.style.cssText = 'display:flex !important; justify-content:center !important; align-items:center !important; gap:12px !important; margin:15px 0 !important;';
-                    if (prevPageBtn) pagination.appendChild(prevPageBtn);
-                    if (pageInfo) pagination.appendChild(pageInfo);
-                    if (nextPageBtn) pagination.appendChild(nextPageBtn);
-                }
-                const table = tableContainer.querySelector('#locationsTable');
-                if (table) {
-                    tableContainer.insertBefore(counter, table);
-                    tableContainer.insertBefore(pagination, table);
-                }
-                counter.style.cssText = 'display:block !important; text-align:center !important; width:100% !important; max-width:600px !important; margin:20px auto 8px !important; font-weight:bold !important; font-size:16px !important; background:rgba(0,0,0,0.6) !important; color:#0f0 !important; padding:12px !important; border:2px solid #0f0 !important; border-radius:10px !important;';
+            const counter = document.getElementById('counter');
+            if (counter) counter.className = 'counter';
+            let pagination = document.getElementById('tablePagination');
+            if (!pagination) {
+                pagination = document.createElement('div');
+                pagination.id = 'tablePagination';
+                pagination.className = 'pagination';
+                const prev = document.getElementById('prevPageBtn');
+                const info = document.getElementById('pageInfo');
+                const next = document.getElementById('nextPageBtn');
+                if (prev) pagination.appendChild(prev);
+                if (info) pagination.appendChild(info);
+                if (next) pagination.appendChild(next);
             }
-
-            // CUSTOM HEADER
+            if (tableContainer && pagination && counter) {
+                tableContainer.insertBefore(pagination, tableContainer.firstChild);
+                tableContainer.insertBefore(counter, pagination.nextSibling);
+            }
             let customHeader = document.getElementById('customTableHeader');
-            if (!customHeader && tableContainer) {
+            if (!customHeader) {
                 customHeader = document.createElement('div');
                 customHeader.id = 'customTableHeader';
-                customHeader.style.cssText = 'display: table !important; width: 100% !important; table-layout: fixed !important; border-spacing: 0 12px !important; margin-bottom: -12px !important;';
                 customHeader.innerHTML = `
-                    <div style="display: table-row !important; background: rgba(0, 255, 0, 0.2) !important; border: 1px solid #0f0 !important; border-radius: 8px !important;">
-                        <div style="display: table-cell !important; width: 10% !important; padding: 10px !important; text-align: center !important; color: #0f0 !important; font-weight: bold !important;">Lock</div>
-                        <div style="display: table-cell !important; width: 15% !important; padding: 10px !important; text-align: center !important; color: #0f0 !important; font-weight: bold !important;">Icon</div>
-                        <div style="display: table-cell !important; width: 25% !important; padding: 10px !important; text-align: center !important; color: #0f0 !important; font-weight: bold !important;">Category</div>
-                        <div style="display: table-cell !important; width: 50% !important; padding: 10px !important; text-align: center !important; color: #0f0 !important; font-weight: bold !important; padding-left: 15px !important;">Description</div>
+                    <div style="display: table-row; background: rgba(0, 255, 0, 0.2); border: 1px solid #0f0; border-radius: 8px; width: 100% !important;">
+                        <div style="display: table-cell; width: 10%; padding: 10px; text-align: center; color: #0f0; font-weight: bold;">Lock</div>
+                        <div style="display: table-cell; width: 15%; padding: 10px; text-align: center; color: #0f0; font-weight: bold;">Icon</div>
+                        <div style="display: table-cell; width: 25%; padding: 10px; text-align: center; color: #0f0; font-weight: bold;">Category</div>
+                        <div style="display: table-cell; width: 50%; padding: 10px; text-align: center; color: #0f0; font-weight: bold; padding-left: 15px;">Description</div>
                     </div>
                 `;
                 const table = tableContainer.querySelector('#locationsTable');
                 if (table) tableContainer.insertBefore(customHeader, table);
             }
-
-            // SEARCH BAR STYLE
-            if (searchBarEl) searchBarEl.style.cssText = 'display:flex !important; align-items:center !important; gap:8px !important; flex-wrap:wrap !important; justify-content:center !important; margin:10px auto !important; padding:10px !important; background:rgba(0,0,0,0.5) !important; border:1px solid #0f0 !important; border-radius:8px !important; max-width:90% !important;';
-
-            // TABLE STYLES
-            const style = document.createElement('style');
-            style.textContent = `
-                #locationsTable { width: 100% !important; max-width: 100% !important; border-collapse: separate !important; border-spacing: 0 12px !important; table-layout: fixed !important; }
-                #locationsTable thead { display: none !important; }
-                #locationsTable tbody { display: block !important; width: 100% !important; }
-                #locationsTable tbody tr { display: table-row !important; background: rgba(0, 0, 0, 0.4) !important; border: 1px solid #0f0 !important; border-radius: 8px !important; transition: all 0.3s ease !important; width: 100% !important; box-sizing: border-box !important; }
-                #locationsTable tbody tr:hover { background: rgba(0, 255, 0, 0.08) !important; box-shadow: 0 0 8px #0f0 !important; }
-                #locationsTable tbody tr.glowing { background: rgba(0, 255, 0, 0.15) !important; box-shadow: 0 0 12px #0f0, 0 0 20px #0f0 !important; order: -1 !important; }
-                #locationsTable tbody td { padding: 10px !important; text-align: center !important; vertical-align: middle !important; word-wrap: break-word !important; }
-                #locationsTable tbody td:nth-child(1) { width: 10% !important; }
-                #locationsTable tbody td:nth-child(2) { width: 15% !important; }
-                #locationsTable tbody td:nth-child(3) { width: 25% !important; }
-                #locationsTable tbody td:nth-child(4) { width: 50% !important; text-align: left !important; padding-left: 15px !important; }
-            `;
-            document.head.appendChild(style);
-
-            // PAGINATION RE-ATTACH
-            if (prevPageBtn) {
-                prevPageBtn.onclick = () => {
-                    if (tablePage > 1) {
-                        tablePage--;
-                        localStorage.setItem('tablePage', tablePage);
-                        refreshTable(combinedSearch ? combinedSearch.value : '', categoryFilter ? categoryFilter.value : '');
-                        playSound('click');
-                    }
-                };
-            }
-            if (nextPageBtn) {
-                nextPageBtn.onclick = () => {
-                    const total = Math.ceil(locations.filter(l => activeCategories.has(l.category)).length / pageSize);
-                    if (tablePage < total) {
-                        tablePage++;
-                        localStorage.setItem('tablePage', tablePage);
-                        refreshTable(combinedSearch ? combinedSearch.value : '', categoryFilter ? categoryFilter.value : '');
-                        playSound('click');
-                    }
-                };
-            }
             document.body.classList.add('map-ready');
         }, 1000);
-    })();
-});
-     /* --------------------------------------------------------------------------
-           Fallout 76 Item Finder Map Version 36 - Disclaimer and Terms of Use
+
+        /* --------------------------------------------------------------------------
+           Fallout 76 Item Finder Map Version 37 - Disclaimer and Terms of Use
            --------------------------------------------------------------------------
            Copyright (c) 2025 MrCrazy. All rights reserved.
            This application, including all code, design, content, and the map images is the intellectual property of MrCrazy.
@@ -2493,8 +2505,10 @@ document.addEventListener('DOMContentLoaded', function() {
            This app is provided "as is" for personal, non-commercial use by Fallout 76 players to track in-game items.
            The author is not responsible for any damages or losses resulting from the use of this application. Use at your own risk.
            For inquiries or permission requests, call someone who cares.
-           Last updated: November 03, 2025
+           Last updated: November 04, 2025
            -------------------------------------------------------------------------- */
+    })();
+});
 </script>
 </body>
 </html>
