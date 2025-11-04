@@ -1283,7 +1283,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const tr = document.createElement('tr');
                 if (isGlowing(loc)) tr.classList.add('glowing');
                 const shortDesc = loc.desc.split('\n')[0].trim();
-                const lockEmoji = loc.locked ? 'LOCKED' : 'UNLOCKED';
+                const lockEmoji = loc.locked ? '🔐' : '🔓';
                 const lockCell = `<td><span class="lock-toggle" onclick="toggleLockFromTable(${locations.indexOf(loc)})" title="${loc.locked ? 'Locked' : 'Unlocked'}">${lockEmoji}</span></td>`;
                 const iconCell = ['named locations', 'regions'].includes(loc.category)
                     ? `<td><div class="text-location">${escapeHtml(shortDesc)}</div></td>`
