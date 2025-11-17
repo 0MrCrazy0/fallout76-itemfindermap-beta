@@ -4,7 +4,7 @@
     <!-- DEV NOTE: Meta tags for mobile + PWA support -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Fallout 76 Item Finder</title>
+    <title>Fallout 76 Item Finder v76.1.0</title>
 
     <!-- DEV NOTE: Leaflet + Clustering + Screenshot Libraries -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -738,6 +738,11 @@
         from { transform: translate(-50%, -20%); opacity: 0; }
         to { transform: translateX(-50%); opacity: 1; }
     }
+	
+	@keyframes pulse {
+    0%,100% { transform:scale(1); }
+    50% { transform:scale(1.15); }
+}
     </style>
 </head>
 <body>
@@ -853,7 +858,7 @@
                 <button id="resetAppBtn" class="reset-btn">Reset App (for debugging only)</button>
             </div>
             <p class="small"><br>Love the Item Finder? Support MrCrazy with a <a href="https://buymeacoffee.com/mrcrazy" target="_blank">Nuka-Cola</a>!</p>
-            <p class="small" id="appVersionText">The Fallout 76 Item Finder Map Version 38.1 Made By MrCrazy</p>
+            <p class="small" id="appVersionText">The Fallout 76 Item Finder Map Version v76.1.0 Made By MrCrazy</p>
         </div>
     </div>
 
@@ -922,11 +927,11 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     (function() {
-        const STORAGE_KEY = 'fo76_locations_v38';
+        const STORAGE_KEY = 'fo76_locations';
         const CUSTOM_CATEGORIES_KEY = 'fallout76_custom_categories';
         const MAP_VERSION_KEY = 'fallout76_map_version';
-        const CURRENT_UPDATE_VERSION = 'v38.31';
-        const APP_VERSION = "38.31";
+        const CURRENT_UPDATE_VERSION = 'v76.1.0';
+        const APP_VERSION = "v76.1.0";
 
         let soundsEnabled = localStorage.getItem('soundsEnabled') !== 'false';
         const baseSounds = {
@@ -1003,14 +1008,14 @@ document.addEventListener('DOMContentLoaded', function() {
         let communityVersion = localStorage.getItem(MAP_VERSION_KEY) || "1.0";
 
         const defaultCategoryIcons = {
-            'weapons': 'GUN', 'armor': 'SHIELD', 'aid': 'SYRINGE', 'food/drink': 'FORK', 'ammunition': 'BOMB',
-            'apparel': 'SHIRT', 'plans': 'SCROLL', 'junk': 'TRASH', 'holotapes': 'CD', 'misc': 'NOTE',
-            'plants': 'LEAF', 'eggs': 'EGG', 'creatures': 'WOLF', 'vendors': 'MONEY', 'exchanges': 'SCALES',
-            'vaults': 'GEAR', 'power armor': 'ROBOT', 'fusion core': 'BATTERY', 'nuke drop zones': 'NUKE',
-            'nuke silos': 'ROCKET', 'magazines': 'BOOK', 'bobbleheads': 'DOLL', 'safe locations': 'LOCK',
-            'terminal locations': 'COMPUTER', 'treasure maps': 'MAP', 'resource deposits': 'PICK',
-            'fishing locations': 'FISH', 'workshops': 'HAMMER', 'train stations': 'TRAIN', 'town locations': 'SCHOOL',
-            'event locations': 'PARTY', 'named locations': 'FLAG', 'regions': 'MAP'
+        'weapons': '🔫', 'armor': '🛡️', 'aid': '💉', 'food/drink': '🍽️', 'ammunition': '💥',
+        'apparel': '👕', 'plans': '📜', 'junk': '🗑️', 'holotapes': '📀', 'misc': '📝',
+        'plants': '🌿', 'eggs': '🥚', 'creatures': '🐺', 'vendors': '💰', 'exchanges': '⚖️',
+        'vaults': '⚙️', 'power armor': '👨‍🚀', 'fusion core': '🔋', 'nuke drop zones': '☢️',
+        'nuke silos': '🚀', 'magazines': '📚', 'bobbleheads': '🎎', 'safe locations': '🗄️',
+        'terminal locations': '🖥️', 'treasure maps': '🗺️', 'resource deposits': '⛏️',
+        'fishing locations': '🎣', 'workshops': '🔧', 'train stations': '🚂', 'town locations': '🏫',
+        'event locations': '🎉', 'named locations': '🚩', 'regions': '📍'
         };
         let categoryIcons = { ...defaultCategoryIcons, ...customCategories };
 
@@ -1076,6 +1081,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let toolsVisible = localStorage.getItem('toolsVisible') !== 'false';
         let currentPostcardLatLng = null;
         let lastMovedMarker = null;
+		let lastLevel = level;
 
         const itemModal = document.getElementById('itemModal');
         const deleteBtn = document.getElementById('deleteItemBtn');
@@ -1174,7 +1180,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(() => combinedSearch.style.boxShadow = '', 1500);
             }
             refreshTable(val, categoryFilter.value);
+			updateMapVisibility();
+			playSound('selectcategory');
         });
+		
+		categoryFilter.onchange = () => {
+    currentCategoryFilter = categoryFilter.value;
+    localStorage.setItem('currentCategoryFilter', currentCategoryFilter);
+    refreshTable(combinedSearch.value, categoryFilter.value);
+    updateMapVisibility();
+    playSound('selectcategory');
+};
 
         function updateLockAllBtn() {
             const hasUnlocked = locations.some(l => !l.locked && !l.isPostcard);
@@ -1699,7 +1715,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <b>${loc.icon} ${loc.category.toUpperCase()}</b><br>
                         <div style="max-height:80px;overflow-y:auto;margin:4px 0;padding-right:8px;">${escapeHtml(loc.desc)}</div>
                         <div style="margin:6px 0;text-align:center;">
-                            <span class="popup-lock-toggle" onclick="toggleLockFromPopup(${locations.indexOf(loc)})">${loc.locked?'LOCKED':'UNLOCKED'}</span>
+                            <span class="popup-lock-toggle" onclick="toggleLockFromPopup(${locations.indexOf(loc)})">${loc.locked?'🔐':'🔓'}</span>
                         </div>
                         <button onclick="editMarkerFromPopup(${locations.indexOf(loc)})">Edit</button>
                     `, { maxWidth: 260, offset: [0, -20] });
@@ -1762,7 +1778,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const secs = Math.floor((timeLeft % 60000) / 1000).toString().padStart(2, '0');
                     lockCell = `<span style="color:#ff0;font-size:11px;">${mins}:${secs}</span>`;
                 } else {
-                    const lock = loc.locked ? 'LOCKED' : 'UNLOCKED';
+                    const lock = loc.locked ? '🔐':'🔓';
                     lockCell = `<span class="lock-toggle" onclick="toggleLockFromTable(${locations.indexOf(loc)})">${lock}</span>`;
                 }
                 tr.innerHTML = `
@@ -1806,29 +1822,43 @@ document.addEventListener('DOMContentLoaded', function() {
             loc.addedTime = Date.now();
             saveLocations();
             forceReload();
-            showTempMessage(loc.locked?'LOCKED':'UNLOCKED',4000);
+            showTempMessage(loc.locked?'🔐':'🔓',4000);
             playSound('click');
         };
 
         setInterval(() => {
-            if (document.visibilityState !== 'visible') return;
-            [clusteredMarkers, nonClusteredMarkers].forEach(g => g.eachLayer(m => {
-                const loc = locations.find(l => l.id === m.options.id);
-                if (!loc) return;
-                const glow = isGlowing(loc);
-                const icon = m.getIcon();
-                if (glow && !icon.options.className?.includes('glowing')) {
-                    m.setIcon(createMarkerIcon(loc));
-                    m.setZIndexOffset(10000);
-                } else if (!glow && icon.options.className?.includes('glowing')) {
-                    m.setIcon(createMarkerIcon(loc));
-                    m.setZIndexOffset(0);
-                }
-                loc.locked || loc.isPostcard ? m.dragging?.disable() : m.dragging?.enable();
-            }));
-            refreshTable(combinedSearch?.value || '', categoryFilter?.value || '');
-            updateLockAllBtn();
-        }, 1000);
+    if (document.visibilityState !== 'visible') return;
+
+    // ← THIS IS THE KEY: don't refresh map when any popup is open
+    let popupIsOpen = false;
+    map.eachLayer(layer => {
+        if (layer.getPopup && layer.getPopup() && layer.getPopup().isOpen()) {
+            popupIsOpen = true;
+        }
+    });
+    if (!popupIsOpen) {
+        updateMapVisibility();   // Only update map when NO popup is open
+    }
+
+    // Still update glow + dragging + table every second
+    [clusteredMarkers, nonClusteredMarkers].forEach(g => g.eachLayer(m => {
+        const loc = locations.find(l => l.id === m.options.id);
+        if (!loc) return;
+        const glow = isGlowing(loc);
+        const icon = m.getIcon();
+        if (glow && !icon.options.className?.includes('glowing')) {
+            m.setIcon(createMarkerIcon(loc));
+            m.setZIndexOffset(10000);
+        } else if (!glow && icon.options.className?.includes('glowing')) {
+            m.setIcon(createMarkerIcon(loc));
+            m.setZIndexOffset(0);
+        }
+        loc.locked || loc.isPostcard ? m.dragging?.disable() : m.dragging?.enable();
+    }));
+
+    refreshTable(combinedSearch?.value || '', categoryFilter?.value || '');
+    updateLockAllBtn();
+}, 1000);
 
         function renderCategoryToggles() {
             const box = document.getElementById('categoryCheckboxes');
@@ -1855,34 +1885,40 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         function openModal(title, idx = -1) {
-            const loc = idx >= 0 ? locations[idx] : null;
-            modalTitle.innerHTML = `${title} <span id="modalLockToggle" style="font-size:22px;cursor:pointer;margin-left:10px;">${loc?.locked ? 'LOCKED' : 'UNLOCKED'}</span>`;
-            currentIndex = idx;
-            const currentCategory = loc?.category || 'misc';
-            itemCategorySelect.value = currentCategory;
-            itemDescInput.value = loc?.desc || '';
+    const loc = idx >= 0 ? locations[idx] : null;
 
-            const modalToggle = document.getElementById('modalLockToggle');
-            if (modalToggle && loc) {
-                modalToggle.onclick = (e) => {
-                    e.stopPropagation();
-                    loc.locked = !loc.locked;
-                    modalToggle.textContent = loc.locked ? 'LOCKED' : 'UNLOCKED';
-                    itemCategorySelect.disabled = loc.locked;
-                    itemDescInput.disabled = loc.locked;
-                    deleteBtn.style.display = loc.locked ? 'none' : 'inline-block';
-                    duplicateBtn.style.display = loc.locked ? 'none' : 'inline-block';
-                    saveLocations();
-                    forceReload();
-                    showTempMessage(loc.locked ? 'LOCKED' : 'UNLOCKED', 2000);
-                    playSound('click');
-                };
-            }
+    const isCurrentlyLocked = loc ? loc.locked : false;
 
-            itemModal.style.display = 'block';
-            document.body.classList.add('modal-open');
+    modalTitle.innerHTML = `${title} <span id="modalLockToggle" style="font-size:22px;cursor:pointer;margin-left:10px;">${isCurrentlyLocked ? 'LOCKED' : 'UNLOCKED'}</span>`;
+    currentIndex = idx;
+    itemCategorySelect.value = loc?.category || 'misc';
+    itemDescInput.value = loc?.desc || '';
+    itemCategorySelect.disabled = isCurrentlyLocked;
+    itemDescInput.disabled = isCurrentlyLocked;
+    deleteBtn.style.display = isCurrentlyLocked ? 'none' : 'inline-block';
+    duplicateBtn.style.display = isCurrentlyLocked ? 'none' : 'inline-block';
+
+    const modalToggle = document.getElementById('modalLockToggle');
+    if (modalToggle && loc) {
+        modalToggle.onclick = (e) => {
+            e.stopPropagation();
+            loc.locked = !loc.locked;                     
+            modalToggle.textContent = loc.locked ? '🔐':'🔓';
+            itemCategorySelect.disabled = loc.locked;
+            itemDescInput.disabled = loc.locked;
+            deleteBtn.style.display = loc.locked ? 'none' : 'inline-block';
+            duplicateBtn.style.display = loc.locked ? 'none' : 'inline-block';
+            saveLocations();
+            forceReload();
+            showTempMessage(loc.locked ? '🔐':'🔓', 2000);
             playSound('click');
-        }
+        };
+    }
+
+    itemModal.style.display = 'block';
+    document.body.classList.add('modal-open');
+    playSound('click');
+}
 
         function closeModal(m) {
             m.style.display = 'none';
@@ -1891,12 +1927,71 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         function recalculateXP() {
-            xp = locations.filter(l => !l.isPostcard).length * xpPerMarker;
-            level = 1 + Math.floor(xp / xpPerLevel);
-            xp = xp % xpPerLevel;
-            localStorage.setItem('fo76_level', level);
-            localStorage.setItem('fo76_xp', xp);
+    const oldLevel = lastLevel;
+    xp = locations.filter(l => !l.isPostcard).length * xpPerMarker;
+    level = 1 + Math.floor(xp / xpPerLevel);
+    xp = xp % xpPerLevel;
+
+    // LEVEL UP DETECTED!
+    if (level > oldLevel) {
+        playSound('levelUp');
+        triggerConfetti();                    // every level
+        showTempMessage(`LEVEL UP → ${level}!`, 5000);
+
+        if (level % 10 === 0) {               // every 10 levels
+            triggerNuke();
         }
+    }
+
+    localStorage.setItem('fo76_level', level);
+    localStorage.setItem('fo76_xp', xp);
+    lastLevel = level;   // update for next time
+    updateXPBar();
+}
+
+// GREEN GLOWING CONFETTI RAIN
+function triggerConfetti() {
+    const fire = () => {
+        confetti({
+            particleCount: 200,
+            spread: 500,
+            origin: { y: 0.60 },
+            colors: ['#00ff00', '#00cc00', '#33ff33', '#00ff99'],
+            ticks: 360,
+            gravity: 0.5,
+            scalar: 2.3
+        });
+    };
+    if (window.confettiReady) {
+        fire();
+    } else {
+        // Wait max 3 seconds for confetti to load, then fire anyway
+        const start = Date.now();
+        const wait = setInterval(() => {
+            if (window.confettiReady || Date.now() - start > 10000) {
+                clearInterval(wait);
+                if (typeof confetti === 'function') fire();
+            }
+        }, 100);
+    }
+}
+
+// NUKE EFFECT — map explodes, then back in 2 seconds
+function triggerNuke() {
+    const nuke = document.createElement('div');
+    nuke.style.cssText = `
+        position:fixed;top:0;left:0;width:100%;height:100%;background:#000;
+        z-index:99999;display:flex;align-items:center;justify-content:center;
+        flex-direction:column;pointer-events:none;
+    `;
+    nuke.innerHTML = `
+        <h1 style="color:#0f0;font-size:80px;animation:pulse 0.8s infinite;">☢ NUKE DETONATED ☢</h1>
+        <p style="color:#0f0;font-size:30px;">LEVEL ${level} ACHIEVED!</p>
+    `;
+    document.body.appendChild(nuke);
+    playSound('levelUp');
+    setTimeout(() => nuke.remove(), 2200);
+}
 
         function updateXPBar() {
             levelSpan.textContent = level;
@@ -2321,12 +2416,57 @@ document.addEventListener('DOMContentLoaded', function() {
             openModal('Log Item');
             playSound('click');
         });
+		
+		function updateMapVisibility() {
+    const selectedCat = categoryFilter.value || '';
+
+    // 1. Find which marker currently has an open popup
+    let openMarkerId = null;
+    let openLatLng = null;
+    map.eachLayer(layer => {
+        if (layer.getPopup && layer.getPopup() && layer.getPopup().isOpen()) {
+            openMarkerId = layer.options.id;
+            openLatLng = layer.getLatLng();
+        }
+    });
+
+    // 2. DON'T clearLayers() — just hide/show individual markers
+    [clusteredMarkers, nonClusteredMarkers].forEach(group => {
+        group.eachLayer(marker => {
+            const loc = locations.find(l => l.id === marker.options.id);
+            if (!loc) return;
+
+            const shouldShow = activeCategories.has(loc.category) &&
+                              (!selectedCat || loc.category === selectedCat);
+
+            if (shouldShow && !map.hasLayer(marker)) {
+                map.addLayer(marker);
+            } else if (!shouldShow && map.hasLayer(marker)) {
+                map.removeLayer(marker);
+            }
+        });
+    });
+
+    // 3. Re-open popup instantly — no flash because marker never died
+    if (openMarkerId && openLatLng) {
+        setTimeout(() => {
+            const marker = [...clusteredMarkers.getLayers(), ...nonClusteredMarkers.getLayers()]
+                .find(m => m.options.id === openMarkerId);
+            if (marker && marker.getPopup()) {
+                marker.openPopup();
+                map.panTo(openLatLng, { animate: false }); // keep exact position
+            }
+        }, 0);
+    }
+}
 
         updateCategoryDropdowns();
         renderCategoryToggles();
         loadData(currentSearch, currentCategoryFilter);
         drawGrid();
         updateXPBar();
+		updateMapVisibility();
+		playSound('selectcategory');
         setTimeout(() => document.body.classList.add('map-ready'), 1000);
 
         toggleDarkModeBtn.onclick = () => {
@@ -2416,9 +2556,95 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const confettiScript = document.createElement('script');
         confettiScript.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js';
-        document.head.appendChild(confettiScript);
+        confettiScript.onload = () => { window.confettiReady = true; };
+		document.head.appendChild(confettiScript);
+		
+		        // WELCOME & UPDATE MODALS — the final polish
+        const WELCOME_KEY = 'fo76_welcome_accepted_v38';
+        const LAST_VERSION_KEY = 'fo76_last_seen_version';
 
-        console.log('%cFallout 76 Item Finder v38.31 — FINAL & FLAWLESS\nPostcard glow fixed | Modal lock instant sync | No bugs\nMade with LOVE by MrCrazy + Grok','color:#00ff00;font-size:14px;font-weight:bold');
+        function showWelcomeModal() {
+            const welcomeModal = document.createElement('div');
+            welcomeModal.className = 'modal';
+            welcomeModal.style.display = 'block';
+            welcomeModal.innerHTML = `
+                <div class="modal-content" style="max-width:600px;">
+                    <h2>Welcome to Fallout 76 Item Finder v76.1.0</h2>
+                    <p>By using this app you agree:</p>
+                    <ul style="text-align:left;margin:20px 0;">
+                        <li>This app, created by MrCrazy, is for personal, non-commercial use by Fallout 76 players to track in-game items. Unauthorized copying, modification, distribution, or monetization is strictly prohibited. Do at your own risk.</li>
+                        <li>Stay Updated! Some Markers are community-sourced — use at your own risk</li>
+                        <li>Check the "Update Community Map" button periodically for the latest map version or to reset the app if you encounter issues. Find this tip in the "How to Use" section.</li>
+                        <li>Have fun and share the ❤️ in Appalachia explore and start logging locations!</li>
+                    </ul>
+                    <div style="text-align:center;margin-top:20px;">
+                        <button id="agreeBtn" style="background:#00ff00;color:#000;padding:10px 30px;font-size:18px;border:none;border-radius:6px;cursor:pointer;font-weight:bold;">I AGREE — LET'S GO!</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(welcomeModal);
+            document.body.classList.add('modal-open');
+
+            document.getElementById('agreeBtn').onclick = () => {
+                localStorage.setItem(WELCOME_KEY, 'true');
+                welcomeModal.remove();
+                document.body.classList.remove('modal-open');
+                playSound('levelUp');
+                showTempMessage('Welcome, wanderer!', 4000);
+            };
+        }
+
+        function checkForUpdate() {
+            const lastSeen = localStorage.getItem(LAST_VERSION_KEY);
+            if (lastSeen !== CURRENT_UPDATE_VERSION) {
+                const updateModal = document.createElement('div');
+                updateModal.className = 'modal';
+                updateModal.style.display = 'block';
+                updateModal.innerHTML = `
+                    <div class="modal-content" style="max-width:500px;">
+                        <h2>App Updated!</h2>
+                        <p style="text-align:left;">What’s new:</p>
+                        <ul style="text-align:left;">
+                            <li>Welcome To Version 76.1.0</li>
+							<li>This is The Latest Update Reset Your App. Find this tip in the "How to Use" section.</li>
+							<li>Made With ❤️</li>
+                        </ul>
+                        <div style="text-align:center;margin-top:20px;">
+                            <button id="updateGotIt" style="background:#00ff00;color:#000;padding:10px 30px;font-size:18px;border:none;border-radius:6px;cursor:pointer;font-weight:bold;">GOT IT — LET'S GO!</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(updateModal);
+                document.body.classList.add('modal-open');
+
+                document.getElementById('updateGotIt').onclick = () => {
+                    localStorage.setItem(LAST_VERSION_KEY, CURRENT_UPDATE_VERSION);
+                    updateModal.remove();
+                    document.body.classList.remove('modal-open');
+                    playSound('levelUp');
+                };
+            }
+        }
+
+        // Show modals on load (welcome first, then update if needed)
+        if (!localStorage.getItem(WELCOME_KEY)) {
+            setTimeout(showWelcomeModal, 800);
+        } else {
+            setTimeout(checkForUpdate, 800);
+        }
+
+        console.log('%cFallout 76 Item Finder v76.1.0 — \nMade with ❤️ by MrCrazy','color:#00ff00;font-size:14px;font-weight:bold');
+		/* --------------------------------------------------------------------------
+       Fallout 76 Item Finder Map - Disclaimer and Terms of Use
+       --------------------------------------------------------------------------
+       Copyright (c) 2025 MrCrazy. All rights reserved.
+       This application, including all code, design, content, and the map images is the intellectual property of MrCrazy.
+       Unauthorized use, copying, modification, distribution, or monetization of this application or any part thereof is strictly prohibited without explicit written permission from the author.
+       This app is provided "as is" for personal, non-commercial use by Fallout 76 players to track in-game items.
+       The author is not responsible for any damages or losses resulting from the use of this application. Use at your own risk.
+       For inquiries or permission requests, call someone who cares.
+       Last updated: November 17, 2025
+       -------------------------------------------------------------------------- */
     })();
 });
 </script>
