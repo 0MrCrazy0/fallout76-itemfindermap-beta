@@ -1433,16 +1433,30 @@ document.addEventListener('DOMContentLoaded', function() {
             startPostcardTicker();
         });
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('postcard')) {
-            const id = urlParams.get('postcard');
-            setTimeout(() => {
-                const loc = locations.find(l => l.id === id);
-                if (loc && loc.isPostcard) {
-                    safeFlyTo(loc.lat, loc.lng, 3);
-                    setTimeout(() => showPostcardMarker(loc), 1800);
-                }
-            }, 1500);
+
+if (urlParams.has('postcard')) {
+    const id = urlParams.get('postcard');
+    setTimeout(() => {
+        const loc = locations.find(l => l.id === id);
+        if (loc && loc.isPostcard) {
+            safeFlyTo(loc.lat, loc.lng, 3);
+            setTimeout(() => showPostcardMarker(loc), 1800);
         }
+    }, 1500);
+}
+
+// NEW: SHARE VIEW — zoom to shared marker
+else if (urlParams.has('lat') && urlParams.has('lng')) {
+    const lat = parseFloat(urlParams.get('lat'));
+    const lng = parseFloat(urlParams.get('lng'));
+    if (!isNaN(lat) && !isNaN(lng)) {
+        setTimeout(() => {
+            safeFlyTo(lat, lng, 4);  // Zoom level 4 = perfect close-up
+            showTempMessage('Shared view loaded!', 3000);
+            playSound('click');
+        }, 1200);
+    }
+}
 
         function createPopupContent(loc) {
             const start = loc.startTime || Date.now();
