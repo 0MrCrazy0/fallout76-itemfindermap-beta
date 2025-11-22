@@ -1,0 +1,3313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- DEV NOTE: Meta tags for mobile + PWA support -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+	<meta http-equiv="Pragma" content="no-cache">
+	<meta http-equiv="Expires" content="0">
+    <title>Fallout 76 Item Finder Map v76.1.0</title>
+
+	<link rel="manifest" href="manifest.json?v=3">
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/fallout76-itemfindermap/service-worker.js');
+  }
+</script>
+    <!-- DEV NOTE: Leaflet + Clustering + Screenshot Libraries -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- DEV NOTE: Icons & Theme -->
+    <link rel="icon" href="/icon-192-v2.png" sizes="192x192">
+    <link rel="icon" href="/icon-512-v2.png" sizes="512x512">
+    <link rel="apple-touch-icon" href="/icon-192-v2.png">
+    <meta name="theme-color" content="#00ff00">
+
+    <style>
+    /* DEV NOTE: GLOBAL STYLES — FALLOUT 76 TERMINAL AESTHETIC */
+    body { 
+        font-family: 'Courier New', monospace; 
+        margin: 20px; 
+        background-color: #0a2a2a; 
+        color: #00ff00; 
+        overflow-x: hidden; 
+    }
+
+    h1 { 
+        color: #00ff00; 
+        text-align: center; 
+        text-shadow: 0 0 10px #00ff00; 
+        font-size: 2.2em; 
+        margin-bottom: 12px; 
+    }
+
+    /* DEV NOTE: MAP STYLING — BLACK BACKGROUND, GREEN BORDER */
+    #map { 
+        height: 750px; 
+        max-width: 95%; 
+        margin: 0 auto 20px; 
+        border: 2px solid #00ff00; 
+        box-shadow: 0 0 15px #00ff00; 
+        background-color: #000000; 
+        position: relative; 
+    }
+
+    /* DEV NOTE: TITLE TOGGLE BUTTON — FIXED */
+    #titleToggleContainer {
+        text-align: center;
+        margin-bottom: 8px;
+    }
+    #toggleTitleBtn {
+        padding: 2px 6px;
+        font-size: 0.9em;
+        max-width: 40px;
+        margin: 0 auto;
+        background: #1a3c34;
+        color: #00ff00;
+        border: 1px solid #00ff00;
+        border-radius: 0;
+        cursor: pointer;
+    }
+    #toggleTitleBtn:hover {
+        background: #00ff00;
+        color: #000;
+    }
+
+    /* DEV NOTE: SEARCH BAR — MOVED UNDER MAP */
+    #searchBar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin: 10px auto;
+        padding: 10px;
+        background: rgba(0,0,0,0.5);
+        border: 1px solid #0f0;
+        border-radius: 8px;
+        max-width: 90%;
+    }
+
+    /* DEV NOTE: TOOLS TOGGLE — OUTSIDE TOOLS PANEL */
+    #toolsToggleRow {
+        text-align: center;
+        margin: 10px 0;
+    }
+    #toggleButtonGroup {
+        padding: 8px 16px;
+        max-width: 200px;
+        background: #1a3c34;
+        color: #00ff00;
+        border: 2px solid #00ff00;
+        border-radius: 0;
+        cursor: pointer;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+    }
+    #toggleButtonGroup:hover {
+        background: #00ff00;
+        color: #000;
+    }
+
+    /* DEV NOTE: TOOLS PANEL — HIDDEN BY DEFAULT */
+    #buttonGroup {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+        margin: 10px auto;
+        padding: 10px;
+        background: rgba(0,0,0,0.5);
+        border: 1px solid #0f0;
+        border-radius: 8px;
+        max-width: 90%;
+    }
+    #buttonGroup.hidden {
+        display: none !important;
+    }
+
+    /* DEV NOTE: FORM CONTROLS — GREEN BORDERS, BLACK INPUTS */
+    .controls { 
+        margin-bottom: 20px; 
+        text-align: center; 
+        display: flex; 
+        flex-wrap: wrap; 
+        justify-content: center; 
+        gap: 10px; 
+    }
+    input[type="text"], select, textarea { 
+        padding: 8px; 
+        width: 100%; 
+        max-width: 200px; 
+        box-sizing: border-box; 
+        border: 2px solid #00ff00; 
+        border-radius: 0; 
+        background-color: #000; 
+        color: #00ff00; 
+        font-family: 'Courier New', monospace; 
+        font-size: 14px;
+    }
+    textarea { 
+        min-height: 80px; 
+        resize: vertical; 
+    }
+
+    /* DEV NOTE: SEARCH BAR HIGHLIGHT ANIMATION */
+    #combinedSearch { 
+        max-width: 250px; 
+        transition: background-color 0.3s, box-shadow 0.3s; 
+    }
+    #combinedSearch.grid-highlight, #combinedSearch.item-highlight { 
+        background-color: #0a3a0a !important; 
+        box-shadow: 0 0 15px #00ff00, inset 0 0 10px rgba(0, 255, 0, 0.3); 
+        animation: pulseSearch 1.5s ease-out; 
+    }
+    @keyframes pulseSearch { 
+        0%, 100% { box-shadow: 0 0 15px #00ff00, inset 0 0 10px rgba(0, 255, 0, 0.3); } 
+        50% { box-shadow: 0 0 25px #00ff00, inset 0 0 15px rgba(0, 255, 0, 0.5); } 
+    }
+
+    /* DEV NOTE: BUTTONS — UNIFIED GREEN + BOLD TEXT */
+    button {
+        padding: 8px 16px;
+        width: 100%;
+        max-width: 200px;
+        box-sizing: border-box;
+        background-color: #1a3c34;
+        color: #00ff00;
+        border: 2px solid #00ff00;
+        border-radius: 0;
+        cursor: pointer;
+        font-family: 'Courier New', monospace;
+        transition: background-color 0.3s;
+        margin: 5px;
+        font-weight: bold;
+    }
+    button:hover {
+        background-color: #00ff00;
+        color: #000;
+    }
+    button.reset-btn {
+        background-color: #F7615E !important;
+        color: #000 !important;
+        font-weight: 700;
+    }
+    #saveItemBtn { background: #00ff00 !important; color: #000 !important; }
+    #shareItemBtn { background: #00b7eb !important; color: #000 !important; }
+    #exportOneBtn { background: #5E99F7 !important; color: #000 !important; }
+    #deleteItemBtn { background: #F7615E !important; color: #000 !important; }
+    #undoItemBtn { background: #cc8400 !important; color: #000 !important; margin: 8px 8px !important; }
+    #duplicateItemBtn { background: #5E99F7 !important; color: #000 !important; }
+
+    /* DEV NOTE: LOCK TOGGLE IN POPUP/MODAL */
+    #modalLockToggle, .popup-lock-toggle {
+        color: #ffa500;
+        cursor: pointer;
+    }
+    #modalLockToggle:hover, .popup-lock-toggle:hover {
+        color: #00ff00;
+    }
+
+    /* DEV NOTE: TABLE CONTAINER — CENTERED, RESPONSIVE */
+    #tableContainer {
+        width: 100%;
+        max-width: 1000px;
+        margin: 0 auto;
+        overflow-x: auto !important;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        contain: paint;
+        padding: 10px;
+        background: rgba(0,0,0,0.7);
+        border: 1px solid #0f0;
+        border-radius: 8px;
+        display: block !important;
+    }
+
+    /* DEV NOTE: PAGINATION — PERFECTLY CENTERED ON ALL DEVICES */
+    .pagination {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        margin: 15px 0;
+        width: 100%;
+        padding: 0 10px;
+        box-sizing: border-box;
+    }
+
+    /* DEV NOTE: COUNTER — YOUR CENTERING FIX RESTORED */
+    .counter {
+        width: 200px !important;
+        margin: 10px auto !important;
+        text-align: center !important;
+        font-weight: bold !important;
+    }
+
+    /* DEV NOTE: FAKE TABLE HEADER — VISUAL CLARITY */
+    #customTableHeader {
+        display: table !important;
+        width: 100% !important;
+        table-layout: fixed !important;
+        border-spacing: 0 12px !important;
+        margin-bottom: -12px !important;
+    }
+    #customTableHeader > div {
+        display: table-row !important;
+        background: rgba(0, 255, 0, 0.2) !important;
+        border: 1px solid #0f0 !important;
+        border-radius: 8px !important;
+    }
+    #customTableHeader > div > div {
+        display: table-cell !important;
+        padding: 10px !important;
+        text-align: center !important;
+        color: #0f0 !important;
+        font-weight: bold !important;
+    }
+
+    /* DEV NOTE: REAL TABLE — FLEX LAYOUT FOR MOBILE */
+    #locationsTable {
+        width: 100% !important;
+        border-collapse: separate !important;
+        border-spacing: 0 12px !important;
+        table-layout: fixed !important;
+        margin: 0 !important;
+    }
+    #locationsTable thead { display: none !important; }
+    #locationsTable tbody { display: block !important; width: 100% !important; }
+    #locationsTable tbody tr {
+        display: flex !important;
+        background: rgba(0, 0, 0, 0.4) !important;
+        border: 1px solid #0f0 !important;
+        border-radius: 8px !important;
+        transition: all 0.3s ease !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    #locationsTable tbody tr:hover {
+        background: rgba(0, 255, 0, 0.08) !important;
+        box-shadow: 0 0 8px #0f0 !important;
+    }
+    #locationsTable tbody tr.glowing {
+        background: rgba(0, 255, 0, 0.15) !important;
+        box-shadow: 0 0 12px #0f0, 0 0 20px #0f0 !important;
+        animation: tablePulse 1.5s infinite ease-in-out !important;
+        border: 2px solid #00ff88 !important;
+    }
+    @keyframes tablePulse {
+        0%, 100% { box-shadow: 0 0 12px #0f0, 0 0 20px #0f0; }
+        50% { box-shadow: 0 0 18px #0f0, 0 0 30px #0f0; }
+    }
+
+    /* DEV NOTE: TABLE CELL FLEX SIZING */
+    #locationsTable tbody td {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px !important;
+        word-wrap: break-word !important;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: normal !important;
+        word-break: break-word !important;
+        overflow-wrap: break-word !important;
+    }
+    #locationsTable tbody td:nth-child(1) { flex: 0.6; } /* Lock */
+    #locationsTable tbody td:nth-child(2) { flex: 0.9; } /* Icon */
+    #locationsTable tbody td:nth-child(3) { flex: 1.5; } /* Category */
+    #locationsTable tbody td:nth-child(4) {
+        flex: 3;
+        justify-content: flex-start !important;
+        padding-left: 15px !important;
+    }
+
+    /* DEV NOTE: ICONS & LOCK TOGGLE */
+    .icon-circle {
+        width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 16px; font-weight: bold; color: #000;
+    }
+    .text-location {
+        background: #000; color: #fff; padding: 2px 6px; border: 1px solid #0f0; border-radius: 3px; font-size: 11px; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; margin: 0 auto;
+    }
+    .lock-toggle { font-size: 18px; cursor: pointer; display: block; margin: 0 auto; }
+
+    /* DEV NOTE: MODALS — FULLSCREEN, GREEN BORDER */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 10000;
+        left: 0; top: 0;
+        width: 100%; height: 100%;
+        overflow: hidden;
+        background-color: rgba(0, 42, 42, 0.8);
+    }
+    .modal-content {
+        background-color: #1a3c34;
+        margin: 8% auto;
+        padding: 16px;
+        border: 2px solid #00ff00;
+        width: 100%;
+        max-width: 360px;
+        box-sizing: border-box;
+        border-radius: 0;
+        color: #00ff00;
+        font-family: 'Courier New', monospace;
+        overflow-y: auto;
+        max-height: 80vh;
+        -webkit-overflow-scrolling: touch;
+    }
+    .close {
+        color: #00ff00;
+        float: right;
+        font-size: 24px;
+        font-weight: bold;
+        line-height: 1;
+        cursor: pointer;
+    }
+    .close:hover { color: #0a2a2a; }
+
+    /* DEV NOTE: MODAL BUTTONS — CENTERED & WRAPPED */
+    #itemModal .modal-content > div:last-child {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 12px;
+    }
+
+    /* DEV NOTE: MARKER CLUSTERING */
+    .marker-cluster div {
+        width: 30px; height: 30px; margin-left: 5px; margin-top: 5px; text-align: center; border-radius: 15px;
+        font: bold 12px/30px "Helvetica Neue", Arial, Helvetica, sans-serif;
+        background-color: #ffff00; color: #000000;
+    }
+
+    /* DEV NOTE: GRID LINES & LABELS */
+    .grid-line {
+        pointer-events: none;
+        stroke: rgba(0, 255, 0, 0.35);
+        stroke-width: 1;
+        stroke-dasharray: 4, 4;
+    }
+    .grid-label {
+        font-family: 'Courier New', monospace;
+        font-size: 16px;
+        font-weight: bold;
+        fill: #00ff00;
+        text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+        pointer-events: none;
+        text-anchor: middle;
+        dominant-baseline: central;
+    }
+
+    /* DEV NOTE: GRID NOTIFICATION POPUP */
+    #gridNotification {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #0a3a0a;
+        color: #00ff00;
+        padding: 14px 22px;
+        border: 2px solid #00ff00;
+        border-radius: 0;
+        font-weight: bold;
+        font-family: 'Courier New', monospace;
+        font-size: 15px;
+        box-shadow: 0 0 20px #00ff00, 0 0 40px rgba(0, 255, 0, 0.3);
+        z-index: 10000;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.4s ease, transform 0.3s ease;
+        pointer-events: none;
+    }
+    #gridNotification.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* DEV NOTE: DARK MODE — FULL BLACK TERMINAL */
+    body.dark-mode {
+        background-color: #000000 !important;
+    }
+    body.dark-mode #searchBar,
+    body.dark-mode #buttonGroup,
+    body.dark-mode #tableContainer,
+    body.dark-mode .modal-content,
+    body.dark-mode #xpStatus,
+    body.dark-mode h1, body.dark-mode h2,
+    body.dark-mode .counter {
+        background-color: #000000 !important;
+        border-color: #00ff00 !important;
+    }
+    body.dark-mode input,
+    body.dark-mode select,
+    body.dark-mode textarea,
+    body.dark-mode button,
+    body.dark-mode .counter,
+    body.dark-mode h1, body.dark-mode h2 {
+        color: #00ff00 !important;
+    }
+    body.dark-mode button:hover {
+        background-color: #00ff00 !important;
+        color: #000 !important;
+        box-shadow: 0 0 10px #00ff00 !important;
+    }
+    body.dark-mode .grid-line {
+        stroke: rgba(0, 255, 0, 0.4) !important;
+    }
+
+    /* DEV NOTE: LEAFLET POPUP = ALWAYS LIGHT FALLOUT 76 STYLE */
+    .leaflet-popup-content-wrapper,
+    .leaflet-popup-tip {
+        background-color: #1a3c34 !important;
+        color: #00ff00 !important;
+        font-family: 'Courier New', monospace !important;
+        border: 2px solid #00ff00 !important;
+    }
+    body.dark-mode .leaflet-popup-content-wrapper,
+    body.dark-mode .leaflet-popup-tip {
+        background-color: #1a3c34 !important;
+        color: #00ff00 !important;
+    }
+
+    /* DEV NOTE: ZOOM BUTTONS — FALLOUT 76 STYLE + SAFE POSITION */
+    .leaflet-control-zoom {
+        top: 60px !important;
+        left: 60px !important;
+        margin: 0 !important;
+    }
+    .leaflet-control-zoom a {
+        background-color: #000000 !important;
+        color: #00ff00 !important;
+        border: 2px solid #00ff00 !important;
+        font-family: 'Courier New', monospace !important;
+        font-weight: bold !important;
+        text-shadow: 0 0 5px #00ff00 !important;
+        box-shadow: 0 0 8px #00ff00 !important;
+        border-radius: 0 !important;
+        width: 30px !important;
+        height: 30px !important;
+        line-height: 26px !important;
+        font-size: 18px !important;
+        text-align: center !important;
+    }
+    .leaflet-control-zoom a:hover {
+        background-color: #00ff00 !important;
+        color: #000000 !important;
+        box-shadow: 0 0 15px #00ff00, inset 0 0 10px #00ff00 !important;
+    }
+
+    /* DEV NOTE: MOBILE POPUP BUTTON — VISIBLE IN LIGHT & DARK MODE */
+    .leaflet-popup button {
+        background: #00ff00 !important;
+        color: #000 !important !important;
+        border: none !important;
+        border-radius: 4px !important;
+        padding: 4px 10px !important;
+        font-weight: bold !important;
+        font-size: 12px !important;
+        cursor: pointer !important;
+        font-family: 'Courier New', monospace !important;
+        min-width: 50px !important;
+        text-align: center !important;
+    }
+    .leaflet-popup button:hover {
+        background: #00cc00 !important;
+    }
+    body.dark-mode .leaflet-popup button {
+        color: #000 !important !important !important;
+        background: #00ff00 !important;
+    }
+    body.dark-mode .leaflet-popup button:hover {
+        background: #00cc00 !important;
+    }
+
+    /* DEV NOTE: MARKER GLOW ANIMATION */
+    .custom-icon.glowing {
+        box-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00 !important;
+        animation: glowPulse 1.5s infinite ease-in-out;
+    }
+    @keyframes glowPulse {
+        0%, 100% { box-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00; }
+        50% { box-shadow: 0 0 15px #00ff00, 0 0 30px #00ff00; }
+    }
+
+    /* DEV NOTE: MARKER BACKGROUND — ROUND */
+    .marker-background {
+        width: 30px; height: 30px;
+        border-radius: 50% !important;
+        display: flex; align-items: center; justify-content: center;
+        background-color: #808080;
+    }
+
+    /* DEV NOTE: CATEGORY LIST — VERTICAL + SPACED */
+    #categoryCheckboxes label {
+        display: block !important;
+        margin: 8px 0 !important;
+        padding: 6px !important;
+        background: rgba(0,0,0,0.3);
+        border-radius: 4px;
+    }
+
+    /* DEV NOTE: NUKA-COLA LINK — READABLE */
+    .small a {
+        color: #00ff00 !important;
+        text-decoration: underline;
+        font-weight: bold;
+    }
+    .small a:hover {
+        color: #00ff88 !important;
+        text-shadow: 0 0 8px #00ff00;
+    }
+
+    /* DEV NOTE: MOBILE RESPONSIVENESS */
+    @media (max-width: 768px) {
+        #map { height: 600px; max-width: 100%; }
+        .controls { flex-direction: column; align-items: center; }
+        input[type="text"], select, textarea, button {
+            width: 100%; max-width: 100%; margin: 5px 0;
+            font-size: clamp(14px, 4vw, 16px);
+            padding: clamp(10px, 2vw, 12px);
+        }
+        #combinedSearch { max-width: 100%; }
+        .modal-content { max-width: 90%; padding: 12px; font-size: clamp(14px, 3.5vw, 16px); max-height: 80vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .close { font-size: clamp(20px, 5vw, 22px); }
+        #gridNotification { bottom: 10px; right: 10px; font-size: 13px; padding: 10px 16px; box-shadow: 0 0 15px #00ff00; }
+        #tableContainer { padding: 8px; }
+        #customTableHeader > div > div,
+        #locationsTable tbody td {
+            font-size: 11px !important;
+            padding: 6px 4px !important;
+        }
+        #locationsTable tbody td:nth-child(4) {
+            font-size: 10px !important;
+            white-space: normal !important;
+            line-height: 1.3 !important;
+            word-break: break-word !important;
+        }
+        .icon-circle { width: 24px !important; height: 24px !important; font-size: 13px !important; }
+        .text-location { font-size: 9px !important; max-width: 80px !important; }
+        .leaflet-control-zoom {
+            top: 50px !important;
+            left: 50px !important;
+        }
+    }
+
+    /* DEV NOTE: NUKE CODES EASTER EGG */
+    .nuke-emoji-wrapper { text-align: center; margin: 12px 0; }
+    .nuke-emoji-btn {
+        display: inline-block;
+        padding: 14px 18px;
+        background: #001100;
+        color: #00ff00 !important;
+        font-size: 3.2em;
+        text-decoration: none;
+        border: 3px solid #00ff00;
+        border-radius: 50%;
+        box-shadow: 0 0 14px #00ff00;
+        transition: all 0.25s ease;
+        cursor: pointer;
+    }
+    .nuke-emoji-btn:hover {
+        background: #002200;
+        transform: scale(1.12) rotate(8deg);
+        box-shadow: 0 0 22px #00ff00, 0 0 34px #00ff00;
+    }
+    .nuke-emoji-btn:active { transform: scale(0.96); }
+
+    /* DEV NOTE: VOICE SEARCH COMPATIBILITY */
+    #voiceSearchBtn[disabled], #voiceSearchBtn[style*="opacity: 0.6"] {
+        pointer-events: auto !important;
+    }
+
+    /* DEV NOTE: UI LOADING FLASH PREVENTION */
+    #searchBar, #buttonGroup, #toolsToggleRow, #topBar {
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 0.4s ease;
+    }
+    .map-ready #searchBar, .map-ready #buttonGroup,
+    .map-ready #toolsToggleRow, .map-ready #topBar {
+        visibility: visible; opacity: 1;
+    }
+
+    /* DEV NOTE: CUSTOM UI LAYOUT FIXES */
+    .top-bar.hidden { display: none; }
+    .tools-toggle-row { display: flex; justify-content: center; margin: 10px 0; }
+    .button-group.hidden { display: none !important; }
+    #lockAllBtn { display: none; margin: 5px; }
+    #toggleTableBtn { display: none !important; }
+
+    /* DEV NOTE: POPUP ARROW EVEN CLOSER */
+    .leaflet-popup {
+        margin-bottom: 25px !important;
+    }
+    .leaflet-popup-tip {
+        margin-top: -6px !important;
+    }
+
+    /* DEV NOTE: POPUP BUTTON — 100% VISIBLE ON MOBILE + DARK MODE */
+    .leaflet-popup-content button,
+    .leaflet-popup-content-wrapper button {
+        all: unset !important;
+        display: inline-block !important;
+        background: #00ff00 !important;
+        color: #000 !important;
+        border: none !important;
+        border-radius: 4px !important;
+        padding: 4px 10px !important;
+        font-family: 'Courier New', monospace !important;
+        font-weight: bold !important;
+        font-size: 12px !important;
+        line-height: 1.4 !important;
+        text-align: center !important;
+        min-width: 50px !important;
+        cursor: pointer !important;
+        box-shadow: 0 0 5px rgba(0, 255, 0, 0.5) !important;
+        margin: 6px auto !important;
+    }
+    .leaflet-popup-content button:hover,
+    .leaflet-popup-content-wrapper button:hover {
+        background: #00cc00 !important;
+        box-shadow: 0 0 10px rgba(0, 255, 0, 0.8) !important;
+    }
+    body.dark-mode .leaflet-popup-content button,
+    body.dark-mode .leaflet-popup-content-wrapper button {
+        color: #000 !important;
+        background: #00ff00 !important;
+    }
+    body.dark-mode .leaflet-popup-content button:hover,
+    body.dark-mode .leaflet-popup-content-wrapper button:hover {
+        background: #00cc00 !important;
+    }
+
+    /* V38.1 — BIGGER DESCRIPTION BOX */
+    #itemDesc, #itemModal textarea {
+        height: 160px !important;
+        width: 100% !important;
+        max-width: none !important;
+        resize: none !important;
+        overflow-y: auto !important;
+        scrollbar-width: thin;
+        scrollbar-color: #00ff00 #000;
+    }
+    #itemDesc::-webkit-scrollbar, #itemModal textarea::-webkit-scrollbar {
+        width: 8px;
+    }
+    #itemDesc::-webkit-scrollbar-track, #itemModal textarea::-webkit-scrollbar-track {
+        background: #000;
+        border-left: 1px solid #00ff00;
+    }
+    #itemDesc::-webkit-scrollbar-thumb, #itemModal textarea::-webkit-scrollbar-thumb {
+        background: #00ff00;
+        border-radius: 0;
+    }
+
+    /* V38.1 — MARKER FLASH & HOVER PULSE */
+    .marker-flash {
+        animation: flashGreen 3s ease-out forwards;
+    }
+    @keyframes flashGreen {
+        0%   { box-shadow: 0 0 20px #00ff00; }
+        100% { box-shadow: 0 0 10px #00ff00; }
+    }
+    .marker-hover {
+        animation: pulseGreen 1.5s infinite ease-in-out;
+    }
+    @keyframes pulseGreen {
+        0%, 100% { filter: brightness(1); }
+        50%      { filter: brightness(1.4); }
+    }
+
+    /* V38.1 — SHARE BUBBLE */
+    .share-spot {
+        position: fixed;
+        top: 20%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #000;
+        color: #0f0;
+        padding: 20px 30px;
+        border: 3px solid #0f0;
+        box-shadow: 0 0 30px #0f0;
+        font: bold 18px monospace;
+        z-index: 99999;
+        border-radius: 10px;
+        text-align: center;
+        animation: pop 0.5s;
+        display: none;
+    }
+    @keyframes pop {
+        from { transform: translate(-50%, -20%); opacity: 0; }
+        to { transform: translateX(-50%); opacity: 1; }
+    }
+	
+	@keyframes pulse {
+    0%,100% { transform:scale(1); }
+    50% { transform:scale(1.15); }
+    }
+.leaflet-control-attribution.leaflet-control {
+    display: none;
+    }
+	#resetAppBtn {
+    color: #000 !important;
+    }
+	#confirmModalBtn,
+    #updateGotIt {
+    color: #000 !important;
+    background: #00ff00 !important;
+    }
+	.leaflet-marker-icon::before {
+    content: '';
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    border: 2px solid rgba(0, 255, 0, 0.3);
+    border-radius: 50%;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.leaflet-marker-icon:hover::before {
+    opacity: 1;
+}
+
+const nukeStyle = document.createElement('style');
+nukeStyle.textContent = `
+    @keyframes nukeFlash {
+        0% { opacity: 0; }
+        10% { opacity: 1; }
+        100% { opacity: 0; }
+    }
+    @keyframes mushroomCloud {
+        0% { font-size: 0; opacity: 0; }
+        50% { font-size: 400px; opacity: 1; }
+        100% { font-size: 600px; opacity: 0; }
+    }
+    @keyframes textAppear {
+        to { opacity: 1; }
+    }
+`;
+document.head.appendChild(nukeStyle);
+}
+@keyframes quickFlash {
+    0%   { opacity: 0; }
+    10%  { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+.nuke-symbol {
+    font-size: clamp(80px, 28vw, 300px);
+    color: #0f0;
+    animation: symbolDrop 1.2s ease-out forwards;
+    text-shadow: 0 0 60px #0f0;
+}
+
+.nuke-title {
+    font-size: clamp(32px, 8vw, 80px);
+    color: #0f0;
+    margin: 0;
+    animation: textFadeIn 1.2s forwards;
+    text-shadow: 0 0 35px #0f0;
+    letter-spacing: 6px;
+}
+
+.nuke-subtitle {
+    font-size: clamp(24px, 6vw, 60px);
+    color: #0f0;
+    margin: 0;
+    font-weight: bold;
+    animation: textFadeIn 1.2s 0.3s forwards;
+    text-shadow: 0 0 30px #0f0;
+}
+
+@keyframes symbolDrop {
+    0%   { opacity: 0; transform: translateY(-60px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes textFadeIn {
+    0%   { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+/* SOFT GLOW WHEN POPUP IS OPEN */
+.popup-glow {
+    filter: drop-shadow(0 0 12px #00ff00) brightness(1.4) !important;
+    z-index: 10000 !important;
+    animation: pulse-glow 2s infinite alternate;
+}
+
+.table-row-popup-glow {
+    background: rgba(0, 255, 0, 0.15) !important;
+    box-shadow: 0 0 12px #00ff00 !important;
+    animation: pulse-glow 2s infinite alternate;
+}
+
+@keyframes pulse-glow {
+    from { filter: drop-shadow(0 0 12px #00ff00) brightness(1.4); }
+    to { filter: drop-shadow(0 0 18px #00ff80) brightness(1.5); }
+}
+/* AUTO-COMPLETE DROPDOWN */
+#searchSuggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 300px;
+    overflow-y: auto;
+    background: #0a2a2a;
+    border: 2px solid #00ff00;
+    z-index: 10000;
+    display: none;
+    box-shadow: 0 0 15px #00ff00;
+}
+#searchSuggestions div {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #00ff22;
+    color: #00ff00;
+    font-family: 'Courier New', monospace;
+}
+#searchSuggestions div:hover {
+    background: #00ff00;
+    color: #000;
+}
+#searchSuggestions .category-match { font-weight: bold; color: #aaffaa; }
+#searchSuggestions .desc-match { opacity: 0.9; }
+    </style>
+</head>
+<body>
+    <!-- DEV NOTE: TITLE TOGGLE BUTTON — FIXED -->
+    <div id="titleToggleContainer">
+        <button id="toggleTitleBtn">-</button>
+    </div>
+    <h1 id="mainTitle">The Fallout 76 Item Finder! Quickly log items while exploring Appalachia.</h1>
+
+    <!-- DEV NOTE: MAIN MAP CONTAINER -->
+    <div id="map"></div>
+
+    <!-- DEV NOTE: SEARCH BAR — NOW UNDER MAP -->
+    <div style="position:relative; display:block; margin:15px auto; max-width:600px;">
+    <div id="searchBar" style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center;">
+        <input type="text" id="combinedSearch" placeholder="desc/cate/grid.." style="flex:1; min-width:200px; padding:8px; background:#000; color:#0f0; border:1px solid #0f0; border-radius:4px;">
+        <button id="clearSearchBtn" style="background:none; border:none; color:#00ff00; font-size:18px; cursor:pointer; display:none; padding:0 8px;">X</button>
+        <select id="categoryFilter" style="padding:8px; background:#000; color:#0f0; border:1px solid #0f0; border-radius:4px;"><option value="">All Categories</option></select>
+        <button id="toggleCategoryModalBtn" style="padding:8px 12px; background:#1a3c34; color:#0f0; border:1px solid #0f0; border-radius:4px;">Toggle Categories</button>
+    </div>
+
+    <!-- AUTOCOMPLETE DROPDOWN — NOW PERFECTLY UNDER THE BAR -->
+    <div id="searchSuggestions"></div>
+</div>
+
+    <!-- DEV NOTE: TOOLS TOGGLE — OUTSIDE TOOLS PANEL -->
+    <div id="toolsToggleRow">
+        <button id="toggleButtonGroup">Hide Tools</button>
+    </div>
+
+    <!-- DEV NOTE: TOOLS PANEL — HIDDEN BY DEFAULT -->
+    <div id="buttonGroup" class="hidden">
+        <button id="voiceSearchBtn">Voice Search</button>
+        <button id="toggleClusterBtn">Clustering: On</button>
+        <button id="toggleMapBtn">Show No-Name Map</button>
+        <button id="toggleGridBtn">Grid: Off</button>
+        <button id="howToUseBtn">How to Use</button>
+        <button id="nukeCodesBtn">Nuke Codes</button>
+        <button id="toggleSoundsBtn">Sounds: On</button>
+        <button id="exportJsonBtn">Export Markers</button>
+        <button id="importBtn">Import Markers</button>
+        <button id="downloadCommunityBtn">Update Community Map</button>
+        <button id="undoImportBtn" style="display:none;">UNDO LAST LINK</button>
+        <button id="saveMapJpegBtn">Save Map as JPEG</button>
+        <button id="toggleDarkModeBtn">Dark Mode: Off</button>
+        <button id="lockAllBtn">Lock All</button>
+    </div>
+
+    <!-- DEV NOTE: XP PROGRESS BAR -->
+    <div id="xpStatus" style="text-align:center; margin:10px; color:#0f0; font-weight:bold;">
+        Explorer Level: <span id="levelSpan">1</span><br>
+        XP: <progress id="xpProgress" value="0" max="1000" style="width:200px;"></progress> <span id="xpText">0 / 1000</span>
+    </div>
+
+    <!-- DEV NOTE: CONTENT INVENTORY TABLE -->
+    <h2 style="text-align:center; margin:15px 0 5px;">Content Inventory</h2>
+    <p id="counter" class="counter"></p>
+
+    <div id="tableContainer" style="margin:0 auto 20px; max-width:90%; background:rgba(0,0,0,0.7); border:1px solid #0f0; border-radius:8px; padding:10px;">
+        <div class="pagination">
+            <button id="prevPageBtn" disabled>Prev</button>
+            <span id="pageInfo">Page 1 of 1</span>
+            <button id="nextPageBtn" disabled>Next</button>
+        </div>
+        <table id="locationsTable" style="width:100%; border-collapse:collapse; color:#0f0;">
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- DEV NOTE: GRID NOTIFICATION POPUP -->
+    <div id="gridNotification"></div>
+
+    <!-- DEV NOTE: ITEM LOGGING MODAL -->
+    <div id="itemModal" class="modal">
+        <div class="modal-content">
+            <span class="close">X</span>
+            <h2 id="modalTitle">Log Item <span id="modalLockToggle" style="font-size:22px; cursor:pointer; margin-left:10px;">Unlock</span></h2>
+            <label>Category:</label>
+            <select id="itemCategory"></select>
+            <label>Description:</label>
+            <textarea id="itemDesc" placeholder="Enter item and location details or leave blank auto puts gid location"></textarea>
+            <div style="margin-top:12px; text-align:center;">
+                <button id="saveItemBtn">Save</button>
+                <button id="shareItemBtn">Share Link</button>
+                <button id="exportOneBtn" style="display:none;">Share This Marker</button>
+                <button id="deleteItemBtn" style="display:none;">Delete</button>
+                <button id="undoItemBtn" style="display:none;">Undo Delete</button>
+                <button id="duplicateItemBtn" style="display:none;">Duplicate</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DEV NOTE: HOW TO USE MODAL -->
+    <div id="instructionsModal" class="modal">
+        <div class="modal-content">
+            <span class="close">X</span>
+            <h1>Fallout 76 Item Finder Info</h1>
+            <p><strong>Double-Left-Click</strong> the map (or <strong>Double-Tap</strong> on mobile) to log a new permanent marker.</p>
+    <p><strong>Right-Click</strong> the map (or <strong>Long-Press</strong> on mobile) to open the <strong>Postcard</strong> menu → type a message → click <strong>Copy Link</strong> to share a temporary postcard (expires in 5 minutes).</p>
+    <p>New markers are automatically <strong>LOCKED</strong> and <strong>Glow Green for 2 Minutes</strong>.</p>
+    <p><strong>Unlock</strong> a marker in its popup or edit modal to allow dragging.</p>
+    <p><strong>Drag any unlocked marker</strong> — drop to auto-save new position (it will glow & lock again for safety).</p>
+    <p><strong>Left-Click / Single-Tap</strong> any marker → opens <strong>Edit Item</strong> menu.</p>
+    <p><strong>Left-Click</strong> a row in the Content Inventory → instantly zooms to that marker.</p>
+    <p><strong>Right-Click</strong> a row → opens Edit modal + zooms.</p>
+    <p>Use the <strong>Search Bar</strong> to filter by description, category, or grid (e.g. C4).</p>
+    <p><strong>Toggle Map</strong> button switches between named and clean map.</p>
+    <p>Click anywhere on the map → shows current <strong>grid coordinate</strong> in a green popup.</p>
+    <p><strong>Grid button</strong> toggles the 10×10 grid overlay.</p>
+    <p>Create and manage <strong>Custom Categories</strong> in the Toggle Categories menu.</p>
+    <p><strong>Export / Import</strong> your markers — duplicates are skipped automatically.</p>
+    <p><strong>Save Map As JPEG</strong> captures your current view with all markers.</p>
+    <p>Earn <strong>XP</strong> for every marker you place — level up like in the game!</p>
+    <p>Lose <strong>XP</strong> when deleting markers.</p>
+    <p>Works fully <strong>Offline</strong> after first load (perfect for no-signal vaults).</p>
+    <p>Hit <strong>Download Community Map</strong> occasionally to get the latest community updates.</p>
+    <p style="margin-top:20px;"><strong>Enjoy Appalachia — & Happy Exploring!</strong></p>
+            <div style="text-align:center; margin:15px 0;">
+                <button id="resetAppBtn" class="reset-btn">Reset App (for debugging only)</button>
+            </div>
+            <p class="small"><br>❤️ the Item Finder? Support MrCrazy with a <a href="https://buymeacoffee.com/mrcrazy" target="_blank">Nuka-Cola</a>!</p>
+            <p class="small" id="appVersionText">The Fallout 76 Item Finder Map Version v76.1.0 Made By MrCrazy</p>
+        </div>
+    </div>
+
+    <!-- DEV NOTE: NUKE CODES MODAL -->
+    <div id="nukeCodesModal" class="modal">
+        <div class="modal-content">
+            <span class="close">X</span>
+            <h1>Nuke Codes</h1>
+            <div class="nuke-emoji-wrapper">
+                <a href="https://www.falloutbuilds.com/fo76/nuke-codes/" target="_blank" rel="noopener noreferrer" class="nuke-emoji-btn" title="Launch codes – click the rocket">🚀</a>
+            </div>
+            <p style="text-align:center; margin-top:20px;">
+                <strong>Weekly launch codes — always up to date!</strong>
+            </p>
+        </div>
+    </div>
+
+    <!-- DEV NOTE: CATEGORY TOGGLE MODAL -->
+    <div id="categoryToggleModal" class="modal">
+        <div class="modal-content">
+            <span class="close">X</span>
+            <h2>Toggle Categories</h2>
+            <div style="margin-bottom:10px; text-align:center;">
+                <button id="selectAllBtn">Select All</button>
+                <button id="deselectAllBtn">Deselect All</button>
+                <button id="createCategoryBtn">Create Category</button>
+                <button id="deleteCategoryBtn">Delete Category</button>
+            </div>
+            <div id="categoryCheckboxes"></div>
+            <button id="closeCategoryToggleBtn">Close</button>
+        </div>
+    </div>
+
+    <!-- DEV NOTE: CREATE CATEGORY MODAL -->
+    <div id="createCategoryModal" class="modal">
+        <div class="modal-content">
+            <span class="close">X</span>
+            <h2>Create New Category</h2>
+            <label style="display:block; margin:10px 0 4px;">Category Name:</label>
+            <input type="text" id="newCategoryName" placeholder="Enter category name" style="width:100%; padding:8px; margin-bottom:10px;">
+            <label style="display:block; margin:10px 0 4px;">Emoji (only one):</label>
+            <input type="text" id="newCategoryEmoji" placeholder="Paste emoji" maxlength="2" inputmode="text" style="width:100%; padding:8px; margin-bottom:10px;">
+            <p class="small">Paste one emoji. Only emojis allowed.</p>
+            <div style="margin-top:12px; text-align:center;">
+                <button id="saveCategoryBtn">Save Category</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DEV NOTE: DELETE CATEGORY MODAL -->
+    <div id="deleteCategoryModal" class="modal">
+        <div class="modal-content">
+            <span class="close">X</span>
+            <h2>Delete Category</h2>
+            <label>Select Category to Delete:</label>
+            <select id="deleteCategorySelect">
+                <option value="">Select a custom category</option>
+            </select>
+            <p class="small">Deleting a category will reassign all its markers to "misc".</p>
+            <div style="margin-top:12px; text-align:center;">
+                <button id="confirmDeleteCategoryBtn">Delete Category</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+	// ─────── AUTO-RECOVERY FOR COMPLETELY BROKEN PWAs (Edge, old Chrome, etc.) ───────
+if ('serviceWorker' in navigator) {
+    // If the page loads but the map is empty OR we detect old version stuck
+    setTimeout(async () => {
+        const storedVersion = localStorage.getItem('fo76_map_version');
+        if (!storedVersion || storedVersion < '1.3') {
+            console.log('Old or broken install detected — auto-fixing...');
+            // Kill old service workers
+            const regs = await navigator.serviceWorker.getRegistrations();
+            for (const reg of regs) await reg.unregister();
+            // Clear all caches
+            const keys = await caches.keys();
+            for (const key of keys) await caches.delete(key);
+            // Force full reload with fresh everything
+            location.replace(location.href.split('?')[0] + '?recovered=' + Date.now());
+        }
+    }, 3000); // wait 3 seconds to see if normal load works
+}
+document.addEventListener('DOMContentLoaded', function() {
+    (function() {
+        const STORAGE_KEY = 'fo76_locations';
+        const CUSTOM_CATEGORIES_KEY = '76_custom_categories';
+        const MAP_VERSION_KEY = 'fo76_map_version';
+        const CURRENT_UPDATE_VERSION = 'v76.1.0';
+        const APP_VERSION = "v76.1.0";
+        let soundsEnabled = localStorage.getItem('soundsEnabled') !== 'false';
+        const baseSounds = {
+            click: new Audio("https://rpg.hamsterrepublic.com/wiki-images/8/84/Select8-Bit.ogg"),
+            type: new Audio("https://rpg.hamsterrepublic.com/wiki-images/3/3a/Thip.ogg"),
+            error: new Audio("https://rpg.hamsterrepublic.com/wiki-images/1/12/Ping-da-ding-ding-ding.ogg"),
+            duplicate: new Audio("https://rpg.hamsterrepublic.com/wiki-images/0/0b/Robot_2.ogg"),
+            saving: new Audio("https://rpg.hamsterrepublic.com/wiki-images/9/9c/Robot_1.ogg"),
+            undo: new Audio("https://rpg.hamsterrepublic.com/wiki-images/d/d7/Oddbounce.ogg"),
+            delete: new Audio("https://rpg.hamsterrepublic.com/wiki-images/0/04/TextboxBloop8-Bit.ogg"),
+            levelUp: new Audio("https://rpg.hamsterrepublic.com/wiki-images/d/d5/Menu8-Bit.ogg"),
+            modalClose: new Audio("https://rpg.hamsterrepublic.com/wiki-images/8/8e/Confirm8-Bit.ogg"),
+            selectcategory: new Audio("https://rpg.hamsterrepublic.com/wiki-images/a/a8/Rolling_Switch.ogg"),
+            postcard: new Audio("https://rpg.hamsterrepublic.com/wiki-images/0/0b/Robot_2.ogg"),
+            dust: new Audio("https://rpg.hamsterrepublic.com/wiki-images/0/04/TextboxBloop8-Bit.ogg")
+        };
+        Object.values(baseSounds).forEach(s => { s.volume = 0.15; });
+        function playSound(type) {
+            if (soundsEnabled && baseSounds[type]) {
+                baseSounds[type].currentTime = 0;
+                baseSounds[type].play().catch(() => {});
+            }
+        }
+        function generateUniqueId() { return 'id-' + crypto.randomUUID(); }
+        function generateCid(loc) {
+            const desc = (loc.desc || '').toString().toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '_');
+            const lat = Math.round(loc.lat);
+            const lng = Math.round(loc.lng);
+            return `${loc.category}_${desc}_${lat}_${lng}`;
+        }
+        let locations = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        locations.forEach(loc => {
+            if (!loc.id) loc.id = generateUniqueId();
+            if (!loc.cid && loc.category && loc.desc && loc.lat && loc.lng) loc.cid = generateCid(loc);
+            if (loc.locked === undefined) loc.locked = false;
+            if (loc.isTemp === undefined) loc.isTemp = false;
+            if (loc.postcardExpire === undefined && loc.isTemp) loc.postcardExpire = Date.now() + 300000;
+            if (loc.isPostcard === undefined) loc.isPostcard = loc.isTemp;
+            if (loc.startTime === undefined) loc.startTime = loc.postcardExpire - 300000;
+            if (loc.keepBtnBound === undefined) loc.keepBtnBound = false;
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(locations));
+        let postcardTicker = null;
+        function startPostcardTicker() {
+            if (postcardTicker) return;
+            postcardTicker = setInterval(() => {
+                const now = Date.now();
+                const postcards = locations.filter(l => l.isPostcard);
+                if (!postcards.length) { clearInterval(postcardTicker); postcardTicker = null; return; }
+                postcards.forEach(loc => {
+                    const start = loc.startTime || (loc.postcardExpire ? (loc.postcardExpire - 300000) : now);
+                    const timeLeft = Math.max(0, 300000 - (now - start));
+                    const timerEl = document.getElementById(`postcardTimer_${loc.id}`);
+                    if (timerEl) {
+                        const mins = Math.floor(timeLeft / 60000);
+                        const secs = Math.floor((timeLeft % 60000) / 1000).toString().padStart(2, '0');
+                        timerEl.textContent = `${mins}:${secs}`;
+                    }
+                    if (timeLeft <= 0) {
+                        if (timerEl) timerEl.textContent = '0:00';
+                        setTimeout(() => dustPostcard(loc.id), 300);
+                    }
+                });
+            }, 1000);
+        }
+        function stopPostcardTicker() {
+            if (postcardTicker) { clearInterval(postcardTicker); postcardTicker = null; }
+        }
+        let customCategories = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_KEY)) || {};
+        let communityVersion = "1.0";  // default fallback only
+function getCurrentCommunityVersion() {
+    return localStorage.getItem(MAP_VERSION_KEY) || "1.0";
+}
+communityVersion = getCurrentCommunityVersion();  // set it correctly on load
+        const defaultCategoryIcons = {
+        'weapons': '🔫', 'armor': '🛡️', 'aid': '💉', 'food/drink': '🍽️', 'ammunition': '💥',
+        'apparel': '👕', 'plans': '📜', 'junk': '🗑️', 'holotapes': '📀', 'misc': '📝',
+        'plants': '🌿', 'eggs': '🥚', 'creatures': '🐺', 'vendors': '💰', 'exchanges': '⚖️',
+        'vaults': '⚙️', 'power armor': '👨‍🚀', 'fusion core': '🔋', 'nuke drop zones': '☢️',
+        'nuke silos': '🚀', 'magazines': '📚', 'bobbleheads': '🎎', 'safe locations': '🗄️',
+        'terminal locations': '🖥️', 'treasure maps': '🗺️', 'resource deposits': '⛏️',
+        'fishing locations': '🎣', 'workshops': '🔧', 'train stations': '🚂', 'town locations': '🏫',
+        'event locations': '🎉', 'named locations': '🚩', 'regions': '📍'
+        };
+        let categoryIcons = { ...defaultCategoryIcons, ...customCategories };
+        const defaultCategoryColors = {
+            'weapons': '#ff4444', 'armor': '#4682b4', 'aid': '#32cd32', 'food/drink': '#adff2f',
+            'ammunition': '#ff8c00', 'apparel': '#dda0dd', 'plans': '#a0522d', 'junk': '#808080',
+            'holotapes': '#f0e68c', 'misc': '#f0e68c', 'plants': '#228b22', 'eggs': '#f5f5dc',
+            'creatures': '#8b0000', 'vendors': '#ffd700', 'exchanges': '#20b2aa', 'vaults': '#4682b4',
+            'power armor': '#b22222', 'fusion core': '#ff4500', 'nuke drop zones': '#ff0000',
+            'nuke silos': '#dc143c', 'magazines': '#ff69b4', 'bobbleheads': '#00b7eb',
+            'treasure maps': '#d2b48c', 'resource deposits': '#696969', 'fishing locations': '#1e90ff',
+            'workshops': '#b8860b', 'train stations': '#a9a9a9', 'town locations': '#228b22',
+            'regions': '#00ff00', 'named locations': '#ffffff'
+        };
+        let categoryColors = { ...defaultCategoryColors };
+        const map = L.map('map', {
+            crs: L.CRS.Simple,
+            minZoom: -3,
+            maxZoom: 6,
+            zoomControl: false,
+            zoomAnimation: true,
+            fadeAnimation: true,
+            markerZoomAnimation: true
+        });
+        const imageBounds = [[0, 0], [4096, 4096]];
+        const mapUrls = {
+            named: 'https://i.postimg.cc/HpqMVWjB/Mappalachia-Map-of-Appalachia.jpg',
+            noName: 'https://i.postimg.cc/y6W7JMKB/Mappalachia-Map-of-Appalachia-no-name.jpg'
+        };
+        let currentMap = localStorage.getItem('currentMap') || 'named';
+        let imageOverlay = L.imageOverlay(mapUrls[currentMap], imageBounds).addTo(map);
+        map.fitBounds(imageBounds);
+        L.control.zoom({ position: 'topleft' }).addTo(map);
+        const clusteredMarkers = L.markerClusterGroup({ maxClusterRadius: 30, disableClusteringAtZoom: 2, animate: true, spiderfyOnMaxZoom: true });
+        const nonClusteredMarkers = L.layerGroup();
+        map.addLayer(clusteredMarkers);
+        map.addLayer(nonClusteredMarkers);
+        let lastDeleted = null;
+        let currentIndex = -1;
+        let tempLatLng = { lat: 0, lng: 0 };
+        let clusteringEnabled = localStorage.getItem('clusteringEnabled') !== 'false';
+        let gridEnabled = localStorage.getItem('gridEnabled') === 'true';
+        let activeCategories = new Set(
+            localStorage.getItem('activeCategories')
+                ? JSON.parse(localStorage.getItem('activeCategories'))
+                : Object.keys(defaultCategoryIcons)
+        );
+        let level = parseInt(localStorage.getItem('fo76_level')) || 1;
+        let xp = parseInt(localStorage.getItem('fo76_xp')) || 0;
+        const xpPerLevel = 1000;
+        const xpPerMarker = 100;
+        const pageSize = 100;
+        let tablePage = parseInt(localStorage.getItem('tablePage')) || 1;
+        let currentSearch = localStorage.getItem('currentSearch') || '';
+        let currentCategoryFilter = localStorage.getItem('currentCategoryFilter') || '';
+        let darkMode = localStorage.getItem('darkMode') === 'true';
+        let gridLayer = L.layerGroup().addTo(map);
+        let isDraggingAny = false;
+		let isDraggingAnyMarker = false;
+        let titleVisible = localStorage.getItem('titleVisible') !== 'false';
+        let toolsVisible = localStorage.getItem('toolsVisible') !== 'false';
+        let currentPostcardLatLng = null;
+        let lastMovedMarker = null;
+        let lastLevel = level;
+		
+let currentPopupMarkerId = null;
+
+map.on('popupopen', e => {
+    const marker = e.popup._source;
+    if (!marker || !marker.options.id) return;
+
+    if (marker._icon) {
+        marker._icon.classList.add('popup-glow');
+    }
+
+    currentPopupMarkerId = marker.options.id;
+
+    document.querySelectorAll('#locationsTable tbody tr').forEach(row => {
+        row.classList.remove('table-row-popup-glow');
+        const onclick = row.getAttribute('onclick') || '';
+        if (onclick.includes(`'${marker.options.id}'`) || onclick.includes(`"${marker.options.id}"`)) {
+            row.classList.add('table-row-popup-glow');
+        }
+    });
+});
+
+map.on('popupclose', () => {
+    if (currentPopupMarkerId) {
+        const marker = [...clusteredMarkers.getLayers(), ...nonClusteredMarkers.getLayers()]
+            .find(m => m.options.id === currentPopupMarkerId);
+        if (marker && marker._icon) {
+            marker._icon.classList.remove('popup-glow');
+        }
+    }
+
+    document.querySelectorAll('.table-row-popup-glow').forEach(row => {
+        row.classList.remove('table-row-popup-glow');
+    });
+
+    currentPopupMarkerId = null;
+});
+
+        const itemModal = document.getElementById('itemModal');
+        const deleteBtn = document.getElementById('deleteItemBtn');
+        const undoBtn = document.getElementById('undoItemBtn');
+        const duplicateBtn = document.getElementById('duplicateItemBtn');
+        const shareItemBtn = document.getElementById('shareItemBtn');
+        const exportOneBtn = document.getElementById('exportOneBtn');
+        const modalTitle = document.getElementById('modalTitle');
+        const itemCategorySelect = document.getElementById('itemCategory');
+        const itemDescInput = document.getElementById('itemDesc');
+        const toggleSoundsBtn = document.getElementById('toggleSoundsBtn');
+        const toggleClusterBtn = document.getElementById('toggleClusterBtn');
+        const toggleMapBtn = document.getElementById('toggleMapBtn');
+        const toggleGridBtn = document.getElementById('toggleGridBtn');
+        const combinedSearch = document.getElementById('combinedSearch');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const toggleCategoryModalBtn = document.getElementById('toggleCategoryModalBtn');
+        const levelSpan = document.getElementById('levelSpan');
+        const xpProgress = document.getElementById('xpProgress');
+        const xpText = document.getElementById('xpText');
+        const prevPageBtn = document.getElementById('prevPageBtn');
+        const nextPageBtn = document.getElementById('nextPageBtn');
+        const pageInfo = document.getElementById('pageInfo');
+        const counter = document.getElementById('counter');
+        const exportBtn = document.getElementById('exportJsonBtn');
+        const importBtn = document.getElementById('importBtn');
+        const downloadCommunityBtn = document.getElementById('downloadCommunityBtn');
+        const saveJpegBtn = document.getElementById('saveMapJpegBtn');
+        const resetAppBtn = document.getElementById('resetAppBtn');
+        const toggleDarkModeBtn = document.getElementById('toggleDarkModeBtn');
+        const voiceSearchBtn = document.getElementById('voiceSearchBtn');
+        const lockAllBtn = document.getElementById('lockAllBtn');
+        const mainTitle = document.getElementById('mainTitle');
+        const titleToggleBtn = document.getElementById('toggleTitleBtn');
+        const toolsToggleBtn = document.getElementById('toggleButtonGroup');
+        const buttonGroup = document.getElementById('buttonGroup');
+
+        const searchRow = document.createElement('div');
+        searchRow.style.cssText = `
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin: 12px 0;
+            flex-wrap: wrap;
+            width: 100%;
+        `;
+        const clearBtn = document.createElement('span');
+        clearBtn.textContent = '×';
+        clearBtn.style.cssText = 'cursor:pointer;font-size:26px;color:#0f0;display:none;user-select:none;margin-left:-38px;z-index:2;';
+        combinedSearch.parentNode.insertBefore(searchRow, combinedSearch);
+        searchRow.appendChild(combinedSearch);
+        searchRow.appendChild(clearBtn);
+        searchRow.appendChild(categoryFilter);
+        searchRow.appendChild(toggleCategoryModalBtn);
+        combinedSearch.style.cssText += 'width:260px;height:42px;font-size:16px;padding-right:40px;box-sizing:border-box;';
+        categoryFilter.style.cssText += 'height:42px;font-size:16px;min-width:160px;';
+        toggleCategoryModalBtn.style.cssText += 'height:42px;min-width:150px;padding:0 8px;font 14px;white-space:nowrap;';
+        clearBtn.onclick = () => {
+            combinedSearch.value = '';
+            combinedSearch.focus();
+            refreshTable();
+            clearBtn.style.display = 'none';
+            playSound('click');
+        };
+        combinedSearch.addEventListener('input', () => {
+            const val = combinedSearch.value.trim();
+            clearBtn.style.display = val ? 'block' : 'none';
+            playSound('type');
+            const gridMatch = val.toUpperCase().match(/^([A-J])\s*([1-9]|10)$/);
+            if (gridMatch) {
+                const gridStr = `${gridMatch[1]}${gridMatch[2]}`;
+                const center = gridToCenter(gridStr);
+                if (center) {
+                    safeFlyTo(center.lat, center.lng, 4);
+                    showGridNotification(gridStr);
+                    const inGrid = locations.filter(l => getGridFromLatLng(l.lat, l.lng) === gridStr);
+                    if (inGrid.length) {
+                        setTimeout(() => {
+                            const m = [...clusteredMarkers.getLayers(), ...nonClusteredMarkers.getLayers()].find(m => inGrid.some(ig => ig.id === m.options.id));
+                            if (m) m.openPopup();
+                        }, 800);
+                    }
+                }
+            }
+            const terms = val.toLowerCase().split(/\s+/).filter(t => t.length > 1);
+            const found = terms.length > 0 && locations.some(l => {
+                const text = (l.desc + ' ' + l.category).toLowerCase();
+                return terms.every(term => text.includes(term));
+            });
+            if (found && val) {
+                showTempMessage('Item Found! Check The Content Inventory!', 3000);
+                combinedSearch.style.boxShadow = '0 0 8px #0f0';
+                setTimeout(() => combinedSearch.style.boxShadow = '', 1500);
+            }
+            refreshTable(val, categoryFilter.value);
+            loadData(combinedSearch.value, categoryFilter.value);
+            playSound('selectcategory');
+        });
+        categoryFilter.onchange = () => {
+            loadData(combinedSearch.value, categoryFilter.value);
+            playSound('selectcategory');
+        };
+
+        function updateLockAllBtn() {
+            const hasUnlocked = locations.some(l => !l.locked && !l.isPostcard);
+            if (lockAllBtn) {
+                lockAllBtn.style.display = hasUnlocked ? 'inline-block' : 'none';
+                lockAllBtn.textContent = hasUnlocked ? 'LOCK ALL' : 'UNLOCK ALL';
+            }
+        }
+        if (lockAllBtn) {
+            lockAllBtn.onclick = () => {
+                const hasUnlocked = locations.some(l => !l.locked && !l.isPostcard);
+                locations.forEach(l => { if (!l.isPostcard) l.locked = hasUnlocked; });
+                saveLocations();
+                forceReload();
+                showTempMessage(hasUnlocked ? 'ALL MARKERS LOCKED!' : 'ALL MARKERS UNLOCKED!', 4000);
+                playSound('click');
+            };
+        }
+
+        mainTitle.style.display = titleVisible ? 'block' : 'none';
+        titleToggleBtn.textContent = titleVisible ? '-' : '+';
+        titleToggleBtn.onclick = () => {
+            titleVisible = !titleVisible;
+            mainTitle.style.display = titleVisible ? 'block' : 'none';
+            titleToggleBtn.textContent = titleVisible ? '-' : '+';
+            localStorage.setItem('titleVisible', titleVisible);
+            playSound('click');
+        };
+        buttonGroup.classList.toggle('hidden', !toolsVisible);
+        toolsToggleBtn.textContent = toolsVisible ? 'Hide Tools' : 'Show Tools';
+        toolsToggleBtn.onclick = () => {
+            toolsVisible = !toolsVisible;
+            buttonGroup.classList.toggle('hidden', !toolsVisible);
+            toolsToggleBtn.textContent = toolsVisible ? 'Hide Tools' : 'Show Tools';
+            localStorage.setItem('toolsVisible', toolsVisible);
+            playSound('click');
+        };
+
+        shareItemBtn.textContent = 'Share View';
+        shareItemBtn.onclick = () => {
+            const loc = locations[currentIndex];
+            if (!loc) return;
+            const lat = Math.round(loc.lat), lng = Math.round(loc.lng);
+            const url = `${location.origin}${location.pathname}?lat=${lat}&lng=${lng}`;
+            navigator.clipboard.writeText(url).then(() => {
+                showTempMessage('View link copied!', 3000);
+                playSound('click');
+            });
+        };
+
+        window.toggleLockFromPopup = i => {
+            const loc = locations[i];
+            if (loc.isPostcard) return;
+            loc.locked = !loc.locked;
+            loc.addedTime = Date.now();
+            saveLocations();
+            forceReload();
+            map.closePopup();
+            showTempMessage(loc.locked ? '🔐':'🔓', 3000);
+            playSound('click');
+        };
+
+        duplicateBtn.onclick = () => {
+            if (currentIndex < 0) return;
+            const loc = locations[currentIndex];
+            if (loc.locked) {
+                showTempMessage('Unlock first!', 4000);
+                playSound('error');
+                return;
+            }
+            const o = 40 / Math.pow(2, map.getZoom());
+            const a = (locations.filter(l => l.cid === loc.cid).length) * 60 * Math.PI / 180;
+            const newLat = loc.lat + o * Math.sin(a);
+            const newLng = loc.lng + o * Math.cos(a);
+            const newDesc = updateDescWithGrid(loc.desc, newLat, newLng);
+            const dup = createNewLocation(newLat, newLng, loc.category, newDesc);
+            dup.locked = false;
+            locations.push(dup);
+            recalculateXP();
+            saveLocations();
+            forceReload();
+            closeModal(itemModal);
+            safeFlyTo(newLat, newLng);
+            showTempMessage('Duplicated!', 3000);
+            playSound('duplicate');
+        };
+
+        function drawGrid() {
+            gridLayer.clearLayers();
+            if (!gridEnabled) return;
+            const gridSize = 10;
+            const cellSize = 4096 / gridSize;
+            for (let i = 0; i <= gridSize; i++) {
+                const x = i * cellSize;
+                L.polyline([[0, x], [4096, x]], { className: 'grid-line', color: '#0f0', weight: 1, opacity: 0.5 }).addTo(gridLayer);
+                const y = i * cellSize;
+                L.polyline([[y, 0], [y, 4096]], { className: 'grid-line', color: '#0f0', weight: 1, opacity: 0.5 }).addTo(gridLayer);
+            }
+            const letters = 'ABCDEFGHIJ'.split('');
+            for (let row = 0; row < gridSize; row++) {
+                for (let col = 0; col < gridSize; col++) {
+                    const centerX = col * cellSize + cellSize / 2;
+                    const centerY = row * cellSize + cellSize / 2;
+                    const label = `${letters[col]}${row + 1}`;
+                    L.marker([centerY, centerX], {
+                        icon: L.divIcon({ className: 'grid-label', html: label, iconSize: [30, 30], iconAnchor: [15, 15] })
+                    }).addTo(gridLayer);
+                }
+            }
+        }
+
+                function getGridFromLatLng(lat, lng) {
+            const gridSize = 10;
+            const cellSize = 4096 / gridSize;
+            const col = Math.floor(lng / cellSize);
+            const row = Math.floor(lat / cellSize);
+            const letters = 'ABCDEFGHIJ';
+            if (col >= 0 && col < letters.length && row >= 0 && row < gridSize) {
+                return `${letters[col]}${row + 1}`;
+            }
+            return null;
+        }
+
+        function gridToCenter(grid) {
+            const letters = 'ABCDEFGHIJ';
+            const match = grid.toUpperCase().match(/^([A-J])([1-9]|10)$/);
+            if (!match) return null;
+            const col = letters.indexOf(match[1]);
+            const row = parseInt(match[2], 10) - 1;
+            const gridSize = 10;
+            const cellSize = 4096 / gridSize;
+            const centerX = col * cellSize + cellSize / 2;
+            const centerY = row * cellSize + cellSize / 2;
+            return { lat: centerY, lng: centerX };
+        }
+
+        function showGridNotification(grid) {
+            let notif = document.getElementById('gridNotification');
+            if (!notif) {
+                notif = document.createElement('div');
+                notif.id = 'gridNotification';
+                notif.style.position = 'fixed';
+                notif.style.bottom = '20px';
+                notif.style.right = '20px';
+                notif.style.background = 'rgba(0,0,0,0.8)';
+                notif.style.color = '#0f0';
+                notif.style.padding = '10px 15px';
+                notif.style.border = '1px solid #0f0';
+                notif.style.borderRadius = '6px';
+                notif.style.font = 'bold 16px monospace';
+                notif.style.zIndex = '10000';
+                notif.style.opacity = '0';
+                notif.style.transition = 'opacity 0.5s';
+                document.body.appendChild(notif);
+            }
+            notif.textContent = `Grid: ${grid}`;
+            notif.style.opacity = '1';
+            clearTimeout(notif.hideTimeout);
+            notif.hideTimeout = setTimeout(() => { notif.style.opacity = '0'; }, 2000);
+        }
+
+        function isValidEmoji(str) {
+            if (!str || str.length === 0) return false;
+            const emojiRegex = /^[\p{Emoji}]+$/u;
+            return emojiRegex.test(str.trim());
+        }
+
+        function updateDescWithGrid(desc, lat, lng) {
+            const grid = getGridFromLatLng(lat, lng);
+            const x = Math.round(lng);
+            const y = Math.round(lat);
+            const newCoords = grid ? `Grid ${grid} (X: ${x}, Y: ${y})` : `X: ${x}, Y: ${y}`;
+            const regex = /(Grid [A-J]\d+ \(X: \d+, Y: \d+\))|(X: \d+, Y: \d+)/;
+            if (regex.test(desc)) {
+                return desc.replace(regex, newCoords);
+            }
+            return desc + '\n' + newCoords;
+        }
+
+        function createNewLocation(lat, lng, category, desc, isTemp = false) {
+            const now = Date.now();
+            return {
+                id: generateUniqueId(),
+                lat, lng,
+                category, desc,
+                icon: isTemp ? '📬' : (categoryIcons[category] || '📝'),
+                addedTime: isTemp ? null : now,
+                userEdited: !isTemp,
+                locked: !isTemp,
+                cid: generateCid({ category, desc, lat, lng }),
+                isTemp: isTemp,
+                isPostcard: isTemp,
+                postcardExpire: isTemp ? now + 300000 : null,
+                startTime: isTemp ? now : null,
+                popupTimer: null,
+                keepBtnBound: false
+            };
+        }
+
+        const postcardModal = document.createElement('div');
+        postcardModal.className = 'modal';
+        postcardModal.id = 'postcardModal';
+        postcardModal.innerHTML = `
+            <div class="modal-content">
+                <span class="close">X</span>
+                <h2>Send Postcard</h2>
+                <label>Message:</label>
+                <textarea id="postcardMessage" placeholder="Type your note..."></textarea>
+                <div style="margin-top:12px; text-align:center;">
+                    <button id="createPostcardBtn">Copy Link</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(postcardModal);
+        postcardModal.querySelector('.close').onclick = () => postcardModal.style.display = 'none';
+
+        map.on('contextmenu', e => {
+            L.DomEvent.preventDefault(e);
+            const clickedOnMarker = [...clusteredMarkers.getLayers(), ...nonClusteredMarkers.getLayers()]
+                .some(m => m.getLatLng().distanceTo(e.latlng) < 30);
+            if (clickedOnMarker) return;
+            currentPostcardLatLng = e.latlng;
+            postcardModal.style.display = 'block';
+            document.getElementById('postcardMessage')?.focus();
+            playSound('click');
+        });
+
+        document.getElementById('createPostcardBtn')?.addEventListener('click', () => {
+            const msg = document.getElementById('postcardMessage')?.value.trim() || 'Check this spot!';
+            if (!currentPostcardLatLng) return;
+            const loc = createNewLocation(currentPostcardLatLng.lat, currentPostcardLatLng.lng, 'misc', msg, true);
+            locations.push(loc);
+            saveLocations();
+            forceReload();
+            postcardModal.style.display = 'none';
+            const encodedMsg = encodeURIComponent(msg);
+            const url = `${window.location.origin}${window.location.pathname}?postcard=${loc.id}&lat=${Math.round(loc.lat)}&lng=${Math.round(loc.lng)}&msg=${encodedMsg}`;
+            navigator.clipboard.writeText(url).then(() => {
+                showTempMessage('Postcard link with your message copied!', 4000);
+                playSound('postcard');
+            });
+            setTimeout(() => showPostcardMarker(loc), 500);
+            startPostcardTicker();
+        });
+
+                const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('postcard')) {
+            const id = urlParams.get('postcard');
+            const lat = parseFloat(urlParams.get('lat'));
+            const lng = parseFloat(urlParams.get('lng'));
+            const msg = urlParams.has('msg')
+                ? decodeURIComponent(urlParams.get('msg').replace(/\+/g, ' '))
+                : 'Postcard from a friend!';
+            if (isNaN(lat) || isNaN(lng)) return;
+            if (!locations.find(l => l.id === id)) {
+                const loc = createNewLocation(lat, lng, 'misc', msg, true);
+                loc.id = id;
+                locations.push(loc);
+                saveLocations();
+            }
+            forceReload();
+            const check = setInterval(() => {
+                if (document.body.classList.contains('map-ready')) {
+                    clearInterval(check);
+                    safeFlyTo(lat, lng, 1);
+                    showTempMessage('Postcard received!', 5000);
+                    playSound('postcard');
+                    setTimeout(() => {
+                        let marker = nonClusteredMarkers.getLayers().find(m => m.options.id === id);
+                        if (!marker && clusteringEnabled) {
+                            marker = clusteredMarkers.getLayers().find(m => m.options.id === id);
+                        }
+                        if (marker) {
+                            marker.unbindPopup();
+                            marker.bindPopup(createPopupContent({ desc: msg, id: id }), { maxWidth: 320, offset: [0, -20] });
+                            marker.openPopup();
+                        }
+                    }, 1600);
+                }
+            }, 200);
+        } else if (urlParams.has('lat') && urlParams.has('lng')) {
+            const lat = parseFloat(urlParams.get('lat'));
+            const lng = parseFloat(urlParams.get('lng'));
+            if (!isNaN(lat) && !isNaN(lng)) {
+                setTimeout(() => {
+                    safeFlyTo(lat, lng, 4);
+                    showTempMessage('Shared view loaded!', 3000);
+                    playSound('click');
+                }, 1200);
+            }
+        }
+
+        exportOneBtn.style.display = 'inline-block';
+        exportOneBtn.textContent = 'Export Marker';
+
+        function createPopupContent(loc) {
+            const start = loc.startTime || Date.now();
+            const timeLeft = Math.max(0, 300000 - (Date.now() - start));
+            const mins = Math.floor(timeLeft / 60000);
+            const secs = Math.floor((timeLeft % 60000) / 1000).toString().padStart(2, '0');
+            return `
+                <div style="background:#000;color:#0f0;padding:14px;border:2px solid #0f0;border-radius:8px;font:bold 14px monospace;text-align:center;max-width:320px;word-wrap:break-word;">
+                    <div style="max-height:120px;overflow-y:auto;margin-bottom:10px;padding:0 4px;">${escapeHtml(loc.desc)}</div>
+                    <div style="font-size:13px;">Expires in: <span id="postcardTimer_${loc.id}">${mins}:${secs}</span></div>
+                    <button id="keepPostcardBtn_${loc.id}" style="margin-top:10px;background:#00ff00;color:#000;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-weight:bold;">Keep It</button>
+                </div>
+            `;
+        }
+
+        function showPostcardMarker(loc) {
+            const existing = [...nonClusteredMarkers.getLayers()].find(m => m.options.id === loc.id);
+            if (existing) existing.remove();
+            const marker = L.marker([loc.lat, loc.lng], {
+                icon: L.divIcon({
+                    className: 'custom-icon glowing',
+                    html: `<div class="marker-background" style="background-color:#f0e68c;"><span style="font-size:18px;">📬</span></div>`,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                })
+            }).addTo(nonClusteredMarkers);
+            marker.options.id = loc.id;
+            const popup = L.popup({ maxWidth: 320, offset: [0, -20] });
+            marker.bindPopup(popup);
+            marker.on('popupopen', () => {
+                popup.setContent(createPopupContent(loc));
+                setTimeout(() => bindKeepButton(loc), 50);
+                const timerEl = document.getElementById(`postcardTimer_${loc.id}`);
+                if (timerEl) {
+                    const start = loc.startTime || Date.now();
+                    const timeLeft = Math.max(0, 300000 - (Date.now() - start));
+                    const mins = Math.floor(timeLeft / 60000);
+                    const secs = Math.floor((timeLeft % 60000) / 1000).toString().padStart(2, '0');
+                    timerEl.textContent = `${mins}:${secs}`;
+                }
+                startPostcardTicker();
+            });
+            marker.openPopup();
+        }
+
+        function bindKeepButton(loc) {
+            const keepBtn = document.getElementById(`keepPostcardBtn_${loc.id}`);
+            if (!keepBtn) return;
+            keepBtn.onclick = (e) => {
+                e.stopPropagation();
+                const index = locations.findIndex(l => l.id === loc.id);
+                if (index === -1) return;
+                locations[index].isPostcard = false;
+                locations[index].isTemp = false;
+                locations[index].locked = true;
+                locations[index].userEdited = true;
+                locations[index].postcardExpire = null;
+                locations[index].addedTime = Date.now();
+                locations[index].startTime = null;
+				locations[index].postcardExpire = null;
+                locations[index].startTime = null;
+				locations[index].icon = '📝';
+                saveLocations();
+                recalculateXP();
+                forceReload();
+                showTempMessage('Postcard kept!', 4000);
+                playSound('saving');
+            };
+        }
+
+        function dustPostcard(id) {
+            const loc = locations.find(l => l.id === id);
+            if (!loc) return;
+            const marker = [...nonClusteredMarkers.getLayers()].find(m => m.options.id === id);
+            if (marker) {
+                const icon = marker._icon;
+                if (icon) {
+                    icon.style.transition = 'all 1.5s ease-out';
+                    icon.style.opacity = '0';
+                    icon.style.transform = 'scale(0.3) rotate(720deg)';
+                }
+                setTimeout(() => {
+                    const index = locations.indexOf(loc);
+                    if (index !== -1) locations.splice(index, 1);
+                    saveLocations();
+                    forceReload();
+                    showTempMessage('Postcard turned to dust!', 4000);
+                    playSound('dust');
+                    if (!locations.some(l => l.isPostcard)) stopPostcardTicker();
+                }, 1500);
+            } else {
+                const index = locations.indexOf(loc);
+                if (index !== -1) {
+                    locations.splice(index, 1);
+                    saveLocations();
+                    forceReload();
+                    showTempMessage('Postcard turned to dust!', 4000);
+                    playSound('dust');
+                    if (!locations.some(l => l.isPostcard)) stopPostcardTicker();
+                }
+            }
+        }
+
+        function isGlowing(loc) {
+            if (loc.isPostcard) return true;
+            return loc.addedTime && (Date.now() - loc.addedTime) < 120000;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function createMarkerIcon(loc) {
+            const isTextOnly = ['named locations', 'regions'].includes(loc.category);
+            if (isTextOnly) {
+			    const iconToUse = loc.icon || categoryIcons[loc.category] || '📝';
+                const words = loc.desc.split('\n')[0].trim().split(' ');
+                const shortText = words.slice(0, 3).join(' ') + (words.length > 3 ? '...' : '');
+                const width = Math.min(120, Math.max(60, shortText.length * 9));
+                const glowClass = isGlowing(loc) ? 'glowing' : '';
+                const html = `<div class="${glowClass}" style="background:#000;color:#fff;padding:3px 6px;border:2px solid #0f0;border-radius:4px;font-weight:bold;font-size:11px;white-space:nowrap;width:${width}px;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(shortText)}</div>`;
+                return L.divIcon({ className: 'text-marker', html, iconSize: [width + 12, 26], iconAnchor: [(width + 12)/2, 13] });
+            } else {
+                const base = `<div class="marker-background" style="background-color:${categoryColors[loc.category] || '#808080'};"><span style="font-size:18px;">${loc.icon || (loc.isPostcard ? '📬' : categoryIcons[loc.category] || '📝')}</span></div>`;
+                return L.divIcon({ className: isGlowing(loc) ? 'custom-icon glowing' : 'custom-icon', html: base, iconSize: [30, 30], iconAnchor: [15, 15] });
+            }
+        }
+
+        const messageQueue = [];
+        let activeMessageControl = null;
+        function showTempMessage(html, ms = 3000) {
+            messageQueue.push({ html, ms });
+            if (!activeMessageControl) processMessageQueue();
+        }
+        function processMessageQueue() {
+            if (messageQueue.length === 0 || activeMessageControl) return;
+            const { html, ms } = messageQueue.shift();
+            activeMessageControl = L.control({ position: 'bottomright' });
+            activeMessageControl.onAdd = function() {
+                const div = L.DomUtil.create('div', 'temp-message');
+                div.innerHTML = html;
+                div.style.background = 'rgba(0,0,0,0.85)';
+                div.style.color = '#0f0';
+                div.style.padding = '8px 12px';
+                div.style.border = '1px solid #0f0';
+                div.style.borderRadius = '6px';
+                div.style.maxWidth = '300px';
+                div.style.font = 'bold 13px/1.4 monospace';
+                div.style.boxShadow = '0 0 10px #0f0';
+                div.style.margin = '10px';
+                div.style.pointerEvents = 'none';
+                div.style.zIndex = '10000';
+                L.DomEvent.disableClickPropagation(div);
+                return div;
+            };
+            activeMessageControl.addTo(map);
+            setTimeout(() => {
+                if (activeMessageControl) {
+                    map.removeControl(activeMessageControl);
+                    activeMessageControl = null;
+                    processMessageQueue();
+                }
+            }, ms);
+        }
+
+        function showConfirmModal(title, content, onConfirm) {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'block';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width:500px;">
+                    <span class="close">X</span>
+                    <h2>${title}</h2>
+                    <div style="margin:15px 0; max-height:300px; overflow-y:auto; text-align:left; line-height:1.5;">${content}</div>
+                    <div style="text-align:center;">
+                        <button id="confirmModalBtn" style="background:#00ff00;color:#000;padding:8px 16px;border:none;border-radius:4px;cursor:pointer;font-weight:bold;">OK</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            document.body.classList.add('modal-open');
+            const closeBtn = modal.querySelector('.close');
+            const confirmBtn = modal.querySelector('#confirmModalBtn');
+            const cleanup = () => {
+                modal.remove();
+                document.body.classList.remove('modal-open');
+                playSound('modalClose');
+            };
+            closeBtn.onclick = cleanup;
+            confirmBtn.onclick = () => {
+                cleanup();
+                if (onConfirm) onConfirm();
+            };
+            playSound('levelUp');
+        }
+
+        window.editMarkerFromPopup = function(index) {
+            map.closePopup();
+            openModal('Edit Item', index);
+        };
+
+        function attachDragHandler(marker, loc) {
+    marker.on('add', () => {
+        const icon = marker._icon;
+        if (!icon) return;
+
+        let isDragging = false;
+        let originalLatLng = null;
+
+        window.isDraggingAnyMarker = window.isDraggingAnyMarker || false;
+
+        const onDragging = (e) => {
+            if (!isDragging) return;
+            let clientX, clientY;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            const latlng = map.mouseEventToLatLng({ clientX, clientY });
+            marker.setLatLng(latlng);
+        };
+
+        const onDragEnd = () => {
+            if (!isDragging) return;
+            isDragging = false;
+            window.isDraggingAnyMarker = false;
+
+            map.dragging.enable();
+            L.DomUtil.removeClass(icon, 'dragging');
+
+            L.DomEvent.off(document, 'mousemove touchmove', onDragging);
+            L.DomEvent.off(document, 'mouseup touchend', onDragEnd);
+
+            const { lat, lng } = marker.getLatLng();
+            loc.lat = lat;
+            loc.lng = lng;
+            loc.desc = updateDescWithGrid(loc.desc, lat, lng);
+            loc.addedTime = Date.now();
+            loc.userEdited = true;
+            loc.locked = true;
+            lastMovedMarker = marker;
+
+            saveLocations();
+            playSound('saving');
+            showTempMessage(`Moved + saved + LOCKED! ${loc.icon}`, 4000);
+            safeFlyTo(lat, lng);
+            forceReload();
+        };
+
+        const onDragStart = (e) => {
+            if (loc.locked || window.isDraggingAnyMarker) return;
+
+            if (e.touches) L.DomEvent.preventDefault(e);
+
+            originalLatLng = marker.getLatLng();
+            isDragging = true;
+            window.isDraggingAnyMarker = true;
+
+            map.dragging.disable();
+            L.DomUtil.addClass(icon, 'dragging');
+
+            if (activeMessageControl) {
+                map.removeControl(activeMessageControl);
+                activeMessageControl = null;
+            }
+
+            L.DomEvent.on(document, 'mousemove', onDragging);
+            L.DomEvent.on(document, 'mouseup', onDragEnd);
+            L.DomEvent.on(document, 'touchmove', onDragging);
+            L.DomEvent.on(document, 'touchend', onDragEnd);
+        };
+
+        if (!loc.locked && !loc.isPostcard) {
+            marker.on('dragstart', onDragStart);
+        }
+
+        marker.on('click', (e) => {
+            if (isDragging) return;
+            icon.classList.add('marker-flash');
+            setTimeout(() => icon.classList.remove('marker-flash'), 3000);
+        });
+
+        icon.addEventListener('mouseenter', () => icon.classList.add('marker-hover'));
+        icon.addEventListener('mouseleave', () => icon.classList.remove('marker-hover'));
+
+        if (loc.isPostcard) {
+            marker.bindPopup(() => createPopupContent(loc), { maxWidth: 320, offset: [0, -20] });
+            marker.on('popupopen', () => {
+                const popup = marker.getPopup();
+                if (popup) {
+                    popup.setContent(createPopupContent(loc));
+                    setTimeout(() => bindKeepButton(loc), 50);
+                    const timerEl = document.getElementById(`postcardTimer_${loc.id}`);
+                    if (timerEl) {
+                        const start = loc.startTime || Date.now();
+                        const timeLeft = Math.max(0, 300000 - (Date.now() - start));
+                        const mins = Math.floor(timeLeft / 60000);
+                        const secs = Math.floor((timeLeft % 60000) / 1000).toString().padStart(2, '0');
+                        timerEl.textContent = `${mins}:${secs}`;
+                    }
+                    startPostcardTicker();
+                }
+            });
+        } else {
+            marker.bindPopup(`
+                <b>${loc.icon} ${loc.category.toUpperCase()}</b><br>
+                <div style="max-height:80px;overflow-y:auto;margin:4px 0;padding-right:8px;">${escapeHtml(loc.desc)}</div>
+                <div style="margin:6px 0;text-align:center;">
+                    <span class="popup-lock-toggle" onclick="toggleLockFromPopup(${locations.indexOf(loc)})">${loc.locked ? 'Locked' : 'Unlocked'}</span>
+                </div>
+                <button onclick="editMarkerFromPopup(${locations.indexOf(loc)})">Edit</button>
+            `, { maxWidth: 260, offset: [0, -20] });
+        }
+    });
+}
+
+        function addMarkerToMap(loc) {
+            const marker = L.marker([loc.lat, loc.lng], {
+                icon: createMarkerIcon(loc),
+                id: loc.id,
+                draggable: false
+            });
+            attachDragHandler(marker, loc);
+            const textOnly = ['named locations', 'regions'].includes(loc.category);
+            (clusteringEnabled && !textOnly ? clusteredMarkers : nonClusteredMarkers).addLayer(marker);
+            if (isGlowing(loc)) {
+                setTimeout(() => {
+                    marker.setZIndexOffset(10000);
+                    marker.setIcon(createMarkerIcon(loc));
+                }, 100);
+            }
+            if (lastMovedMarker && lastMovedMarker.options.id === loc.id) {
+                setTimeout(() => {
+                    marker.openPopup();
+                    lastMovedMarker = null;
+                }, 800);
+            }
+        }
+
+        function updateCounterDisplay() {
+    const appVersion = "76.1.0";
+    const communityVer = localStorage.getItem(MAP_VERSION_KEY) || "1.0";
+
+    const total = locations.filter(l => activeCategories.has(l.category)).length;
+    const showing = locations.filter(l => activeCategories.has(l.category))
+        .slice((tablePage-1)*pageSize, tablePage*pageSize).length;
+
+    counter.innerHTML = `<strong>Fallout 76 Item Finder v${appVersion}</strong> — <strong>Community Map v${communityVer}</strong> — <strong>${total}</strong> logged — <strong>${showing}</strong> showing`;
+}
+
+        function refreshTable(search = '', cat = '') {
+    const tbody = document.querySelector('#locationsTable tbody');
+    tbody.innerHTML = '';
+
+    let list = locations.filter(l => activeCategories.has(l.category) && (!cat || l.category === cat));
+
+    if (search) {
+        const normalizedSearch = normalizeString(search);
+        list = list.filter(l => {
+            const text = normalizeString(l.desc + ' ' + l.category);
+            return text.includes(normalizedSearch) || normalizedSearch.includes(text.split(' ')[0]);
+        });
+    }
+
+    const glow = list.filter(isGlowing).sort((a,b) => b.addedTime - a.addedTime);
+    const rest = list.filter(l => !isGlowing(l)).sort((a,b) => a.category.localeCompare(b.category) || a.desc.localeCompare(b.desc));
+    const sorted = [...glow, ...rest];
+
+    const start = (tablePage - 1) * pageSize;
+    sorted.slice(start, start + pageSize).forEach(loc => {
+        const tr = document.createElement('tr');
+        if (isGlowing(loc)) tr.classList.add('glowing');
+
+        const short = loc.desc.split('\n')[0].trim();
+        let lockCell = '';
+        if (loc.isPostcard) {
+            const timeLeft = Math.max(0, 300000 - (Date.now() - loc.startTime));
+            const mins = Math.floor(timeLeft / 60000);
+            const secs = Math.floor((timeLeft % 60000) / 1000).toString().padStart(2, '0');
+            lockCell = `<span style="color:#ff0;font-size:11px;">${mins}:${secs}</span>`;
+        } else {
+            const lock = loc.locked ? 'Locked' : 'Unlocked';
+            lockCell = `<span class="lock-toggle" onclick="toggleLockFromTable(${locations.indexOf(loc)})">${lock}</span>`;
+        }
+
+        tr.innerHTML = `
+            <td>${lockCell}</td>
+            <td>${['named locations','regions'].includes(loc.category) ? `<div class="text-location">${escapeHtml(short)}</div>` : `<div class="icon-circle" style="background:${categoryColors[loc.category]||'#808080'}">${loc.icon}</div>`}</td>
+            <td>${escapeHtml(loc.category)} ${loc.icon}</td>
+            <td>${escapeHtml(short)}</td>
+        `;
+
+        tr.onclick = e => {
+            if (e.target.tagName === 'SPAN' && !loc.isPostcard) return;
+            document.getElementById('map').scrollIntoView({behavior:'smooth'});
+            const targetLatLng = [loc.lat, loc.lng];
+            const duration = map.getZoom() < 2 ? 2.5 : 1.5;
+            map.flyTo(targetLatLng, 4, { duration });
+            map.once('moveend', () => {
+                setTimeout(() => {
+                    const m = [...clusteredMarkers.getLayers(), ...nonClusteredMarkers.getLayers()].find(m=>m.options.id===loc.id);
+                    if (m) { m.openPopup(); playSound('click'); }
+                }, 200);
+            });
+        };
+
+        tr.oncontextmenu = e => {
+            e.preventDefault();
+            safeFlyTo(loc.lat, loc.lng, 4);
+            if (!loc.isPostcard) openModal('Edit Item', locations.findIndex(l=>l.id===loc.id));
+        };
+
+        tbody.appendChild(tr);
+    });
+
+    const pages = Math.ceil(sorted.length / pageSize);
+    tablePage = Math.min(tablePage, pages || 1);
+    pageInfo.textContent = `Page ${tablePage} of ${pages||1}`;
+    prevPageBtn.disabled = tablePage <= 1;
+    nextPageBtn.disabled = tablePage >= pages;
+    updateCounterDisplay();
+}
+
+        window.toggleLockFromTable = i => {
+            const loc = locations[i];
+            if (loc.isPostcard) return;
+            loc.locked = !loc.locked;
+            loc.addedTime = Date.now();
+            saveLocations();
+            forceReload();
+            showTempMessage(loc.locked?'🔐':'🔓',4000);
+            playSound('click');
+        };
+
+        setInterval(() => {
+    if (document.visibilityState === 'visible' && !window.isDraggingAnyMarker) {
+
+        let popupIsOpen = false;
+        map.eachLayer(layer => {
+            if (layer.getPopup && layer.getPopup() && layer.getPopup().isOpen()) {
+                popupIsOpen = true;
+            }
+        });
+
+        if (!popupIsOpen) {
+            loadData(combinedSearch.value || '', categoryFilter.value || '');
+        }
+
+        [clusteredMarkers, nonClusteredMarkers].forEach(g => g.eachLayer(m => {
+            const loc = locations.find(l => l.id === m.options.id);
+            if (!loc) return;
+
+            const glow = isGlowing(loc);
+            const icon = m.getIcon();
+
+            if (glow && !icon.options.className?.includes('glowing')) {
+                m.setIcon(createMarkerIcon(loc));
+                m.setZIndexOffset(10000);
+            } else if (!glow && icon.options.className?.includes('glowing')) {
+                m.setIcon(createMarkerIcon(loc));
+                m.setZIndexOffset(0);
+            }
+
+            if (loc.locked || loc.isPostcard) {
+                m.dragging?.disable();
+            } else {
+                m.dragging?.enable();
+            }
+        }));
+
+        refreshTable(combinedSearch?.value || '', categoryFilter?.value || '');
+        updateLockAllBtn?.();
+    }
+}, 1000);
+
+        function renderCategoryToggles() {
+            const box = document.getElementById('categoryCheckboxes');
+            box.innerHTML = '';
+            [...Object.keys(defaultCategoryIcons), ...Object.keys(customCategories)].sort().forEach(cat => {
+                const label = document.createElement('label');
+                label.innerHTML = `<input type="checkbox" value="${cat}" ${activeCategories.has(cat)?'checked':''}><span>${cat} ${categoryIcons[cat]||''}</span>`;
+                box.appendChild(label);
+            });
+            box.querySelectorAll('input').forEach(cb => cb.onchange = () => {
+                cb.checked ? activeCategories.add(cb.value) : activeCategories.delete(cb.value);
+                localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
+                loadData(combinedSearch.value, categoryFilter.value);
+                playSound('selectcategory');
+            });
+        }
+
+        function updateCategoryDropdowns() {
+            const cats = [...Object.keys(defaultCategoryIcons), ...Object.keys(customCategories)].sort();
+            const opt = c => `<option value="${c}">${c} ${categoryIcons[c]||''}</option>`;
+            categoryFilter.innerHTML = '<option value="">All Categories</option>' + cats.map(opt).join('');
+            itemCategorySelect.innerHTML = cats.map(opt).join('');
+            if (currentCategoryFilter && cats.includes(currentCategoryFilter)) categoryFilter.value = currentCategoryFilter;
+        }
+
+        function openModal(title, idx = -1) {
+            const loc = idx >= 0 ? locations[idx] : null;
+            const isCurrentlyLocked = loc ? loc.locked : false;
+            modalTitle.innerHTML = `${title} <span id="modalLockToggle" style="font-size:22px;cursor:pointer;margin-left:10px;">${isCurrentlyLocked ? '🔐':'🔓'}</span>`;
+            currentIndex = idx;
+            itemCategorySelect.value = loc?.category || 'misc';
+            itemDescInput.value = loc?.desc || '';
+            itemCategorySelect.disabled = isCurrentlyLocked;
+            itemDescInput.disabled = isCurrentlyLocked;
+            deleteBtn.style.display = isCurrentlyLocked ? 'none' : 'inline-block';
+            duplicateBtn.style.display = isCurrentlyLocked ? 'none' : 'inline-block';
+            exportOneBtn.style.display = 'inline-block';
+            const modalToggle = document.getElementById('modalLockToggle');
+            if (modalToggle && loc) {
+                modalToggle.onclick = (e) => {
+                    e.stopPropagation();
+                    loc.locked = !loc.locked;
+                    modalToggle.textContent = loc.locked ? '🔐':'🔓';
+                    itemCategorySelect.disabled = loc.locked;
+                    itemDescInput.disabled = loc.locked;
+                    deleteBtn.style.display = loc.locked ? 'none' : 'inline-block';
+                    duplicateBtn.style.display = loc.locked ? 'none' : 'inline-block';
+                    saveLocations();
+                    forceReload();
+                    showTempMessage(loc.locked ? '🔐':'🔓', 2000);
+                    playSound('click');
+                };
+            }
+            itemModal.style.display = 'block';
+            document.body.classList.add('modal-open');
+            playSound('click');
+        }
+
+        function closeModal(m) {
+            m.style.display = 'none';
+            document.body.classList.remove('modal-open');
+            playSound('modalClose');
+        }
+
+        function recalculateXP() {
+            const oldLevel = lastLevel;
+            xp = locations.filter(l => !l.isPostcard).length * xpPerMarker;
+            level = 1 + Math.floor(xp / xpPerLevel);
+            xp = xp % xpPerLevel;
+            if (level > oldLevel) {
+                playSound('levelUp');
+                triggerConfetti();
+                showTempMessage(`LEVEL UP → ${level}!`, 5000);
+                if (level % 10 === 0) triggerNuke();
+            }
+            localStorage.setItem('fo76_level', level);
+            localStorage.setItem('fo76_xp', xp);
+            lastLevel = level;
+            updateXPBar();
+        }
+
+        function triggerConfetti() {
+            const fire = () => {
+                confetti({
+                    particleCount: 200,
+                    spread: 500,
+                    origin: { y: 0.60 },
+                    colors: ['#00ff00', '#00cc00', '#33ff33', '#00ff99'],
+                    ticks: 360,
+                    gravity: 0.5,
+                    scalar: 2.3
+                });
+            };
+            if (window.confettiReady) {
+                fire();
+            } else {
+                const start = Date.now();
+                const wait = setInterval(() => {
+                    if (window.confettiReady || Date.now() - start > 10000) {
+                        clearInterval(wait);
+                        if (typeof confetti === 'function') fire();
+                    }
+                }, 100);
+            }
+        }
+
+        function triggerNuke() {
+    const flash = document.createElement('div');
+    flash.style.cssText = `
+        position:fixed;top:0;left:0;width:100vw;height:100vh;
+        background:#fff;z-index:99999;pointer-events:none;
+        animation: quickFlash 0.7s ease-out forwards;
+    `;
+    document.body.appendChild(flash);
+
+    setTimeout(() => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position:fixed;top:0;left:0;width:100vw;height:100vh;
+            background:#000;z-index:99998;pointer-events:none;
+            display:flex;flex-direction:column;align-items:center;justify-content:center;
+            gap:20px;padding:20px;box-sizing:border-box;
+            font-family:'Courier New',monospace;text-align:center;
+        `;
+
+        overlay.innerHTML = `
+            <div class="nuke-symbol">☢</div>
+            <h1 class="nuke-title">LEVEL ${level} ACHIEVED</h1>
+            <p class="nuke-subtitle">${level % 10 === 0 ? 'NUKE DETONATED!' : 'RANK UP!'}</p>
+        `;
+
+        document.body.appendChild(overlay);
+        playSound('levelUp');
+
+        setTimeout(() => {
+            overlay.style.transition = 'opacity 1.2s';
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.remove(), 1200);
+        }, 3500);
+
+    }, 400);
+
+    setTimeout(() => flash.remove(), 700);
+}
+
+        function updateXPBar() {
+            levelSpan.textContent = level;
+            xpProgress.value = xp;
+            xpText.textContent = `${xp} / ${xpPerLevel}`;
+        }
+
+        function loadData(search = '', catFilter = '') {
+    clusteredMarkers.clearLayers();
+    nonClusteredMarkers.clearLayers();
+    const currentLocations = [...locations];
+
+    const filtered = currentLocations.filter(loc => {
+        if (!activeCategories.has(loc.category)) return false;
+        if (catFilter && loc.category !== catFilter) return false;
+        if (!search) return true;
+
+        const normalizedSearch = normalizeString(search);
+        const normalizedDesc = normalizeString(loc.desc);
+        const normalizedCat = loc.category ? normalizeString(loc.category) : '';
+
+        return normalizedDesc.includes(normalizedSearch) || 
+               normalizedSearch.includes(normalizedDesc) ||
+               normalizedCat.includes(normalizedSearch);
+    });
+
+    filtered.forEach(addMarkerToMap);
+
+    refreshTable(search, catFilter);
+
+    updateXPBar();
+    drawGrid();
+    saveAppState();
+    updateLockAllBtn();
+    if (currentLocations.some(l => l.isPostcard)) startPostcardTicker();
+}
+
+        function forceReload() {
+    const modalOpen = itemModal.style.display === 'block';
+    const currentModalCategory = modalOpen ? (locations[currentIndex]?.category || itemCategorySelect.value) : null;
+
+    saveAppState();
+    loadData('', categoryFilter?.value || '');
+    renderCategoryToggles();
+    updateCategoryDropdowns();
+
+    if (modalOpen && currentModalCategory) {
+        setTimeout(() => {
+            itemCategorySelect.value = currentModalCategory;
+        }, 50);
+    }
+}
+
+        function saveAppState() {
+            localStorage.setItem('currentSearch', combinedSearch?.value || '');
+            localStorage.setItem('currentCategoryFilter', categoryFilter?.value || '');
+            localStorage.setItem('tablePage', tablePage);
+            localStorage.setItem('clusteringEnabled', clusteringEnabled);
+            localStorage.setItem('gridEnabled', gridEnabled);
+            localStorage.setItem('currentMap', currentMap);
+            localStorage.setItem('titleVisible', titleVisible);
+            localStorage.setItem('toolsVisible', toolsVisible);
+        }
+
+        function saveLocations() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(locations));
+            saveAppState();
+        }
+
+        function normalizeString(s) {
+            return (s || '').toLowerCase().trim();
+        }
+
+        let flyTO;
+        function safeFlyTo(lat, lng, z = map.getZoom()) {
+            if (isNaN(lat) || isNaN(lng)) return;
+            clearTimeout(flyTO);
+            map.flyTo([lat, lng], z, {
+                animate: true,
+                duration: 1.5,
+                easeLinearity: 0.25
+            });
+        }
+
+        function fetchWithTimeout(url, timeout = 12000) {
+            return Promise.race([
+                fetch(url),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
+            ]);
+        }
+
+        resetAppBtn.onclick = () => {
+            if (!confirm('Reset ALL data? Backup your markers first! Click OK to backup.')) return;
+            const data = { version: 1.0, communityVersion, customCategories, locations: locations.filter(l => !l.isPostcard) };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `fo76_backup_ALL_${data.locations.length}_v${communityVersion}_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+            showTempMessage('Backup saved! Now confirm reset.', 5000);
+            setTimeout(() => {
+                if (confirm('Backup saved. Click OK to RESET app (cannot undo).')) {
+				    localStorage.removeItem(LAST_VERSION_KEY);
+                    localStorage.clear();
+                    location.reload();
+                }
+            }, 1000);
+        };
+
+        exportBtn.onclick = () => {
+            playSound('saving');
+            const all = confirm('OK = ALL markers | Cancel = USER only');
+            const data = {
+                version: 1.0,
+                communityVersion,
+                customCategories,
+                locations: all ? locations.filter(l => !l.isPostcard) : locations.filter(l => l.userEdited && !l.isPostcard)
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `fo76_${all ? 'all' : 'user'}_${data.locations.length}_v${communityVersion}_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+            showTempMessage(`Exported ${data.locations.length} markers!`, 4000);
+        };
+
+        importBtn.onclick = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const r = new FileReader();
+        r.onload = ev => {
+    try {
+        const data = JSON.parse(ev.target.result);
+        const incoming = data.locations || (Array.isArray(data) ? data : []);
+        let added = 0, updated = 0, skipped = 0;
+        
+        incoming.forEach(imp => {
+            const existing = locations.find(l => l.cid === imp.cid);
+            if (existing && existing.userEdited) {
+                skipped++;
+                return;
+            }
+            if (existing) {
+                Object.assign(existing, imp);
+                updated++;
+            } else {
+                locations.push({ ...imp, id: generateUniqueId(), addedTime: Date.now(), locked: true, isPostcard: false, isTemp: false });
+                added++;
+            }
+        });
+        
+        if (data.customCategories) {
+            customCategories = { ...customCategories, ...data.customCategories };
+            localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(customCategories));
+        }
+
+        const newVersion = data.communityVersion || "1.0";
+        localStorage.setItem(MAP_VERSION_KEY, String(data.communityVersion || data.version || "1.0"));
+        showTempMessage(`Community Map v${newVersion} loaded!`, 5000);
+
+        updateCounterDisplay();
+
+        recalculateXP();
+        forceReload();
+		saveLocations();
+
+        showConfirmModal(
+            'Import Complete',
+            `Added: <strong>${added}</strong> markers<br>Updated: <strong>${updated}</strong> markers<br>Skipped (user-edited): <strong>${skipped}</strong> markers`,
+            null
+        );
+        playSound('saving');
+    } catch (err) {
+        console.error("Import failed:", err);
+        showTempMessage('Invalid file', 4000);
+        playSound('error');
+    }
+};
+        r.readAsText(file);
+    };
+    input.click();
+};
+
+        downloadCommunityBtn.onclick = async () => {   // ← added async here
+    playSound('click');
+    if (!confirm('Update Community Map? Your edits are SAFE.')) return;
+    downloadCommunityBtn.disabled = true;
+    downloadCommunityBtn.textContent = 'Updating...';
+
+    const cacheBust = new Date().getTime();
+    fetchWithTimeout('https://0mrcrazy0.github.io/fallout76-itemfindermap/communitymap.json?t=' + Date.now(), 12000)
+        .then(r => r.ok ? r.json() : Promise.reject('Bad response'))
+        .then(async data => {                     // ← added async here
+            // ─────── AUTO-FIX OLD ANDROID CACHED MAP (runs silently) ───────
+            try {
+                const regs = await navigator.serviceWorker.getRegistrations();
+                for (const reg of regs) await reg.unregister();
+                const keys = await caches.keys();
+                for (const key of keys) await caches.delete(key);
+                console.log('Old service worker + caches cleared (only happens once)');
+            } catch (e) { /* silent – only needed for stuck phones */ }
+
+            // ─────── YOUR ORIGINAL CODE (100% unchanged) ───────
+            // Clear any leftover communitymap.json from any cache
+            caches.keys().then(cacheNames => {
+                cacheNames.forEach(name => {
+                    caches.open(name).then(cache => {
+                        cache.keys().then(requests => {
+                            requests.forEach(req => {
+                                if (req.url.includes('communitymap.json')) cache.delete(req);
+                            });
+                        });
+                    });
+                });
+            });
+
+            console.log('Fetched version:', data.communityVersion);
+            console.log('Markers:', data.locations.length);
+
+            const incoming = data.locations || [];
+            let added = 0, updated = 0, skipped = 0;
+            incoming.forEach(imp => {
+                const existing = locations.find(l => l.cid === imp.cid);
+                if (existing && existing.userEdited) {
+                    skipped++;
+                    return;
+                }
+                if (existing) {
+                    Object.assign(existing, imp);
+                    updated++;
+                } else {
+                    locations.push({ ...imp, id: generateUniqueId(), addedTime: Date.now(), locked: true, isPostcard: false, isTemp: false });
+                    added++;
+                }
+            });
+            if (data.customCategories) customCategories = { ...customCategories, ...data.customCategories };
+
+            const newVersion = String(data.communityVersion || "1.0");
+            localStorage.setItem(MAP_VERSION_KEY, newVersion);
+            communityVersion = newVersion;
+
+            showTempMessage(`Community Map v${newVersion} loaded! (${data.locations.length} markers)`, 5000);
+            localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(customCategories));
+            recalculateXP();
+            updateCounterDisplay();
+            forceReload();
+            saveLocations();
+
+            showConfirmModal(
+                'Community Map Updated',
+                `Added: <strong>${added}</strong> markers<br>Updated: <strong>${updated}</strong> markers<br>Skipped (user-edited): <strong>${skipped}</strong> markers<br>Total: <strong>${locations.length}</strong> markers`,
+                null
+            );
+            playSound('saving');
+
+            // One-time polite reload for the few who needed the fix
+            setTimeout(() => {
+                if (confirm('Reload now for the best experience? (only asked once)')) {
+                    location.reload();
+                }
+            }, 1500);
+        })
+        .catch(err => {
+            console.error('Fetch error:', err);
+            showTempMessage('Update failed – check internet', 5000);
+            playSound('error');
+        })
+        .finally(() => {
+            downloadCommunityBtn.disabled = false;
+            downloadCommunityBtn.textContent = 'Update Community Map';
+        });
+};
+
+        saveJpegBtn.onclick = () => {
+            playSound('saving');
+            html2canvas(document.getElementById('map'), { useCORS: true, scale: 2 }).then(canvas => {
+                const a = document.createElement('a');
+                a.href = canvas.toDataURL('image/jpeg', 0.9);
+                a.download = `fo76_map_${new Date().toISOString().slice(0,10)}.jpg`;
+                a.click();
+                showTempMessage('Map saved to Downloads!', 4000);
+            });
+        };
+
+        prevPageBtn.onclick = () => {
+            if (tablePage > 1) {
+                tablePage--;
+                localStorage.setItem('tablePage', tablePage);
+                refreshTable(combinedSearch.value, categoryFilter.value);
+                playSound('click');
+            }
+        };
+
+        nextPageBtn.onclick = () => {
+            const max = Math.ceil(locations.filter(l => activeCategories.has(l.category)).length / pageSize);
+            if (tablePage < max) {
+                tablePage++;
+                localStorage.setItem('tablePage', tablePage);
+                refreshTable(combinedSearch.value, categoryFilter.value);
+                playSound('click');
+            }
+        };
+
+        toggleSoundsBtn.onclick = () => {
+            soundsEnabled = !soundsEnabled;
+            localStorage.setItem('soundsEnabled', soundsEnabled);
+            toggleSoundsBtn.textContent = soundsEnabled ? 'Sounds: On' : 'Sounds: Off';
+            playSound('click');
+        };
+
+        toggleClusterBtn.onclick = () => {
+            clusteringEnabled = !clusteringEnabled;
+            localStorage.setItem('clusteringEnabled', clusteringEnabled);
+            toggleClusterBtn.textContent = `Clustering: ${clusteringEnabled ? 'On' : 'Off'}`;
+            const currentCat = categoryFilter.value;
+            forceReload();
+            setTimeout(() => {
+                if (categoryFilter.querySelector(`option[value="${currentCat}"]`)) {
+                    categoryFilter.value = currentCat;
+                }
+                playSound('click');
+            }, 100);
+        };
+
+        toggleMapBtn.onclick = () => {
+            currentMap = currentMap === 'named' ? 'noName' : 'named';
+            localStorage.setItem('currentMap', currentMap);
+            toggleMapBtn.textContent = currentMap === 'named' ? 'Show No-Name Map' : 'Show Named Map';
+            map.removeLayer(imageOverlay);
+            imageOverlay = L.imageOverlay(mapUrls[currentMap], imageBounds).addTo(map);
+            playSound('saving');
+        };
+
+        toggleGridBtn.onclick = () => {
+            gridEnabled = !gridEnabled;
+            localStorage.setItem('gridEnabled', gridEnabled);
+            toggleGridBtn.textContent = `Grid: ${gridEnabled ? 'On' : 'Off'}`;
+            drawGrid();
+            playSound('click');
+        };
+
+        toggleCategoryModalBtn.onclick = () => {
+    categoryToggleModal.style.display = 'block';
+    document.body.classList.add('modal-open');
+    renderCategoryToggles();
+    
+    const closeBtn = document.getElementById('closeCategoryToggleBtn');
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            categoryToggleModal.style.display = 'none';
+            document.body.classList.remove('modal-open');
+            playSound('modalClose');
+        };
+    }
+    
+    playSound('selectcategory');
+};
+
+        document.getElementById('selectAllBtn').onclick = () => {
+            activeCategories = new Set(Object.keys(categoryIcons));
+            localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
+            renderCategoryToggles();
+            forceReload();
+            playSound('click');
+        };
+
+        document.getElementById('deselectAllBtn').onclick = () => {
+            activeCategories = new Set();
+            localStorage.setItem('activeCategories', '[]');
+            renderCategoryToggles();
+            forceReload();
+            playSound('click');
+        };
+
+        document.getElementById('createCategoryBtn').onclick = () => {
+            document.getElementById('createCategoryModal').style.display = 'block';
+            playSound('click');
+        };
+
+        document.getElementById('deleteCategoryBtn').onclick = () => {
+            const sel = document.getElementById('deleteCategorySelect');
+            sel.innerHTML = '<option value="">Select custom</option>' +
+                Object.keys(customCategories).sort().map(n => `<option value="${n}">${n} ${customCategories[n]}</option>`).join('');
+            document.getElementById('deleteCategoryModal').style.display = 'block';
+            playSound('click');
+        };
+
+        document.getElementById('saveCategoryBtn').onclick = () => {
+            const name = document.getElementById('newCategoryName').value.trim();
+            const emoji = document.getElementById('newCategoryEmoji').value.trim();
+            if (!name || !emoji || !isValidEmoji(emoji) || defaultCategoryIcons[name]) {
+                showTempMessage('Invalid name or emoji', 4000);
+                return;
+            }
+            customCategories[name] = emoji;
+            categoryIcons[name] = emoji;
+            categoryColors[name] = '#f0e68c';
+            activeCategories.add(name);
+            localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(customCategories));
+            localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
+            updateCategoryDropdowns();
+            renderCategoryToggles();
+            closeModal(document.getElementById('createCategoryModal'));
+            showTempMessage('Category created!', 3000);
+            playSound('saving');
+        };
+
+        document.getElementById('confirmDeleteCategoryBtn').onclick = () => {
+            const name = document.getElementById('deleteCategorySelect').value;
+            if (!name || !customCategories[name]) return;
+            if (!confirm(`Delete "${name}"? Markers → misc`)) return;
+            locations.forEach(l => { if (l.category === name) l.category = 'misc'; });
+            delete customCategories[name]; delete categoryIcons[name]; delete categoryColors[name];
+            activeCategories.delete(name);
+            localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(customCategories));
+            localStorage.setItem('activeCategories', JSON.stringify([...activeCategories]));
+            saveLocations();
+            forceReload();
+            closeModal(document.getElementById('deleteCategoryModal'));
+            showTempMessage('Category deleted', 3000);
+            playSound('delete');
+        };
+
+        saveItemBtn.onclick = () => {
+    const cat = itemCategorySelect.value;
+    let desc = itemDescInput.value.trim();
+    const isNew = currentIndex < 0;
+    let lat, lng;
+
+    if (isNew) {
+        if (tempLatLng && typeof tempLatLng.lat === 'number' && typeof tempLatLng.lng === 'number') {
+            lat = tempLatLng.lat;
+            lng = tempLatLng.lng;
+        } else {
+            showTempMessage('No location selected! Double-click map first.', 4000);
+            playSound('error');
+            return;
+        }
+    } else {
+        const loc = locations[currentIndex];
+        if (!loc || typeof loc.lat !== 'number' || typeof loc.lng !== 'number') {
+            showTempMessage('Invalid location data!', 4000);
+            playSound('error');
+            return;
+        }
+        lat = loc.lat;
+        lng = loc.lng;
+    }
+
+    if (!desc) {
+        const grid = getGridFromLatLng(lat, lng);
+        const x = Math.round(lng);
+        const y = Math.round(lat);
+        desc = grid ? `Grid ${grid} (X: ${x}, Y: ${y})` : `X: ${x}, Y: ${y}`;
+        itemDescInput.value = desc;
+    } else {
+        desc = updateDescWithGrid(desc, lat, lng);
+    }
+
+    if (currentIndex >= 0) {
+        const loc = locations[currentIndex];
+        if (loc.locked) {
+            showTempMessage('Unlock first!', 4000);
+            playSound('error');
+            return;
+        }
+        loc.category = cat;
+        loc.desc = desc;
+        loc.icon = categoryIcons[cat] || '📬';
+        loc.addedTime = Date.now();
+        loc.userEdited = true;
+        loc.locked = true;
+    } else {
+        const newLoc = createNewLocation(lat, lng, cat, desc);
+        newLoc.locked = true;
+        locations.push(newLoc);
+        recalculateXP();
+    }
+
+    closeModal(itemModal);
+    saveLocations();
+    playSound('saving');
+    showTempMessage('Saved + LOCKED!', 4000);
+    forceReload();
+};
+
+        deleteBtn.onclick = () => {
+            if (currentIndex < 0) return;
+            const loc = locations[currentIndex];
+            if (loc.locked) {
+                showTempMessage('Unlock first!', 4000);
+                playSound('error');
+                return;
+            }
+            lastDeleted = { ...loc };
+            locations.splice(currentIndex, 1);
+            recalculateXP();
+            closeModal(itemModal);
+            saveLocations();
+            forceReload();
+            undoBtn.style.display = 'inline-block';
+            showTempMessage('Deleted – Undo ready', 4000);
+            playSound('delete');
+        };
+
+        undoBtn.onclick = () => {
+            if (!lastDeleted) return;
+            locations.push(lastDeleted);
+            lastDeleted = null;
+            recalculateXP();
+            saveLocations();
+            forceReload();
+            undoBtn.style.display = 'none';
+            showTempMessage('Undo complete!', 3000);
+            playSound('undo');
+            const restoredLoc = locations[locations.length - 1];
+			closeModal(itemModal);
+            safeFlyTo(restoredLoc.lat, restoredLoc.lng, 4);
+        };
+
+        exportOneBtn.onclick = () => {
+            const loc = locations[currentIndex];
+            const blob = new Blob([JSON.stringify([loc], null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `fo76_marker_${getGridFromLatLng(loc.lat, loc.lng) || 'unknown'}_v1.0_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+            showTempMessage('Single marker exported!', 3000);
+            playSound('saving');
+        };
+
+        /* DEV NOTE: MAP INTERACTIONS */
+    map.on('dragstart', () => { isDraggingAny = true; });
+    map.on('dragend', () => { setTimeout(() => { isDraggingAny = false; }, 400); });
+    map.on('movestart', () => { isDraggingAny = true; });
+    map.on('moveend', () => { setTimeout(() => { isDraggingAny = false; }, 400); });
+
+    const coordHoverControl = L.control({ position: 'bottomleft' });
+    coordHoverControl.onAdd = function() {
+        const div = L.DomUtil.create('div', 'coord-hover');
+        div.innerHTML = '';
+        return div;
+    };
+    coordHoverControl.addTo(map);
+    const hoverCoordsHandler = (e) => {
+        if (isDraggingAny) return;
+        let lat, lng;
+        if (e.touches) {
+            const touch = e.touches[0];
+            lat = map.mouseEventToLatLng({ clientX: touch.clientX, clientY: touch.clientY }).lat;
+            lng = map.mouseEventToLatLng({ clientX: touch.clientX, clientY: touch.clientY }).lng;
+        } else {
+            lat = e.latlng.lat;
+            lng = e.latlng.lng;
+        }
+        const grid = getGridFromLatLng(lat, lng);
+        const x = Math.round(lng);
+        const y = Math.round(lat);
+        coordHoverControl.getContainer().innerHTML = `Grid: ${grid || 'N/A'} (X: ${x}, Y: ${y})`;
+        coordHoverControl.getContainer().classList.add('show');
+    };
+    map.on('mousemove', hoverCoordsHandler);
+    map.on('touchmove', hoverCoordsHandler);
+    map.getContainer().addEventListener('mouseleave', () => {
+        coordHoverControl.getContainer().classList.remove('show');
+    });
+
+    map.on('click', e => {
+        if (isDraggingAny) {
+            isDraggingAny = false;
+            return;
+        }
+		
+		combinedSearch.value = '';
+        loadData('', categoryFilter.value);
+	
+        if (!gridEnabled) {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+            const grid = getGridFromLatLng(lat, lng);
+            const x = Math.round(lng);
+            const y = Math.round(lat);
+            coordHoverControl.getContainer().innerHTML = `Grid: ${grid || 'N/A'} (X: ${x}, Y: ${y})`;
+            coordHoverControl.getContainer().classList.add('show');
+            setTimeout(() => coordHoverControl.getContainer().classList.remove('show'), 3000);
+        }
+        if (gridEnabled) {
+            const grid = getGridFromLatLng(e.latlng.lat, e.latlng.lng);
+            if (grid) showGridNotification(grid);
+        }
+        playSound('click');
+    });
+
+    map.on('contextmenu', e => {
+        L.DomEvent.preventDefault(e);
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+        const grid = getGridFromLatLng(lat, lng);
+        const x = Math.round(lng);
+        const y = Math.round(lat);
+        const desc = grid ? `Grid ${grid} (X: ${x}, Y: ${y})` : `X: ${x}, Y: ${y}`;
+        const url = `${window.location.origin}${window.location.pathname}?lat=${y}&lng=${x}&grid=${grid}&desc=${encodeURIComponent(desc)}`;
+        navigator.clipboard.writeText(url).then(() => {
+            showTempMessage('Sending A Postcard location copied!', 3000);
+            playSound('click');
+        }).catch(() => {
+            prompt('Copy this link:', url);
+        });
+        if (grid) showGridNotification(grid);
+    });
+
+    map.on('dblclick', e => {
+        L.DomEvent.stopPropagation(e);
+        tempLatLng = { lat: e.latlng.lat, lng: e.latlng.lng };
+        openModal('Log Item');
+        playSound('click');
+    });
+
+        updateCategoryDropdowns();
+        renderCategoryToggles();
+        loadData(currentSearch, currentCategoryFilter);
+        drawGrid();
+        updateXPBar();
+        playSound('selectcategory');
+        setTimeout(() => document.body.classList.add('map-ready'), 1000);
+
+        toggleDarkModeBtn.onclick = () => {
+            darkMode = !darkMode;
+            document.body.classList.toggle('dark-mode', darkMode);
+            localStorage.setItem('darkMode', darkMode);
+            toggleDarkModeBtn.textContent = darkMode ? 'Dark mode: On' : 'Dark mode: Off';
+            resetAppBtn.style.color = '#000';
+            playSound('click');
+        };
+
+        if (howToUseBtn) {
+            howToUseBtn.onclick = () => {
+                instructionsModal.style.display = 'block';
+                document.body.classList.add('modal-open');
+                playSound('click');
+            };
+        }
+
+        if (nukeCodesBtn) {
+            nukeCodesBtn.onclick = () => {
+                nukeCodesModal.style.display = 'block';
+                document.body.classList.add('modal-open');
+                playSound('click');
+            };
+        }
+
+        document.querySelectorAll('.modal .close').forEach(closeBtn => {
+            closeBtn.onclick = (e) => {
+                e.stopPropagation();
+                const modal = closeBtn.closest('.modal');
+                modal.style.display = 'none';
+                document.body.classList.remove('modal-open');
+                playSound('modalClose');
+            };
+        });
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition && voiceSearchBtn) {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+            voiceSearchBtn.onclick = () => {
+                if (voiceSearchBtn.textContent === 'LISTENING...') {
+                    recognition.stop();
+                    voiceSearchBtn.textContent = 'Voice Search';
+                    return;
+                }
+                if (combinedSearch) combinedSearch.value = '';
+                combinedSearch.focus();
+                recognition.start();
+                voiceSearchBtn.textContent = 'LISTENING...';
+                playSound('click');
+            };
+            recognition.onresult = e => {
+                const transcript = e.results[0][0].transcript.trim();
+                if (combinedSearch) combinedSearch.value = transcript;
+                document.getElementById('combinedSearch').dispatchEvent(new Event('input'));
+                voiceSearchBtn.textContent = 'Voice Search';
+                showTempMessage(`Heard: "${transcript}"`, 4000);
+                playSound('selectcategory');
+            };
+            recognition.onerror = () => {
+                voiceSearchBtn.textContent = 'Voice Search';
+                showTempMessage('Voice failed. Try again or type.', 3000);
+                playSound('error');
+            };
+            recognition.onend = () => {
+                voiceSearchBtn.textContent = 'Voice Search';
+            };
+        } else if (voiceSearchBtn) {
+            voiceSearchBtn.textContent = 'Voice Search (Chrome/Edge only)';
+            voiceSearchBtn.title = 'Voice Search requires Chrome or Edge';
+            voiceSearchBtn.disabled = true;
+            voiceSearchBtn.onclick = () => {
+                showTempMessage('Voice Search only works in Chrome or Edge', 4000);
+                playSound('error');
+            };
+        }
+
+        resetAppBtn.style.color = '#000';
+        function addTypeSound(input) {
+            input.addEventListener('input', () => playSound('type'));
+        }
+        addTypeSound(itemDescInput);
+        document.getElementById('postcardMessage')?.addEventListener('input', () => playSound('type'));
+
+        const confettiScript = document.createElement('script');
+        confettiScript.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js';
+        confettiScript.onload = () => { window.confettiReady = true; };
+        document.head.appendChild(confettiScript);
+
+        const WELCOME_KEY = 'fo76_welcome_accepted_v38';
+        const LAST_VERSION_KEY = 'fo76_last_seen_version';
+        function showWelcomeModal() {
+    const welcomeModal = document.createElement('div');
+    welcomeModal.id = 'welcomeModal';
+    welcomeModal.className = 'modal';
+    welcomeModal.style.display = 'block';
+
+    welcomeModal.innerHTML = `
+        <div class="modal-content" style="max-width:650px; background:#000; border:2px solid #00ff00; box-shadow:0 0 30px #00ff00;">
+            <div style="background:#000; padding:15px; text-align:center; border-bottom:2px solid #00ff00;">
+                <h1 style="margin:0; font-size:2.5em; text-shadow:0 0 20px #00ff00;">
+                    ☢ FALLOUT 76 ITEM FINDER ☢
+                </h1>
+                <p style="margin:8px 0 0; font-size:1.3em; color:#0f0;">
+                    v76.1.0 — Built with ❤️ by MrCrazy
+                </p>
+            </div>
+
+            <div style="padding:20px; line-height:1.7;">
+                <p style="font-size:1.1em; margin-bottom:18px;">
+                    <strong>Welcome, Vault Dweller!</strong> By using this app you agree:
+                </p>
+
+                <ul style="margin:20px 0; padding-left:30px; font-size:1.05em;">
+                    <li>This tool is for <strong>personal, non-commercial use only</strong>.</li>
+                    <li>No copying, selling, or redistributing without permission.</li>
+                    <li>Some markers are community-sourced — use at your own risk.</li>
+                    <li>Always hit <strong>"Update Community Map"</strong> for the latest data.</li>
+                    <li>Have fun exploring Appalachia — and share the love! ❤️</li>
+                </ul>
+
+                <div style="margin:25px 0; text-align:center;">
+                    <div id="welcomeGotItBtn" style="display:inline-block; padding:12px 40px; background:#000; border:3px solid #00ff00; color:#00ff00; font-size:1.5em; font-weight:bold; text-shadow:0 0 15px #00ff00; box-shadow:0 0 20px #00ff00; cursor:pointer;">
+                        ENTER THE WASTELAND
+                    </div>
+                </div>
+
+                <p style="text-align:center; margin-top:20px; font-size:0.9em; opacity:0.8;">
+                    Made with passion for the Fallout 76 community.<br>
+                    <a href="https://buymeacoffee.com/mrcrazy" target="_blank" style="color:#00ff80;">Buy MrCrazy a Nuka-Cola ☕</a> if you love it!
+                </p>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(welcomeModal);
+    document.body.classList.add('modal-open');
+    document.getElementById('welcomeGotItBtn').onclick = () => {
+        localStorage.setItem(WELCOME_KEY, 'true');
+        welcomeModal.remove();
+        document.body.classList.remove('modal-open');
+        playSound('levelUp');
+        showTempMessage('Welcome to Appalachia!', 5000);
+    };
+}
+
+        function checkForUpdate() {
+    const lastSeen = localStorage.getItem(LAST_VERSION_KEY);
+    if (lastSeen !== CURRENT_UPDATE_VERSION) {
+        const updateModal = document.createElement('div');
+        updateModal.id = 'updateModal';
+        updateModal.className = 'modal';
+        updateModal.style.display = 'block';
+        updateModal.innerHTML = `
+            <div class="modal-content" style="max-width:600px; background:#000; border:2px solid #00ff00; box-shadow:0 0 30px #00ff00;">
+                <div style="background:#000; padding:18px; text-align:center; border-bottom:2px solid #00ff00;">
+                    <h1 style="margin:0; font-size:2.4em; text-shadow:0 0 20px #00ff00; color:#0f0;">
+                        ☢ UPDATE AVAILABLE ☢
+                    </h1>
+                </div>
+                <div style="padding:30px; text-align:center; line-height:1.8;">
+                    <ul style="text-align:left; display:inline-block; margin:25px 0; padding-left:30px; font-size:1.2em;">
+                        <li>Welcome To Version 76.1.0</li>
+                        <li>This is The Latest Update — Reset Your App if needed.<br>
+                            Find this tip in the "How to Use" section.</li>
+                        <li>Made With ❤️</li>
+                    </ul>
+                    <div style="margin:30px 0;">
+                        <div id="updateGotItBtn" style="display:inline-block; padding:14px 50px; background:#000; border:3px solid #00ff00; color:#00ff00; font-size:1.6em; font-weight:bold; text-shadow:0 0 18px #00ff00; box-shadow:0 0 25px #00ff00; cursor:pointer;">
+                            GOT IT — LET'S GO!
+                        </div>
+                    </div>
+                    <p style="margin-top:20px; font-size:0.9em; opacity:0.8;">
+                        Thank you for using the Fallout 76 Item Finder!<br>
+                        <a href="https://buymeacoffee.com/mrcrazy" target="_blank" style="color:#00ff80;">Buy MrCrazy a Nuka-Cola ☕</a>
+                    </p>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(updateModal);
+        document.body.classList.add('modal-open');
+
+        setTimeout(() => {
+            const btn = document.getElementById('updateGotItBtn');
+            if (btn) {
+                btn.onclick = () => {
+                    localStorage.setItem(LAST_VERSION_KEY, CURRENT_UPDATE_VERSION);
+                    updateModal.remove();
+                    document.body.classList.remove('modal-open');
+                    playSound('levelUp');
+                };
+            } else {
+                console.error('Update button not found');
+            }
+        }, 50);
+
+        updateModal.onclick = (e) => {
+            if (e.target === updateModal) {
+                localStorage.setItem(LAST_VERSION_KEY, CURRENT_UPDATE_VERSION);
+                updateModal.remove();
+                document.body.classList.remove('modal-open');
+                playSound('levelUp');
+            }
+        };
+    }
+}
+
+        if (!localStorage.getItem(WELCOME_KEY)) {
+            setTimeout(showWelcomeModal, 800);
+        } else {
+            setTimeout(checkForUpdate, 500);
+        }
+		
+		const searchInput = document.getElementById('combinedSearch');
+const suggestionsBox = document.getElementById('searchSuggestions');
+
+searchInput.addEventListener('input', function(e) {
+    if (e && !e.isTrusted) return;
+
+    const q = searchInput.value.trim().toLowerCase();
+    suggestionsBox.innerHTML = '';
+    suggestionsBox.style.display = 'none';
+
+    if (q.length < 2) return;
+
+    const matches = [];
+
+    locations.forEach(loc => {
+        if (!loc.desc) return;
+
+        const descLower = loc.desc.toLowerCase();
+        if (descLower.includes(q)) {
+            const displayText = loc.desc.length > 50 ? loc.desc.substring(0,47) + '...' : loc.desc;
+            matches.push({
+                display: displayText,
+                desc: loc.desc,
+                lat: loc.lat,
+                lng: loc.lng,
+                id: loc.id
+            });
+        }
+
+        if (loc.category && loc.category.toLowerCase().includes(q)) {
+            matches.push({
+                display: loc.category,
+                desc: loc.category,
+                lat: loc.lat,
+                lng: loc.lng,
+                id: loc.id
+            });
+        }
+    });
+
+    const seen = new Set();
+    const unique = matches.filter(item => {
+        if (seen.has(item.desc + item.lat + item.lng)) return false;
+        seen.add(item.desc + item.lat + item.lng);
+        return true;
+    }).slice(0, 12);
+
+    if (unique.length === 0) return;
+
+    unique.forEach(item => {
+        const div = document.createElement('div');
+        div.textContent = item.display;
+        div.onclick = () => {
+    searchInput.value = '';
+    suggestionsBox.style.display = 'none';
+
+    loadData('', categoryFilter.value);
+
+    safeFlyTo(item.lat, item.lng, 4);
+
+    map.once('moveend', () => {
+        setTimeout(() => {
+            const m = [...clusteredMarkers.getLayers(), ...nonClusteredMarkers.getLayers()]
+                .find(m => m.options.id === item.id);
+            if (m) {
+                m.openPopup();
+                playSound('click');
+            }
+        }, 200);
+    });
+
+    playSound('click');
+};
+        suggestionsBox.appendChild(div);
+    });
+
+    suggestionsBox.style.display = 'block';
+});
+
+document.addEventListener('click', e => {
+    if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+        suggestionsBox.style.display = 'none';
+    }
+});
+setTimeout(checkForUpdate, 800);
+
+// ─────── PWA INSTALL REMINDER (WORKS EVERYWHERE) ───────
+let deferredPrompt = null;
+let reminderShown = false;
+
+// Capture the install prompt
+window.addEventListener('beforeinstallprompt', (e) => {
+    console.log('beforeinstallprompt fired');
+    e.preventDefault();           // Stop Chrome from showing its own banner
+    deferredPrompt = e;           // Save it so we can trigger it manually
+});
+
+// Check if running as installed PWA
+function isInstalled() {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+           window.matchMedia('(display-mode: minimal-ui)').matches ||
+           window.navigator.standalone === true;
+}
+
+// Show reminder after 30 seconds if not installed and not shown this session
+setTimeout(() => {
+    if (!isInstalled() && deferredPrompt && !reminderShown) {
+        reminderShown = true;
+
+        const banner = document.createElement('div');
+banner.style.cssText = `
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background:#001100; color:#00ff00; padding:14px 20px; border:2px solid #00ff00;
+    border-radius:8px; font:bold 16px 'Courier New',monospace; text-align:center;
+    z-index:99999; box-shadow:0 0 20px #00ff00; max-width:90%;
+`;
+
+// ← ADD THIS ONE LINE
+const isMobile = /Mobi|Android|iPhone|iPad|iPod/.test(navigator.userAgent);
+banner.innerHTML = `
+    ❤️ Love the map?<br>
+    <button id="installYes" style="background:#00ff00;color:#000;padding:8px 16px;border:none;margin:8px;cursor:pointer;">
+        ${isMobile ? 'Install App' : 'Install as App'}
+    </button>
+    <button id="installNo" style="background:transparent;color:#00ff00;border:none;margin:8px;cursor:pointer;">
+        Maybe later
+    </button>
+`;
+
+        document.body.appendChild(banner);
+
+        document.getElementById('installYes').onclick = () => {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(() => banner.remove());
+        };
+
+        document.getElementById('installNo').onclick = () => banner.remove();
+    }
+}, 30000); // 30 seconds — change if you want faster/slower
+        console.log('%cFallout 76 Item Finder v76.1.0 — \nMade with ❤️ by MrCrazy','color:#00ff00;font-size:14px;font-weight:bold');
+		/* --------------------------------------------------------------------------
+       Fallout 76 Item Finder Map - Disclaimer and Terms of Use
+       --------------------------------------------------------------------------
+       Copyright (c) 2025 MrCrazy. All rights reserved.
+       This application, including all code, design, content, and the map images is the intellectual property of MrCrazy.
+       Unauthorized use, copying, modification, distribution, or monetization of this application or any part thereof is strictly prohibited without explicit written permission from the author.
+       This app is provided "as is" for personal, non-commercial use by Fallout 76 players to track in-game items.
+       The author is not responsible for any damages or losses resulting from the use of this application. Use at your own risk.
+       For inquiries or permission requests, call someone who cares.
+       Last updated: November 17, 2025
+       -------------------------------------------------------------------------- */
+    })();
+});
+</script>
+</body>
+</html>
+
+
+
+
+
+
